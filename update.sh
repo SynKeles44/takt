@@ -67,4 +67,4 @@ fi
 
 echo
 bold "Fertig"
-git --no-pager log --oneline "$before..$after" | head -10 | sed 's/^/  /'
+git --no-pager log --oneline "$before..$after" | head -10 | sed 's/^/  /' || true

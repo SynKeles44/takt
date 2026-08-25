@@ -35,14 +35,16 @@ have npm || missing+=("node/npm")
 
 if have php; then
     php -r 'exit(PHP_VERSION_ID >= 80300 ? 0 : 1);' || fail "PHP 8.3 oder neuer nötig, gefunden $(php -r 'echo PHP_VERSION;')"
-    php -m | grep -qi '^pdo_sqlite$' || missing+=("PHP-Erweiterung pdo_sqlite")
-    php -m | grep -qi '^gd$' || missing+=("PHP-Erweiterung gd")
+    # no `php -m | grep -q`: grep closes the pipe early and pipefail then fails the check
+    php -r 'exit(extension_loaded("pdo_sqlite") ? 0 : 1);' || missing+=("PHP-Erweiterung pdo_sqlite")
+    php -r 'exit(extension_loaded("gd") ? 0 : 1);' || missing+=("PHP-Erweiterung gd")
 else
     missing+=("php")
 fi
 
 if [ ${#missing[@]} -gt 0 ]; then
-    printf '\033[31m  Es fehlt: %s\033[0m\n' "$(IFS=', '; echo "${missing[*]}")" >&2
+    joined=$(printf '%s, ' "${missing[@]}")
+    printf '\033[31m  Es fehlt: %s\033[0m\n' "${joined%, }" >&2
     echo
     info "Auf macOS mit Homebrew:"
     info "  brew install php composer node git"
