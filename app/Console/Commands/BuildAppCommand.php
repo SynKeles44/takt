@@ -18,7 +18,8 @@ class BuildAppCommand extends Command
 {
     protected $signature = 'takt:app
                             {--path= : Where the bundle is written (default: ~/Applications)}
-                            {--port=8000 : Port the app serves on}';
+                            {--port=8000 : Port the app serves on}
+                            {--force : Overwrite a bundle that points at another installation}';
 
     protected $description = 'Build the macOS app bundle for this installation';
 
@@ -43,6 +44,16 @@ class BuildAppCommand extends Command
         $target = rtrim($this->option('path') ?: getenv('HOME').'/Applications', '/');
         $bundle = $target.'/'.$name.'.app';
         $port = (int) $this->option('port');
+
+        $existing = $this->bundleRoot($bundle);
+
+        if ($existing !== null && $existing !== base_path() && ! $this->option('force')) {
+            $this->components->warn(sprintf('%s.app already points at %s — kept it.', $name, $existing));
+            $this->components->twoColumnDetail('Overwrite it with', 'php artisan takt:app --force');
+            $this->components->twoColumnDetail('Or write elsewhere with', 'php artisan takt:app --path=…');
+
+            return self::SUCCESS;
+        }
 
         $this->components->info(sprintf('Building %s.app for %s', $name, base_path()));
 
@@ -78,6 +89,20 @@ class BuildAppCommand extends Command
         $this->components->info('Open it from Finder or the Launchpad. Keep it in the Dock for one-click access.');
 
         return self::SUCCESS;
+    }
+
+    /** Which installation an existing bundle launches, if any. */
+    private function bundleRoot(string $bundle): ?string
+    {
+        $plist = $bundle.'/Contents/Info.plist';
+
+        if (! is_file($plist)) {
+            return null;
+        }
+
+        $result = Process::run(['/usr/bin/plutil', '-extract', 'TaktRoot', 'raw', '-o', '-', $plist]);
+
+        return $result->successful() ? trim($result->output()) : null;
     }
 
     /**

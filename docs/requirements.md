@@ -517,3 +517,29 @@ assignment. Everything below serves one person organising their own work.
 - [x] The drag strip starts the drag explicitly via `performDrag`; the earlier `mouseDown`
       override consumed the event before the window server could move the window. Its frame
       comes from constraints instead of an autoresizing mask.
+
+## R23 — Published
+
+### R23.1 Repository
+
+- [x] Public repository with description, ten topics, MIT licence and a green CI run
+      (tests + code style on PHP 8.4, Node 22).
+- [x] CI renders the notification icon first: `public/icons` is generated and ignored, so a
+      fresh checkout had none and the test that guards it failed.
+- [x] `tests/Unit` carries real unit tests for the duration helper — the suite was declared
+      in `phpunit.xml` but the directory was empty, and git does not carry empty directories,
+      so every clone failed with exit code 2.
+
+### R23.2 Two commands
+
+- [x] `install.sh` and `update.sh`, both verified end to end against the published
+      repository: clone, dependencies, database, icon, app bundle; update reports
+      "Schon aktuell" when there is nothing to pull and refuses to run over local changes.
+- [x] Fixed a false negative that aborted every install: `php -m | grep -q` closes the pipe
+      early, which fails the pipeline under `set -o pipefail`. The check asks PHP directly.
+
+### R23.3 A second installation cannot hijack the app
+
+- [x] `takt:app` keeps a bundle that points at another installation and names it, unless
+      `--force` is passed — the end-to-end install test had silently re-pointed the app at a
+      throwaway checkout.

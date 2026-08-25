@@ -275,3 +275,10 @@ Requirement ids refer to `requirements.md`.
       the maintainer.
 - [x] Window: `fullSizeContentView` with a hidden title, `DragStrip` overlay for moving,
       `applicationNameForUserAgent` marker, unlayered app-shell CSS.
+
+## Phase 38 — Publication (R23)
+
+- [x] Repository created through the browser under the right account, description and topics
+      set, initial commit pushed, CI green after two fixes (unit suite, icon step).
+- [x] `install.sh` / `update.sh` proven against GitHub; requirement check rewritten without
+      a pipe; `takt:app` guards a foreign bundle (`--force` to take it over).

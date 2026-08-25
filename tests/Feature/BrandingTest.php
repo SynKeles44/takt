@@ -133,6 +133,37 @@ class BrandingTest extends TestCase
         exec('/bin/rm -rf '.escapeshellarg($target));
     }
 
+    public function test_a_bundle_of_another_installation_is_not_overwritten(): void
+    {
+        if (PHP_OS_FAMILY !== 'Darwin') {
+            $this->markTestSkipped('The bundle is macOS only.');
+        }
+
+        $target = sys_get_temp_dir().'/takt-guard-'.bin2hex(random_bytes(4));
+
+        $this->artisan('takt:app', ['--path' => $target])->assertSuccessful();
+
+        // pretend the bundle belongs to a second installation
+        exec(sprintf(
+            '/usr/bin/plutil -replace TaktRoot -string /tmp/other-checkout %s',
+            escapeshellarg($target.'/Takt.app/Contents/Info.plist')
+        ));
+
+        $this->artisan('takt:app', ['--path' => $target])
+            ->expectsOutputToContain('/tmp/other-checkout')
+            ->assertSuccessful();
+
+        $plist = (string) file_get_contents($target.'/Takt.app/Contents/Info.plist');
+        $this->assertStringContainsString('/tmp/other-checkout', $plist, 'the foreign bundle must stay untouched');
+
+        $this->artisan('takt:app', ['--path' => $target, '--force' => true])->assertSuccessful();
+
+        $plist = (string) file_get_contents($target.'/Takt.app/Contents/Info.plist');
+        $this->assertStringContainsString(base_path(), $plist, '--force takes it over');
+
+        exec('/bin/rm -rf '.escapeshellarg($target));
+    }
+
     public function test_the_login_item_points_at_this_installation(): void
     {
         if (PHP_OS_FAMILY !== 'Darwin') {
