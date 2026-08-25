@@ -46,7 +46,8 @@ class SetupCommand extends Command
         $mac = PHP_OS_FAMILY === 'Darwin';
 
         if ($mac && ! $this->option('no-app')) {
-            $this->call('takt:app', ['--port' => $port, '--force' => true]);
+            // no --force: a bundle that belongs to another installation is left alone
+            $this->call('takt:app', ['--port' => $port]);
         }
 
         if ($mac && ! $this->option('no-autostart')) {

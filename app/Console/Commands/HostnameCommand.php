@@ -69,8 +69,9 @@ class HostnameCommand extends Command
 
         $this->call('config:clear');
 
-        // the app window carries the address in its bundle, so it has to be rewritten
-        if (PHP_OS_FAMILY === 'Darwin' && is_dir($this->bundle())) {
+        // the app window carries the address in its bundle, so it has to be rewritten —
+        // but only ours, and never from a test run, which has no business touching the machine
+        if ($this->rebuildsBundle()) {
             $this->call('takt:app', ['--port' => $port, '--force' => true]);
         }
 
@@ -88,6 +89,22 @@ class HostnameCommand extends Command
     private function bundle(): string
     {
         return (getenv('HOME') ?: '').'/Applications/'.config('app.name').'.app';
+    }
+
+    /** Only a bundle that belongs to this installation, and only outside of tests. */
+    private function rebuildsBundle(): bool
+    {
+        if (PHP_OS_FAMILY !== 'Darwin' || app()->environment('testing')) {
+            return false;
+        }
+
+        $plist = $this->bundle().'/Contents/Info.plist';
+
+        if (! is_file($plist)) {
+            return false;
+        }
+
+        return str_contains((string) file_get_contents($plist), '<string>'.base_path().'</string>');
     }
 
     /** Either the hosts file we were given says so, or the resolver does. */

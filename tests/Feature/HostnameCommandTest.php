@@ -106,6 +106,17 @@ class HostnameCommandTest extends TestCase
         $this->assertStringNotContainsString('not a host', File::get($this->hosts));
     }
 
+    public function test_it_never_rebuilds_the_app_bundle_from_a_test(): void
+    {
+        $plist = (getenv('HOME') ?: '').'/Applications/'.config('app.name').'.app/Contents/Info.plist';
+        $before = is_file($plist) ? (string) File::get($plist) : null;
+
+        $this->hostname(['host' => 'local.takt.de']);
+
+        // a test run must leave the machine's own app alone — this is what broke it once
+        $this->assertSame($before, is_file($plist) ? (string) File::get($plist) : null);
+    }
+
     public function test_the_address_helper_reads_the_configured_url(): void
     {
         config(['app.url' => 'http://local.takt.de:8123']);
