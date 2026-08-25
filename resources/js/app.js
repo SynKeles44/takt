@@ -119,7 +119,8 @@ document.querySelectorAll('[data-carousel]').forEach((carousel) => {
     const index = carousel.querySelector('[data-slide-index]');
     const form = carousel.querySelector('[data-slide-form]');
     const activeBadge = carousel.querySelector('[data-slide-active]');
-    const field = form?.querySelector('input[type="hidden"]');
+    // never `input[type=hidden]`: that is the CSRF token, and overwriting it broke the submit
+    const field = form?.querySelector('[data-slide-value]');
     const param = carousel.dataset.param;
 
     let current = Math.max(0, slides.findIndex((slide) => ! slide.classList.contains('is-off')));

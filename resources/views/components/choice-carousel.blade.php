@@ -51,7 +51,7 @@
     <form method="POST" action="{{ $action }}" class="mt-4 @if ($isActive) hidden @endif" data-slide-form>
         @csrf
         @method('PUT')
-        <input type="hidden" name="{{ $field }}" value="{{ $previewed->value }}">
+        <input type="hidden" name="{{ $field }}" value="{{ $previewed->value }}" data-slide-value>
         <button type="submit" class="btn btn-primary w-full">
             <x-icon name="check" class="size-4"/>
             {{ $chooseLabel }}

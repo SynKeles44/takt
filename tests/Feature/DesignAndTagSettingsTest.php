@@ -79,6 +79,24 @@ class DesignAndTagSettingsTest extends TestCase
         $response->assertDontSee('data-position="2"'."\n".'     class="hidden"', escape: false);
     }
 
+    public function test_the_value_field_is_marked_so_paging_cannot_touch_the_csrf_token(): void
+    {
+        $content = (string) $this->get(route('settings'))->assertOk()->getContent();
+
+        foreach (['design_style', 'theme'] as $field) {
+            $this->assertStringContainsString('name="'.$field.'" value=', $content);
+        }
+
+        // the token comes first in the form, so the carousel must address the value field by
+        // its marker — reaching for the first hidden input overwrote the token instead
+        $form = substr($content, strpos($content, 'data-slide-form'));
+        $token = strpos($form, 'name="_token"');
+        $value = strpos($form, 'data-slide-value');
+
+        $this->assertNotFalse($value);
+        $this->assertLessThan($value, $token);
+    }
+
     public function test_the_previewed_style_follows_the_query_parameter(): void
     {
         $this->get(route('settings', ['stil' => DesignStyle::Terminal->value]))
