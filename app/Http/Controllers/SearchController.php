@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\DayNote;
+use App\Models\Snippet;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use Illuminate\Http\JsonResponse;
@@ -60,8 +61,21 @@ class SearchController extends Controller
                 'url' => route('history', ['from' => $note->day->copy()->startOfWeek()->toDateString()]),
             ]);
 
+        $snippets = Snippet::query()
+            ->where(fn ($query) => $query->where('title', 'like', $like)->orWhere('body', 'like', $like))
+            ->inOrder()
+            ->limit(6)
+            ->get()
+            ->map(fn (Snippet $snippet): array => [
+                'group' => __('app.dev.snippets'),
+                'label' => $snippet->title,
+                'hint' => Str::limit($snippet->body, 70),
+                'copy' => $snippet->body,
+                'ping' => route('snippets.used', $snippet),
+            ]);
+
         return response()->json([
-            'results' => $todos->concat($entries)->concat($notes)->values()->all(),
+            'results' => $snippets->concat($todos)->concat($entries)->concat($notes)->values()->all(),
         ]);
     }
 }

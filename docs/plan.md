@@ -282,3 +282,68 @@ Requirement ids refer to `requirements.md`.
       set, initial commit pushed, CI green after two fixes (unit suite, icon step).
 - [x] `install.sh` / `update.sh` proven against GitHub; requirement check rewritten without
       a pipe; `takt:app` guards a foreign bundle (`--force` to take it over).
+
+## Phase 39 — Development section (R24)
+
+- [x] `projects` and `snippets` tables plus four user columns (token, three templates).
+- [x] Services: `Commits` (local git), `Reviews` (GitHub search, cached), `ProjectRunner`
+      (detached start, pid, port probe), `TestPost` (template expansion + slug).
+- [x] Pages: overview (commits, reviews, projects, snippets), projects, snippets, test post,
+      plus the settings card; `data-copy` clipboard handler wired into the palette.
+- [x] 21 tests, including real git repositories created in the test and a faked GitHub API.
+
+## Phase 40 — Colour scheme as a flip-through element (R14)
+
+- [x] One `choice-carousel` component drives the design style and the colour scheme alike;
+      the previous per-style JS became a generic `[data-carousel]` handler.
+- [x] `theme-preview` shows a real mock-up in the scheme's own tokens; an explicit
+      `[data-theme='midnight']` block lets a preview keep its colours inside another theme.
+- [x] Automatic shows both halves of the same mock-up as a diagonal split, so no slide
+      changes the element's height.
+
+## Phase 41 — Registering a project (R24.6)
+
+- [x] `ProjectScanner` reads folder, remote, start command and port; `NSOpenPanel` bridge in
+      the shell (`window.takt.pickFolder`), scan on paste or blur in the browser.
+- [x] `make start` as the default, the port labelled optional with the reason spelled out.
+
+## Phase 42 — Dashboard of widgets (R25)
+
+- [x] `Widget` / `WidgetGroup` enums as the register (span + rows per widget),
+      `dashboard_widgets` table, `users.dashboard_arranged` to tell an empty board from an
+      untouched one, `Dashboard` service that resolves the layout and loads data per widget.
+- [x] The old dashboard split into seven widget views; fourteen new ones on top, ten of them
+      about development.
+- [x] One endpoint: the edit mode sends the whole layout (order, span, rows) as JSON, so a
+      drag never leaves a half state; reset writes the default set back.
+- [x] `board.js`: edit mode, pointer-driven dragging with a ghost tile, FLIP animation for
+      every tile that moved, the gallery on the right, iOS-style wiggle and pop-in badges.
+      Every listener is bound to the document once, so a region swap never loses the wiring.
+- [x] Row height measured against the real content in the browser until no tile scrolled by
+      accident (6–12 px overflows on three tiles, fixed by a 5rem row).
+- [x] 14 layout tests plus `EveryPageTest`, which renders every page with content and every
+      widget on one board.
+- [x] Measured in the browser after the first round of feedback: rows are a floor, not a cap
+      (`minmax(row, max-content)`), so a tile narrowed in edit mode grows instead of clipping;
+      the height arrows are gone — the width is the only size worth choosing by hand.
+- [x] Saving moved to the end of the edit mode: arranging is local, "Fertig" (or escape) is the
+      one commit, `pagehide` writes an unsaved arrangement as a net. A pushed-in widget stays
+      marked until that commit, and a removed one goes straight back into the gallery.
+- [x] `.control` got one height for every field type and text size — a monospace path next to a
+      plain name was five pixels shorter, which is what read as broken.
+- [x] Development header: the day navigation moved left of the tabs, so the tab bar keeps its
+      place on all four pages instead of shifting on the overview.
+
+## Phase 43 — Marking a range in the calendar (R26)
+
+- [x] `day-range.js`: pointer-driven marking (drag or long press), the range painted straight
+      onto the day cells, backwards drags sorted, escape and cancel clearing it.
+- [x] The absence window lives in the calendar view and posts to the existing
+      `absences.store`; the calendar comes back through the region swap.
+- [x] A plain click keeps its old job — the day still links into the week history.
+- [x] 6 tests on the contract the browser reads: `data-day` per cell, `draggable="false"`, the
+      window's fields, and the endpoint taking a marked range (single day and reversed range).
+- [x] First round did not drag at all: a day is a link, so the browser answered press-and-move
+      with its own drag-and-drop. `draggable="false"` plus `preventDefault()` on pointerdown
+      fixed it; synthetic events had passed because they skip exactly that default. Verified
+      afterwards with real mouse drags in the browser.

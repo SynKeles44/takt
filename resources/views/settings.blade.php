@@ -219,54 +219,26 @@
                     </div>
                 </div>
 
-                <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                <x-choice-carousel
+                    param="farbe"
+                    field="theme"
+                    :action="route('settings.theme')"
+                    :previewed="$previewedTheme"
+                    :previous="$previousTheme"
+                    :next="$nextTheme"
+                    :position="$themePosition"
+                    :count="$themeCount"
+                    :active="$user->theme"
+                    :choose-label="__('app.settings.theme_choose')"
+                    :active-label="__('app.settings.theme_active')"
+                    :previous-label="__('app.settings.theme_previous')"
+                    :next-label="__('app.settings.theme_next')">
                     @foreach ($themes as $option)
-                        @php
-                            $preview = $option->preview();
-                            $active = $user->theme === $option;
-                        @endphp
-
-                        <form method="POST" action="{{ route('settings.theme') }}">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="theme" value="{{ $option->value }}">
-
-                            <button type="submit"
-                                    @class([
-                                        'block w-full overflow-hidden rounded-[var(--radius-control)] border text-left transition',
-                                        'border-accent ring-2 ring-accent/30' => $active,
-                                        'border-line hover:border-line-strong' => ! $active,
-                                    ])>
-                                <span class="block h-16 p-2" @style([
-                                        'background: '.$preview['canvas'] => ! $option->isAutomatic(),
-                                        'background: linear-gradient(135deg, #060911 50%, #f4f6fb 50%)' => $option->isAutomatic(),
-                                    ])>
-                                    <span class="flex h-full flex-col justify-between rounded p-1.5" @style([
-                                            'background: '.$preview['surface'] => ! $option->isAutomatic(),
-                                            'background: linear-gradient(135deg, #161c2c 50%, #ffffff 50%)' => $option->isAutomatic(),
-                                        ])>
-                                        <span class="flex items-center gap-1">
-                                            <span class="size-1.5 rounded-full" style="background: {{ $preview['accent'] }}"></span>
-                                            <span class="h-1 w-8 rounded-full" style="background: {{ $preview['ink'] }}; opacity: .7"></span>
-                                        </span>
-                                        <span class="flex items-end gap-1">
-                                            <span class="h-3 w-2.5 rounded-sm" style="background: {{ $preview['accent'] }}"></span>
-                                            <span class="h-5 w-2.5 rounded-sm" style="background: {{ $preview['accent'] }}; opacity: .55"></span>
-                                        </span>
-                                    </span>
-                                </span>
-
-                                <span class="flex items-center justify-between gap-2 border-t border-line bg-raised px-3 py-2">
-                                    <span>
-                                        <span class="block text-xs font-semibold text-ink">{{ $option->label() }}</span>
-                                        <span class="block text-[10px] text-faint">{{ $option->description() }}</span>
-                                    </span>
-                                    @if ($active)<span class="shrink-0 text-accent-text"><x-icon name="check" class="size-4"/></span>@endif
-                                </span>
-                            </button>
-                        </form>
+                        <x-choice-slide :case="$option" :position="$loop->iteration" :shown="$option === $previewedTheme">
+                            <x-theme-preview :theme="$option"/>
+                        </x-choice-slide>
                     @endforeach
-                </div>
+                </x-choice-carousel>
             </x-card>
 
             <x-card class="rise">
@@ -278,65 +250,26 @@
                     </div>
                 </div>
 
-                @php
-                    $styles = \App\Enums\DesignStyle::cases();
-                    $isActiveStyle = $user->design_style === $previewedStyle;
-                @endphp
-
-                <div class="mt-5" data-style-carousel data-active-style="{{ $user->design_style->value }}">
-                    <div class="flex items-stretch gap-2">
-                        <a href="{{ route('settings', ['stil' => $previousStyle->value]) }}"
-                           class="btn btn-icon shrink-0 self-stretch px-2" data-style-step="-1"
-                           aria-label="{{ __('app.settings.style_previous') }}">
-                            <x-icon name="chevron-left" class="size-4"/>
-                        </a>
-
-                        <div class="min-w-0 flex-1">
-                            @foreach ($styles as $option)
-                                <div data-style-slide="{{ $option->value }}"
-                                     data-style-label="{{ $option->label() }}"
-                                     data-style-description="{{ $option->description() }}"
-                                     data-style-position="{{ $loop->iteration }}"
-                                     @class(['hidden' => $option !== $previewedStyle])>
-                                    <x-style-preview :style="$option"/>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <a href="{{ route('settings', ['stil' => $nextStyle->value]) }}"
-                           class="btn btn-icon shrink-0 self-stretch px-2" data-style-step="1"
-                           aria-label="{{ __('app.settings.style_next') }}">
-                            <x-icon name="chevron-right" class="size-4"/>
-                        </a>
-                    </div>
-
-                    <div class="mt-4 flex flex-wrap items-end justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-ink" data-style-name>{{ $previewedStyle->label() }}</p>
-                            <p class="mt-0.5 text-xs leading-snug text-faint" data-style-text>{{ $previewedStyle->description() }}</p>
-                        </div>
-                        <span class="metric shrink-0 text-xs text-dim">
-                            <span data-style-index>{{ $stylePosition }}</span> / {{ $styleCount }}
-                        </span>
-                    </div>
-
-                    <p class="btn btn-ghost mt-4 w-full cursor-default text-work-text @unless ($isActiveStyle) hidden @endunless"
-                       data-style-active>
-                        <x-icon name="check" class="size-4"/>
-                        {{ __('app.settings.style_active') }}
-                    </p>
-
-                    <form method="POST" action="{{ route('settings.style') }}"
-                          class="mt-4 @if ($isActiveStyle) hidden @endif" data-style-form>
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="design_style" value="{{ $previewedStyle->value }}">
-                        <button type="submit" class="btn btn-primary w-full">
-                            <x-icon name="check" class="size-4"/>
-                            {{ __('app.settings.style_choose') }}
-                        </button>
-                    </form>
-                </div>
+                <x-choice-carousel
+                    param="stil"
+                    field="design_style"
+                    :action="route('settings.style')"
+                    :previewed="$previewedStyle"
+                    :previous="$previousStyle"
+                    :next="$nextStyle"
+                    :position="$stylePosition"
+                    :count="$styleCount"
+                    :active="$user->design_style"
+                    :choose-label="__('app.settings.style_choose')"
+                    :active-label="__('app.settings.style_active')"
+                    :previous-label="__('app.settings.style_previous')"
+                    :next-label="__('app.settings.style_next')">
+                    @foreach ($styles as $option)
+                        <x-choice-slide :case="$option" :position="$loop->iteration" :shown="$option === $previewedStyle">
+                            <x-style-preview :style="$option"/>
+                        </x-choice-slide>
+                    @endforeach
+                </x-choice-carousel>
             </x-card>
 
             <x-card class="rise">
@@ -401,6 +334,56 @@
                         </button>
                     </form>
                 </div>
+            </x-card>
+
+            <x-card class="rise">
+                <div class="flex items-start gap-3">
+                    <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-info/10 text-info-text"><x-icon name="terminal" class="size-4"/></span>
+                    <div>
+                        <h2 class="text-sm font-semibold text-ink">{{ __('app.nav.dev') }}</h2>
+                        <p class="text-xs text-faint">{{ __('app.settings.dev_hint') }}</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('settings.developer') }}" class="mt-4 space-y-3">
+                    @csrf
+                    @method('PUT')
+
+                    <div>
+                        <label for="github_token" class="label">{{ __('app.settings.github_token') }}</label>
+                        <input id="github_token" type="password" name="github_token" class="control metric text-xs"
+                               autocomplete="off" placeholder="{{ $user->github_token ? __('app.settings.token_set') : 'ghp_…' }}">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.github_token_hint') }}</p>
+                        @error('github_token') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="ticket_url_template" class="label">{{ __('app.settings.ticket_template') }}</label>
+                        <input id="ticket_url_template" type="text" name="ticket_url_template" class="control metric text-xs"
+                               value="{{ old('ticket_url_template', $user->ticket_url_template) }}"
+                               placeholder="{{ \App\Services\TestPost::TICKET_DEFAULT }}">
+                    </div>
+
+                    <div>
+                        <label for="pr_url_template" class="label">{{ __('app.settings.pr_template') }}</label>
+                        <input id="pr_url_template" type="text" name="pr_url_template" class="control metric text-xs"
+                               value="{{ old('pr_url_template', $user->pr_url_template) }}"
+                               placeholder="{{ \App\Services\TestPost::PR_DEFAULT }}">
+                    </div>
+
+                    <div>
+                        <label for="instance_url_template" class="label">{{ __('app.settings.instance_template') }}</label>
+                        <input id="instance_url_template" type="text" name="instance_url_template" class="control metric text-xs"
+                               value="{{ old('instance_url_template', $user->instance_url_template) }}"
+                               placeholder="{{ \App\Services\TestPost::INSTANCE_DEFAULT }}">
+                        <p class="mt-1 text-[11px] text-dim">{{ __('app.settings.template_hint') }}</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full">
+                        <x-icon name="check" class="size-4"/>
+                        {{ __('app.settings.save') }}
+                    </button>
+                </form>
             </x-card>
         </div>
     </div>

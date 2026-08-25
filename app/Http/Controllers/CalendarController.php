@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\AbsenceType;
 use App\Enums\EntryType;
 use App\Models\TimeEntry;
 use App\Models\Todo;
@@ -68,6 +69,8 @@ class CalendarController extends Controller
             'monthWork' => (int) $days->where('inMonth', true)->sum('work'),
             'dailyTarget' => $request->user()->dailyTargetSeconds(),
             'vacation' => $calendar->vacationSummary($request->user()),
+            // the calendar books an absence itself, straight from a marked range
+            'types' => AbsenceType::cases(),
         ]);
     }
 

@@ -15,8 +15,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'weekly_hours', 'working_days', 'theme', 'design_style', 'locale', 'notify_worktime', 'holiday_region', 'vacation_days'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'weekly_hours', 'working_days', 'theme', 'design_style', 'locale', 'notify_worktime', 'github_token', 'ticket_url_template', 'pr_url_template', 'instance_url_template', 'holiday_region', 'vacation_days'])]
+#[Hidden(['password', 'remember_token', 'github_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -41,10 +41,21 @@ class User extends Authenticatable
             'weekly_hours' => 'float',
             'working_days' => 'integer',
             'notify_worktime' => 'boolean',
+            'dashboard_arranged' => 'boolean',
             'theme' => Theme::class,
             'design_style' => DesignStyle::class,
             'vacation_days' => 'float',
         ];
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    public function snippets(): HasMany
+    {
+        return $this->hasMany(Snippet::class);
     }
 
     public function timeEntries(): HasMany

@@ -1,3 +1,6 @@
+import { createBoard } from './board';
+import { dayRange } from './day-range';
+
 const pad = (value) => String(value).padStart(2, '0');
 
 const asClock = (seconds) =>
@@ -103,62 +106,65 @@ document.addEventListener('change', (event) => {
     }
 });
 
-const carousel = document.querySelector('[data-style-carousel]');
-
-if (carousel) {
-    const slides = [...carousel.querySelectorAll('[data-style-slide]')];
-    const steps = [...carousel.querySelectorAll('[data-style-step]')];
-    const name = carousel.querySelector('[data-style-name]');
-    const text = carousel.querySelector('[data-style-text]');
-    const index = carousel.querySelector('[data-style-index]');
-    const form = carousel.querySelector('[data-style-form]');
-    const activeBadge = carousel.querySelector('[data-style-active]');
-    const field = form?.querySelector('input[name="design_style"]');
+/*
+ * Flip-through picker, used for the design style and the colour scheme alike: the
+ * slides are all in the page, blättern only swaps which one is visible and keeps the
+ * URL, the labels and the confirm button in step with it.
+ */
+document.querySelectorAll('[data-carousel]').forEach((carousel) => {
+    const slides = [...carousel.querySelectorAll('[data-slide]')];
+    const steps = [...carousel.querySelectorAll('[data-step]')];
+    const name = carousel.querySelector('[data-slide-name]');
+    const text = carousel.querySelector('[data-slide-text]');
+    const index = carousel.querySelector('[data-slide-index]');
+    const form = carousel.querySelector('[data-slide-form]');
+    const activeBadge = carousel.querySelector('[data-slide-active]');
+    const field = form?.querySelector('input[type="hidden"]');
+    const param = carousel.dataset.param;
 
     let current = Math.max(0, slides.findIndex((slide) => ! slide.classList.contains('hidden')));
 
     const show = (target) => {
+        const previous = current;
         current = (target + slides.length) % slides.length;
 
         slides.forEach((slide, position) => slide.classList.toggle('hidden', position !== current));
 
         const slide = slides[current];
+        const value = slide.dataset.slide;
+        const forward = (current - previous + slides.length) % slides.length === 1;
 
-        slide.classList.remove('rise');
+        slide.classList.remove('slide-in-left', 'slide-in-right');
         void slide.offsetWidth;
-        slide.classList.add('rise');
-        const value = slide.dataset.styleSlide;
-        const isActive = value === carousel.dataset.activeStyle;
+        slide.classList.add(forward ? 'slide-in-right' : 'slide-in-left');
 
-        name.textContent = slide.dataset.styleLabel;
-        text.textContent = slide.dataset.styleDescription;
-        index.textContent = slide.dataset.stylePosition;
+        if (name) name.textContent = slide.dataset.label;
+        if (text) text.textContent = slide.dataset.description;
+        if (index) index.textContent = slide.dataset.position;
+        if (field) field.value = value;
 
-        if (field) {
-            field.value = value;
-        }
-
+        const isActive = value === carousel.dataset.active;
         form?.classList.toggle('hidden', isActive);
         activeBadge?.classList.toggle('hidden', ! isActive);
 
         steps.forEach((step) => {
-            const offset = Number(step.dataset.styleStep);
+            const offset = Number(step.dataset.step);
             const neighbour = slides[(current + offset + slides.length) % slides.length];
-            step.href = step.href.replace(/stil=[^&]*/, `stil=${neighbour.dataset.styleSlide}`);
+            step.href = step.href.replace(new RegExp(`${param}=[^&]*`), `${param}=${neighbour.dataset.slide}`);
         });
 
         const url = new URL(window.location.href);
-        url.searchParams.set('stil', value);
+        url.searchParams.set(param, value);
         window.history.replaceState({}, '', url);
     };
 
     steps.forEach((step) => {
         step.addEventListener('click', (event) => {
             event.preventDefault();
-            show(current + Number(step.dataset.styleStep));
+            show(current + Number(step.dataset.step));
         });
     });
-}
+});
 
 const palette = document.querySelector('[data-palette]');
 
@@ -194,7 +200,19 @@ if (palette) {
         rows.forEach((row) => {
             const node = template.content.firstElementChild.cloneNode(true);
             node.dataset.label = row.label.toLowerCase();
-            node.querySelector('a').href = row.url;
+
+            const link = node.querySelector('a');
+
+            if (row.copy) {
+                link.href = '#';
+                link.dataset.copy = row.copy;
+
+                if (row.ping) {
+                    link.dataset.copyPing = row.ping;
+                }
+            } else {
+                link.href = row.url;
+            }
             node.querySelector('[data-slot="label"]').textContent = row.label;
             node.querySelector('[data-slot="hint"]').textContent = row.hint ?? '';
             node.querySelector('[data-slot="group"]').textContent = row.group;
@@ -428,10 +446,13 @@ const swapRegions = (html) => {
         node.replaceWith(fresh);
         swapped = true;
 
-        // the entrance animation belongs to a page load, not to an in-place update
+        // the entrance animation belongs to a page load; an in-place update only fades
         fresh.querySelectorAll(':scope > *').forEach((child) => {
             child.style.animation = 'none';
         });
+
+        fresh.dataset.swapped = '';
+        requestAnimationFrame(() => requestAnimationFrame(() => delete fresh.dataset.swapped));
     });
 
     const title = doc.querySelector('title')?.textContent;
@@ -763,3 +784,67 @@ document.addEventListener('keydown', (event) => {
 
     document.querySelectorAll('[data-menu]').forEach((menu) => menu.classList.add('hidden'));
 });
+
+// anything carrying data-copy puts its content on the clipboard, delegated so it
+// keeps working inside regions that were swapped in place
+document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-copy]');
+
+    if (! trigger) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const text = trigger.dataset.copy ?? '';
+    const done = () => {
+        toast(trigger.dataset.copyLabel || 'Kopiert.');
+
+        const ping = trigger.dataset.copyPing;
+
+        if (ping) {
+            fetch(ping, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                },
+            }).catch(() => {});
+        }
+    };
+
+    if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, done));
+
+        return;
+    }
+
+    fallback(text, done);
+});
+
+function fallback(text, done) {
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.cssText = 'position:fixed;left:-9999px';
+    document.body.append(field);
+    field.select();
+
+    try {
+        document.execCommand('copy');
+        done();
+    } catch (error) {
+        // nothing we can do without clipboard access
+    }
+
+    field.remove();
+}
+
+// the dashboard's edit mode; it re-reads the DOM after every region swap
+const boardApi = createBoard({ swapRegions, toast });
+
+boardApi.apply();
+
+// marking a range of days in the calendar
+dayRange();

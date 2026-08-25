@@ -48,6 +48,43 @@
     --scheme: dark;
 }
 
+/*
+ * Midnight is the root default. Repeating it as an explicit scope lets a preview
+ * inside another theme show its own colours instead of inheriting the page's.
+ */
+[data-theme='midnight'] {
+    --color-canvas: #060911;
+    --color-surface: rgb(255 255 255 / 0.035);
+    --color-raised: rgb(255 255 255 / 0.05);
+    --color-hover: rgb(255 255 255 / 0.1);
+    --color-panel: rgb(2 6 23 / 0.6);
+    --color-popover: #121a2b;
+    --color-line: rgb(255 255 255 / 0.1);
+    --color-line-strong: rgb(255 255 255 / 0.18);
+    --color-ink: #f1f5f9;
+    --color-muted: #94a3b8;
+    --color-faint: #64748b;
+    --color-dim: #475569;
+    --color-accent: #6366f1;
+    --color-accent-2: #8b5cf6;
+    --color-accent-text: #c7d2fe;
+    --color-accent-ink: #ffffff;
+    --color-work: #10b981;
+    --color-work-2: #34d399;
+    --color-work-text: #a7f3d0;
+    --color-work-ink: #052e1b;
+    --color-rest: #f59e0b;
+    --color-rest-2: #fbbf24;
+    --color-rest-text: #fde68a;
+    --color-rest-ink: #3a2506;
+    --color-danger: #f43f5e;
+    --color-danger-text: #fda4af;
+    --color-info: #22d3ee;
+    --color-info-text: #a5f3fc;
+    --shadow-color: rgb(0 0 0 / 0.9);
+    --scheme: dark;
+}
+
 [data-theme='daylight'] {
     --color-canvas: #f4f6fb;
     --color-surface: #ffffff;
@@ -414,17 +451,28 @@ body {
         border-color: var(--color-line-strong);
     }
 
+    /*
+     * One height for every field, whatever type or text size it carries — a monospace path
+     * next to a plain name used to end up five pixels shorter, and a row of fields with
+     * different heights is what reads as broken.
+     */
     .control {
         width: 100%;
+        min-block-size: 2.7rem;
         background-color: var(--color-panel);
         border: var(--border-w) solid var(--color-line);
         border-radius: var(--radius-control);
         padding: 0.62rem 0.85rem;
         font-size: 0.875rem;
+        line-height: 1.4;
         color: var(--color-ink);
         outline: none;
         box-shadow: var(--control-shadow);
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    textarea.control {
+        min-block-size: 0;
     }
 
     .control::placeholder {
@@ -547,7 +595,16 @@ body {
         padding: 0.35rem;
         border-radius: var(--radius-control);
         color: var(--color-muted);
-        transition: background-color 0.15s ease, color 0.15s ease;
+        transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    }
+
+    .icon-action:active {
+        transform: scale(0.94);
+    }
+
+    .icon-action:disabled {
+        opacity: 0.35;
+        pointer-events: none;
     }
 
     .icon-action:hover {
@@ -605,6 +662,7 @@ body {
         font-size: 0.6875rem;
         font-weight: 600;
         color: var(--color-muted);
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
     .heading {
@@ -976,15 +1034,420 @@ body {
     animation: wb-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* entrance for page content, lightly staggered */
-main > *,
-main > .grid > * {
+/* a region that was just swapped in place settles instead of blinking */
+[data-region] {
+    transition: opacity 0.14s ease;
+}
+
+[data-region][data-swapped] {
+    opacity: 0.8;
+}
+
+/* the flip-through picker slides in from the side it came from */
+@keyframes wb-slide-right {
+    from { opacity: 0; transform: translateX(14px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes wb-slide-left {
+    from { opacity: 0; transform: translateX(-14px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in-right {
+    animation: wb-slide-right 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.slide-in-left {
+    animation: wb-slide-left 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/*
+ * The board is a fixed tile grid — six columns, a fixed row height, and every widget
+ * states how many of each it takes. Tiles keep their shape and their content scrolls
+ * inside, so no widget can punch a hole into the layout; `dense` closes any gap left.
+ */
+.dashboard-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(var(--board-row, 5rem), max-content);
+    grid-auto-flow: row dense;
+}
+
+@media (width >= 64rem) {
+    .dashboard-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        /* the stated rows are a floor, not a cap — a tile that needs more gets it */
+        grid-auto-rows: minmax(var(--board-row, 5rem), max-content);
+    }
+}
+
+/* the gallery must not cover the board, so the board makes room for it */
+.dashboard-grid,
+[data-board] > .mb-4 {
+    transition: padding 0.42s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@media (width >= 80rem) {
+    [data-board='editing'] .dashboard-grid,
+    [data-board='editing'] > .mb-4 {
+        padding-inline-end: 21rem;
+    }
+}
+
+.widget-slot {
+    position: relative;
+    min-width: 0;
+    animation: wb-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (width >= 64rem) {
+    .widget-slot {
+        grid-column: span var(--widget-span, 6) / span var(--widget-span, 6);
+        grid-row: span var(--widget-rows, 3) / span var(--widget-rows, 3);
+    }
+}
+
+/*
+ * The card fills its tile and anything longer scrolls — on the wrapper, not on the card,
+ * so a card that clips its own decoration (the timer's glow) keeps doing that.
+ */
+.widget-body {
+    block-size: 100%;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-card);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+}
+
+.widget-body > * {
+    min-block-size: 100%;
+}
+
+.widget-body::-webkit-scrollbar {
+    inline-size: 6px;
+}
+
+.widget-body::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-strong);
+    border-radius: var(--radius-pill);
+}
+
+.widget-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dashboard-grid > .widget-slot:nth-child(2) { animation-delay: 40ms; }
+.dashboard-grid > .widget-slot:nth-child(3) { animation-delay: 80ms; }
+.dashboard-grid > .widget-slot:nth-child(4) { animation-delay: 120ms; }
+.dashboard-grid > .widget-slot:nth-child(5) { animation-delay: 160ms; }
+.dashboard-grid > .widget-slot:nth-child(n + 6) { animation-delay: 200ms; }
+
+/*
+ * MARK: edit mode, iOS style — the tiles wiggle, a minus badge pops in at the top left,
+ * a dragged tile lifts off and follows the pointer, and the gallery slides in from the right.
+ */
+
+:root {
+    --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.widget-tools {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s ease;
+    z-index: 2;
+}
+
+[data-board='editing'] .widget-tools {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* the badge sits half outside the tile corner, exactly like a home-screen icon */
+.widget-remove {
+    position: absolute;
+    inset-block-start: -0.55rem;
+    inset-inline-start: -0.55rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.55rem;
+    block-size: 1.55rem;
+    border-radius: 50%;
+    border: 1px solid color-mix(in oklab, var(--color-ink) 18%, transparent);
+    background-color: color-mix(in oklab, var(--color-canvas) 82%, var(--color-ink));
+    color: var(--color-ink);
+    box-shadow: 0 4px 12px -4px var(--shadow-color);
+    transform: scale(0);
+}
+
+[data-board='editing'] .widget-remove {
+    animation: wb-pop 0.34s var(--spring) both;
+}
+
+.widget-remove:hover {
+    background-color: var(--color-danger);
+    color: #fff;
+    border-color: transparent;
+}
+
+.widget-remove:active {
+    transform: scale(0.88);
+}
+
+/* one pill at the bottom right: drag handle plus the four size steps */
+.widget-tools > .widget-bar {
+    position: absolute;
+    inset-block-end: 0.5rem;
+    inset-inline-end: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.2rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-line-strong);
+    background-color: color-mix(in oklab, var(--color-popover) 88%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 20px -10px var(--shadow-color);
+    transform: scale(0.85);
+    opacity: 0;
+}
+
+[data-board='editing'] .widget-tools > .widget-bar {
+    animation: wb-pop-soft 0.3s var(--spring) 0.04s both;
+    opacity: 0.45;
+}
+
+/* the size pill steps back until the tile is under the pointer */
+[data-board='editing'] .widget-slot:hover .widget-tools > .widget-bar,
+[data-board='editing'] .widget-tools > .widget-bar:focus-within {
+    opacity: 1;
+}
+
+.widget-grip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-faint);
+    cursor: grab;
+    touch-action: none;
+}
+
+.widget-grip:active {
+    cursor: grabbing;
+}
+
+.widget-size {
+    display: inline-flex;
+    gap: 0.1rem;
+}
+
+.widget-size > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.3rem;
+    block-size: 1.5rem;
+    border-radius: var(--radius-pill);
+    color: var(--color-muted);
+    transition: background-color 0.14s ease, color 0.14s ease, transform 0.12s ease;
+}
+
+.widget-size > button:hover {
+    background-color: var(--color-hover);
+    color: var(--color-ink);
+}
+
+.widget-size > button:active {
+    transform: scale(0.88);
+}
+
+.widget-size > button:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+@keyframes wb-pop {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes wb-pop-soft {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* the home-screen wiggle: fast, tiny, and out of phase per tile */
+@keyframes wb-wiggle {
+    0% { transform: rotate(-0.55deg) translate(-0.4px, 0.2px); }
+    50% { transform: rotate(0.55deg) translate(0.4px, -0.2px); }
+    100% { transform: rotate(-0.55deg) translate(-0.4px, 0.2px); }
+}
+
+[data-board='editing'] .widget-slot > .widget-body {
+    animation: wb-wiggle 0.34s ease-in-out infinite;
+    transform-origin: 50% 50%;
+}
+
+[data-board='editing'] .widget-slot:nth-child(2n) > .widget-body { animation-delay: -0.08s; }
+[data-board='editing'] .widget-slot:nth-child(3n) > .widget-body { animation-delay: -0.17s; }
+[data-board='editing'] .widget-slot:nth-child(5n) > .widget-body { animation-delay: -0.25s; }
+
+/* a tile being moved: the original dims, the ghost carries the lift */
+[data-board='editing'] .widget-slot[data-dragging] > .widget-body {
+    animation: none;
+    opacity: 0.22;
+    filter: saturate(0.35);
+}
+
+/* days marked with the mouse, before the absence window opens */
+[data-day][data-selected] {
+    border-color: color-mix(in oklab, var(--color-accent) 65%, transparent) !important;
+    background-color: color-mix(in oklab, var(--color-accent) 18%, transparent) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 40%, transparent);
+}
+
+[data-day-picker] {
+    touch-action: pan-y;
+}
+
+/* a widget pushed onto the board stays marked until "Fertig" saves the arrangement */
+.widget-slot[data-fresh] > .widget-body {
+    outline: 2px dashed color-mix(in oklab, var(--color-accent) 70%, transparent);
+    outline-offset: 3px;
+    animation: wb-fresh-pending 1.4s ease-in-out infinite;
+}
+
+@keyframes wb-fresh-pending {
+    0%, 100% {
+        outline-color: color-mix(in oklab, var(--color-accent) 35%, transparent);
+        box-shadow: 0 0 0 0 transparent;
+    }
+    50% {
+        outline-color: color-mix(in oklab, var(--color-accent) 90%, transparent);
+        box-shadow: 0 0 0 5px color-mix(in oklab, var(--color-accent) 12%, transparent);
+    }
+}
+
+.widget-slot[data-dragging] .widget-tools {
+    opacity: 0;
+}
+
+/* the slot every following tile slides towards while a drag is open */
+.widget-slot[data-shift] {
+    transition: transform 0.26s var(--spring);
+}
+
+.board-drawer {
+    position: fixed;
+    inset-block: 4.75rem 1.25rem;
+    inset-inline-end: 1.25rem;
+    inline-size: min(19.5rem, calc(100vw - 2.5rem));
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 1.35rem;
+    border: 1px solid var(--color-line);
+    background-color: color-mix(in oklab, var(--color-popover) 92%, transparent);
+    backdrop-filter: blur(24px) saturate(1.3);
+    box-shadow: 0 34px 70px -26px var(--shadow-color);
+    transform: translateX(calc(100% + 2rem)) scale(0.98);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        transform 0.42s var(--spring),
+        opacity 0.26s ease;
+    z-index: 60;
+}
+
+[data-board='editing'] .board-drawer {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.board-drawer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-inline-end: 0.15rem;
+}
+
+.board-drawer-group {
+    margin-block-start: 0.35rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+}
+
+/* each entry of the gallery: a small card that can be dragged onto the board */
+.board-chip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    text-align: start;
+    border-radius: 0.9rem;
+    border: 1px solid var(--color-line);
+    background-color: var(--color-raised);
+    cursor: grab;
+    touch-action: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.16s var(--spring);
+}
+
+.board-chip:hover {
+    background-color: var(--color-hover);
+    border-color: var(--color-line-strong);
+    transform: translateX(-2px);
+}
+
+.board-chip:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.board-chip[data-dragging] {
+    opacity: 0.4;
+}
+
+/* the tile that follows the pointer, tilted a touch like a lifted icon */
+.board-ghost {
+    position: fixed;
+    z-index: 70;
+    pointer-events: none;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px var(--shadow-color);
+    animation: wb-lift 0.18s var(--spring) both;
+}
+
+@keyframes wb-lift {
+    from { transform: scale(1) rotate(0deg); }
+    to { transform: scale(1.04) rotate(-0.8deg); }
+}
+
+/* entrance for page content, lightly staggered — widget slots bring their own stagger */
+main > *:not(.dashboard-grid),
+main > .grid > *:not(.widget-slot) {
     animation: wb-rise 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-main > .grid > *:nth-child(2) { animation-delay: 40ms; }
-main > .grid > *:nth-child(3) { animation-delay: 80ms; }
-main > .grid > *:nth-child(4) { animation-delay: 120ms; }
+main > .grid > *:not(.widget-slot):nth-child(2) { animation-delay: 40ms; }
+main > .grid > *:not(.widget-slot):nth-child(3) { animation-delay: 80ms; }
+main > .grid > *:not(.widget-slot):nth-child(4) { animation-delay: 120ms; }
 
 /* smooth open/close for the collapsible blocks */
 @supports (interpolate-size: allow-keywords) {
@@ -1035,6 +1498,15 @@ input[type='time'] {
  * scrolling shiver in WebKit), no reserved scrollbar gutter, no visible scrollbars,
  * and room at the top for the window buttons that float over the surface.
  */
+/* Only the native shell can open a Finder panel, so that button exists only there. */
+.native-only {
+    display: none;
+}
+
+:root[data-shell='native'] .native-only {
+    display: inline-flex;
+}
+
 :root[data-shell='native'] {
     overflow: hidden;
     scrollbar-gutter: auto;

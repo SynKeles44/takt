@@ -34,7 +34,9 @@
             </div>
         </div>
 
-        <div class="mt-5 grid grid-cols-7 gap-1 sm:gap-1.5">
+        <p class="mt-4 text-[11px] text-dim">{{ __('app.absence.select_hint') }}</p>
+
+        <div class="mt-2 grid grid-cols-7 gap-1 select-none sm:gap-1.5" data-day-picker>
             @foreach (['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as $weekday)
                 <span class="heading pb-1 text-center">{{ $weekday }}</span>
             @endforeach
@@ -55,6 +57,9 @@
                     @endphp
 
                     <a href="{{ route('history', ['from' => $day['date']->copy()->startOfWeek()->toDateString()]) }}"
+                       data-day="{{ $day['date']->toDateString() }}"
+                       data-day-label="{{ $day['date']->isoFormat('dd, D. MMM YYYY') }}"
+                       draggable="false"
                        @class([
                            'flex min-h-20 flex-col gap-1 rounded-[var(--radius-control)] border p-1.5 transition sm:min-h-24 sm:p-2',
                            'border-accent/50 bg-accent/10' => $isToday,
@@ -108,4 +113,62 @@
             @endforeach
         </div>
     </x-card>
+
+    {{-- opens as soon as the mouse is let go over the marked days --}}
+    <div class="pointer-events-none fixed inset-0 z-[70] hidden items-center justify-center p-4"
+         data-absence-dialog role="dialog" aria-modal="true" aria-labelledby="absence-dialog-title">
+        <div class="absolute inset-0 bg-canvas/75 backdrop-blur-sm" data-absence-cancel></div>
+
+        <div class="surface-plain dialog-panel pointer-events-auto relative w-full max-w-md p-0">
+            <form method="POST" action="{{ route('absences.store') }}" data-live data-absence-form>
+                @csrf
+
+                <div class="flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6">
+                    <span class="grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text">
+                        <x-icon name="calendar-days" class="size-4"/>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 id="absence-dialog-title" class="text-sm font-semibold text-ink">{{ __('app.absence.new') }}</h2>
+                        <p class="metric mt-0.5 truncate text-xs text-muted" data-absence-range></p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 px-5 py-5 sm:px-6">
+                    <input type="hidden" name="starts_on" data-absence-start>
+                    <input type="hidden" name="ends_on" data-absence-end>
+
+                    <div>
+                        <span class="label">{{ __('app.form.type') }}</span>
+                        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            @foreach ($types as $type)
+                                <label class="block">
+                                    <input type="radio" name="type" value="{{ $type->value }}" class="peer sr-only"
+                                           @checked($type->value === 'vacation')>
+                                    <span class="control flex cursor-pointer items-center justify-center text-center text-xs font-medium text-muted transition peer-checked:border-accent/50 peer-checked:bg-accent/10 peer-checked:text-accent-text">
+                                        {{ $type->label() }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="absence-note" class="label">{{ __('app.form.note') }}</label>
+                        <input id="absence-note" type="text" name="note" class="control" maxlength="200"
+                               placeholder="{{ __('app.absence.note_placeholder') }}">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 border-t border-line px-5 py-4 sm:px-6">
+                    <button type="button" class="btn btn-ghost flex-1" data-absence-cancel>
+                        {{ __('app.dialog.cancel') }}
+                    </button>
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <x-icon name="check" class="size-4"/>
+                        {{ __('app.absence.save') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-app-layout>

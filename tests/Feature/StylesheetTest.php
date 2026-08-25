@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\Theme;
 use Tests\TestCase;
 
 /**
@@ -30,10 +31,12 @@ class StylesheetTest extends TestCase
         $this->assertMatchesRegularExpression('/\.nav-menu\{[^}]*background-color:var\(--color-popover\)/', $css);
         $this->assertMatchesRegularExpression('/\.dialog-panel\{[^}]*background-color:var\(--color-popover\)/', $css);
 
-        // one opaque value per theme, never a translucent one
+        // one opaque value for the root plus every named theme, never a translucent one
         preg_match_all('/--color-popover:\s*([^;]+);/', $css, $matches);
 
-        $this->assertCount(4, $matches[1]);
+        $named = count(array_filter(Theme::cases(), fn (Theme $theme): bool => ! $theme->isAutomatic()));
+
+        $this->assertCount($named + 1, $matches[1]);
 
         foreach ($matches[1] as $value) {
             // the minifier shortens #ffffff to #fff — either way it must be a plain hex

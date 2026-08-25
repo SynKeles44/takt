@@ -543,3 +543,89 @@ assignment. Everything below serves one person organising their own work.
 - [x] `takt:app` keeps a bundle that points at another installation and names it, unless
       `--force` is passed — the end-to-end install test had silently re-pointed the app at a
       throwaway checkout.
+
+## R24 — Development section
+
+A section for the programmer's day, reachable as its own sidebar entry with four tabs.
+
+### R24.1 Today's commits
+
+- [x] Registered project folders are read with `git log` for the chosen day, grouped per
+      project, with short sha, subject and time; the day can be paged.
+- [x] "Mine" means the repository's own `user.email` plus the account address, so work
+      identities per repository are covered.
+- [x] Missing folder or missing `.git` is reported per project instead of failing the page.
+
+### R24.2 Snippets
+
+- [x] Commands and text blocks with a label, one click to the clipboard from the page, the
+      overview card or the ⌘K palette; a copy counts, and the most used float to the top.
+
+### R24.3 Review queue
+
+- [x] Open pull requests waiting for my review and my own open ones, oldest first, with a
+      red mark above 24 hours; cached for two minutes with a manual reload.
+- [x] Needs a GitHub token with read access, entered once in the settings; a rejected token
+      (401) or an unreachable API is reported in plain words instead of an empty list.
+
+### R24.4 Project launcher
+
+- [x] Per project: folder, repository, start command and port. Start and stop run the
+      configured command in the project folder, the state comes from the recorded pid and
+      from probing the port; a link opens the running app.
+
+### R24.5 Test post builder
+
+- [x] Builds the three-line block for the testing channel from ticket, PR and instance.
+      A bare key (`COR-6944`), a bare number (`2456`) or a bare instance id are expanded
+      through templates; a full URL is taken as it is.
+- [x] The Linear link keeps the key upper case and appends the title as a slug, exactly like
+      Linear's own URLs.
+- [x] Templates are configurable per user; the preview names what is still missing and the
+      whole block copies with one click.
+- [x] Three fields only: ticket, PR, instance. The instance field carries the id and, behind
+      a slash, the path (`b63d4865/mod/zeiterfassung/?fn=…`).
+
+### R24.6 Registering a project
+
+- [x] In the native app a Finder panel picks the folder; typing or pasting a path works the
+      same way in the browser.
+- [x] What the folder already states fills the rest of the form: name from the folder,
+      repository from `git remote origin`, start command from a `Makefile` target,
+      `package.json` script or `artisan`, port from `Makefile`, `.env` or the vite config.
+- [x] `make start` is the default start command. The port stays optional — it is only used
+      for the state dot and the open link, never to run the command.
+
+## R26 Booking an absence from the calendar
+
+- [x] Days in the month grid are marked by holding the mouse and dragging across them; a long
+      press marks a single day. A plain click still follows the day's own link.
+- [x] Letting go opens the absence window right there, with the marked range already set and
+      the range spelled out in words; escape or cancel closes it and clears the marking.
+- [x] Saving books the absence through the existing endpoint and swaps the calendar back in,
+      so the new range shows up without a reload.
+
+## R25 Dashboard of widgets
+
+- [x] The dashboard is a tile board: six columns, a fixed row height, every widget states how
+      many columns and rows it takes. A tile keeps its shape and its content scrolls inside,
+      so no widget can punch a hole into the layout.
+- [x] Arranged on the dashboard itself, the way a home screen is: "Dashboard anpassen" starts
+      the edit mode, the tiles wiggle, a minus badge at the top left takes one off, the pill at
+      the bottom right changes width and height, and a tile can be dragged to a new place.
+- [x] The gallery of everything that is not on the board slides in from the right; an entry is
+      dragged onto the board or tapped to add it. The board makes room for the gallery instead
+      of being covered by it.
+- [x] Nothing is stored while arranging: "Fertig" writes the whole layout at once and pulls the
+      page back in place through the region swap, never a reload. Leaving the page with an
+      unsaved arrangement still writes it.
+- [x] A widget pushed onto the board stays marked — dashed, softly pulsing, with its name on
+      the placeholder — until exactly that save happens.
+- [x] Until something is arranged, the dashboard is the default set — timer, key figures, week
+      chart, day note, tasks, booking form, entries — and it can be restored at any time. An
+      empty board stays empty, because that was a decision, not an untouched default.
+- [x] 21 widgets in three groups, among them month summary, week trend, year heatmap, upcoming
+      days off, tasks by label, task progress, commits today, commits this week, review queue,
+      my pull requests, project launcher, snippets, test post and repository links.
+- [x] Only the widgets on the board load data — the GitHub-backed ones cost nothing when they
+      are not shown.

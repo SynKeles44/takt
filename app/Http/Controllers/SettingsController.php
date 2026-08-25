@@ -12,6 +12,7 @@ use App\Http\Requests\Settings\ProfileRequest;
 use App\Http\Requests\Settings\ThemeRequest;
 use App\Http\Requests\Settings\WorkTimeRequest;
 use App\Services\Holidays;
+use App\Services\Reviews;
 use App\Support\Duration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,28 +26,46 @@ class SettingsController extends Controller
     {
         $request->validate([
             'stil' => ['nullable', Rule::enum(DesignStyle::class)],
+            'farbe' => ['nullable', Rule::enum(Theme::class)],
         ]);
 
         $user = $request->user();
-        $styles = DesignStyle::cases();
 
-        $previewed = $request->filled('stil')
+        $previewedStyle = $request->filled('stil')
             ? DesignStyle::from($request->string('stil')->toString())
             : $user->design_style;
 
-        $index = array_search($previewed, $styles, true);
-        $count = count($styles);
+        $previewedTheme = $request->filled('farbe')
+            ? Theme::from($request->string('farbe')->toString())
+            : $user->theme;
 
         return view('settings', [
             'user' => $user,
-            'themes' => Theme::cases(),
             'regions' => Holidays::regions(),
-            'previewedStyle' => $previewed,
-            'previousStyle' => $styles[($index - 1 + $count) % $count],
-            'nextStyle' => $styles[($index + 1) % $count],
-            'stylePosition' => $index + 1,
-            'styleCount' => $count,
+            ...$this->carousel('style', DesignStyle::cases(), $previewedStyle),
+            ...$this->carousel('theme', Theme::cases(), $previewedTheme),
         ]);
+    }
+
+    /**
+     * One flip-through element per choice: what is shown, its neighbours, and where we are.
+     *
+     * @param  array<int, DesignStyle|Theme>  $cases
+     * @return array<string, mixed>
+     */
+    private function carousel(string $key, array $cases, DesignStyle|Theme $previewed): array
+    {
+        $index = (int) array_search($previewed, $cases, true);
+        $count = count($cases);
+
+        return [
+            $key.'s' => $cases,
+            'previewed'.ucfirst($key) => $previewed,
+            'previous'.ucfirst($key) => $cases[($index - 1 + $count) % $count],
+            'next'.ucfirst($key) => $cases[($index + 1) % $count],
+            $key.'Position' => $index + 1,
+            $key.'Count' => $count,
+        ];
     }
 
     public function updateProfile(ProfileRequest $request): RedirectResponse
@@ -74,6 +93,36 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('status', __('app.flash.notify_saved'));
+    }
+
+    public function updateDeveloper(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'github_token' => ['nullable', 'string', 'max:255'],
+            'ticket_url_template' => ['nullable', 'string', 'max:255'],
+            'pr_url_template' => ['nullable', 'string', 'max:255'],
+            'instance_url_template' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+
+        // an empty token field keeps the stored one, "-" clears it
+        $token = trim((string) ($data['github_token'] ?? ''));
+
+        $user->update([
+            'github_token' => match (true) {
+                $token === '' => $user->github_token,
+                $token === '-' => null,
+                default => $token,
+            },
+            'ticket_url_template' => $data['ticket_url_template'] ?? null ?: null,
+            'pr_url_template' => $data['pr_url_template'] ?? null ?: null,
+            'instance_url_template' => $data['instance_url_template'] ?? null ?: null,
+        ]);
+
+        app(Reviews::class)->forget($user);
+
+        return back()->with('status', __('app.flash.developer_saved'));
     }
 
     public function updatePassword(PasswordRequest $request): RedirectResponse

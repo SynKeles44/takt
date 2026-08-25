@@ -8,12 +8,16 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\DayNoteController;
+use App\Http\Controllers\DeveloperController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\MonthController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SnippetController;
 use App\Http\Controllers\StepTemplateController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TimeEntryController;
@@ -38,6 +42,9 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::put('/dashboard/anordnung', [DashboardLayoutController::class, 'arrange'])->name('dashboard.arrange');
+    Route::post('/dashboard/anordnung/zuruecksetzen', [DashboardLayoutController::class, 'reset'])->name('dashboard.reset');
     Route::get('/verlauf', HistoryController::class)->name('history');
 
     Route::get('/kalender', [CalendarController::class, 'index'])->name('calendar');
@@ -47,6 +54,24 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/kalender/abwesenheiten/{absence}', [AbsenceController::class, 'destroy'])->name('absences.destroy');
 
     Route::post('/notizen', [DayNoteController::class, 'store'])->name('notes.store');
+
+    Route::get('/entwicklung', [DeveloperController::class, 'index'])->name('dev');
+    Route::post('/entwicklung/reviews', [DeveloperController::class, 'refreshReviews'])->name('dev.reviews');
+    Route::get('/entwicklung/testpost', [DeveloperController::class, 'post'])->name('dev.testpost');
+
+    Route::get('/entwicklung/projekte', [ProjectController::class, 'index'])->name('projects');
+    Route::post('/entwicklung/projekte', [ProjectController::class, 'store'])->name('projects.store');
+    Route::post('/entwicklung/projekte/scan', [ProjectController::class, 'scan'])->name('projects.scan');
+    Route::put('/entwicklung/projekte/{project}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::delete('/entwicklung/projekte/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+    Route::post('/entwicklung/projekte/{project}/start', [ProjectController::class, 'start'])->name('projects.start');
+    Route::post('/entwicklung/projekte/{project}/stop', [ProjectController::class, 'stop'])->name('projects.stop');
+
+    Route::get('/entwicklung/bausteine', [SnippetController::class, 'index'])->name('snippets');
+    Route::post('/entwicklung/bausteine', [SnippetController::class, 'store'])->name('snippets.store');
+    Route::put('/entwicklung/bausteine/{snippet}', [SnippetController::class, 'update'])->name('snippets.update');
+    Route::delete('/entwicklung/bausteine/{snippet}', [SnippetController::class, 'destroy'])->name('snippets.destroy');
+    Route::post('/entwicklung/bausteine/{snippet}/kopiert', [SnippetController::class, 'used'])->name('snippets.used');
 
     Route::get('/auswertung', InsightsController::class)->name('insights');
     Route::get('/auswertung/bericht', [InsightsController::class, 'report'])->name('insights.report');
@@ -112,6 +137,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/einstellungen/profil', [SettingsController::class, 'updateProfile'])->name('settings.profile');
     Route::put('/einstellungen/arbeitszeit', [SettingsController::class, 'updateWorkTime'])->name('settings.worktime');
     Route::put('/einstellungen/benachrichtigungen', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
+    Route::put('/einstellungen/entwicklung', [SettingsController::class, 'updateDeveloper'])->name('settings.developer');
     Route::put('/einstellungen/passwort', [SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::put('/einstellungen/design', [SettingsController::class, 'updateTheme'])->name('settings.theme');
     Route::put('/einstellungen/kalender-token', [SettingsController::class, 'regenerateIcalToken'])->name('settings.ical');

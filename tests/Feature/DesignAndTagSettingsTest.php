@@ -31,19 +31,48 @@ class DesignAndTagSettingsTest extends TestCase
         $response = $this->get(route('settings'))->assertOk();
 
         foreach (DesignStyle::cases() as $style) {
-            $response->assertSee('data-style-slide="'.$style->value.'"', escape: false);
+            $response->assertSee('data-slide="'.$style->value.'"', escape: false);
         }
 
         $response
-            ->assertSeeInOrder(['data-style-name', DesignStyle::Soft->label()], escape: false)
+            ->assertSeeInOrder(['data-slide-name', DesignStyle::Soft->label()], escape: false)
             ->assertSee(__('app.settings.style_active'));
+    }
+
+    public function test_the_colour_scheme_is_flipped_through_the_same_way(): void
+    {
+        $response = $this->get(route('settings'))->assertOk();
+
+        foreach (Theme::cases() as $theme) {
+            $response->assertSee('data-slide="'.$theme->value.'"', escape: false);
+        }
+
+        $response
+            ->assertSee('data-param="farbe"', escape: false)
+            ->assertSee(__('app.settings.theme_active'));
+    }
+
+    public function test_the_previewed_colour_scheme_follows_the_query_parameter(): void
+    {
+        $this->get(route('settings', ['farbe' => Theme::Sage->value]))
+            ->assertOk()
+            ->assertSeeInOrder(['data-slide-name', Theme::Sage->label()], escape: false)
+            ->assertSee(__('app.settings.theme_choose'))
+            ->assertSee('value="sage"', escape: false);
+    }
+
+    public function test_a_previewed_scheme_shows_its_own_colours(): void
+    {
+        $this->get(route('settings', ['farbe' => Theme::Daylight->value]))
+            ->assertOk()
+            ->assertSee('data-theme="daylight"', escape: false);
     }
 
     public function test_the_previewed_style_follows_the_query_parameter(): void
     {
         $this->get(route('settings', ['stil' => DesignStyle::Terminal->value]))
             ->assertOk()
-            ->assertSeeInOrder(['data-style-name', DesignStyle::Terminal->label()], escape: false)
+            ->assertSeeInOrder(['data-slide-name', DesignStyle::Terminal->label()], escape: false)
             ->assertSee(__('app.settings.style_choose'))
             ->assertSee('value="terminal"', escape: false);
     }

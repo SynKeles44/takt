@@ -20,7 +20,8 @@ file — no cloud, no external services.
   own time entries and todos (enforced server-side by a global ownership scope).
 - **Per-user settings** — weekly hours, working days per week, name, email, password,
   colour theme and design style, all under the settings entry in the sidebar.
-- **Four colour themes** — Mitternacht (dark blue), Tageslicht (light), Onyx (black) and
+- **Four colour themes** — flipped through the same way as the design styles, each with a
+  live preview in its own colours. Mitternacht (dark blue), Tageslicht (light), Onyx (black) and
   Salbei (dark green). Applied server-side, so there is no flash of the wrong theme.
 - **Tasks** — title, details, due date with optional time, tags, repetition, subtasks and
   file attachments. Grouped by due state (overdue, due soon, today, this week, later, no
@@ -37,6 +38,14 @@ file — no cloud, no external services.
   four tiles (work, target, balance, completed) and the same distribution list; switching
   the period changes the numbers, not the layout. The year adds a day-by-day heatmap, the
   month adds a print-ready timesheet with signature lines and a CSV export.
+- **Registering a project** — in the app a Finder panel picks the folder and the rest of the
+  form fills itself: name, GitHub remote, start command (`make start` by default) and, if the
+  project states one, the port. The port stays optional; it only feeds the state dot and the
+  open link.
+- **Development section** — today's commits across your registered repositories, the pull
+  requests waiting for your review (and yours waiting for others), a launcher for local
+  environments with port state, reusable command snippets one ⌘K away from the clipboard,
+  and a builder for the structured test post (ticket, PR, test instance).
 - **Notifications** — the tag warning window and the working-time reminders are delivered as
   native notifications in the app bundle, or as browser notifications in a browser tab.
 - **Tag rules** — every tag defines how long before the due time a warning appears and
@@ -58,8 +67,17 @@ file — no cloud, no external services.
   directly adjacent entry with it, so a work/break boundary can be corrected in one step.
   Shrinking leaves a gap and never grows a neighbour; an edit that would swallow, split or
   stop a neighbour is refused instead.
-- **Today dashboard** — running clock, work/break totals, daily target progress, week total
-  and a stacked week chart.
+- **Dashboard of widgets** — a tile board you arrange the way you arrange a home screen:
+  "Dashboard anpassen" starts the edit mode, the tiles wiggle, the minus badge takes one off,
+  the pill changes its width and height, and a tile can be dragged wherever you want it. What
+  is not on the board waits in a gallery that slides in from the right — drag an entry onto
+  the board or tap it. Out of the box it is the default set (timer, key figures, week chart,
+  day note, tasks, booking form, entries), and one click restores it. 21 widgets in three
+  groups — time, tasks and development — among them month summary, week trend, year heatmap,
+  upcoming days off, tasks by label, task progress, commits today, commits this week, review
+  queue, my pull requests, project launcher, snippets, test post and repository links. Only
+  what is on the board loads data, so the GitHub-backed widgets cost nothing when they are
+  not shown.
 - **Plus/minus balance** — flextime balance on the dashboard: booked work time minus
   the daily target for every day that has bookings, today included. Days without bookings
   never create minus hours, and a still-running entry only counts once it is stopped.
@@ -67,6 +85,9 @@ file — no cloud, no external services.
   edit/delete for every entry.
 - **Trash and undo** — deleted entries and tasks rest in the trash for 30 days; the toast
   right after a deletion undoes it in one click, expired items are purged automatically.
+- **Marking days in the calendar** — hold the mouse and drag across the days you mean (or hold
+  one day for a single day); letting go opens the absence window with exactly that range
+  already filled in. A plain click still opens that week in the history.
 - **Absences and public holidays** — vacation, sick leave and other day ranges, plus German
   public holidays for the chosen federal state (Easter-based ones computed). Those days carry
   no daily target, so they never create minus hours; a vacation account tracks the rest.

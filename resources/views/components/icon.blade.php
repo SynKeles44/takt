@@ -235,4 +235,48 @@
             <path d="M6 9.5l6 6 6-6"/>
         </svg>
         @break
+    @case('terminal')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l3 3-3 3"/>
+            <path d="M12.5 15h5"/>
+            <rect x="2.75" y="4.25" width="18.5" height="15.5" rx="3"/>
+        </svg>
+        @break
+    @case('minus')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+            <path d="M6.5 12h11"/>
+        </svg>
+        @break
+    @case('grip')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+            <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+            <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+        </svg>
+        @break
+    @case('squares')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3.25" y="3.25" width="7.5" height="7.5" rx="2"/>
+            <rect x="13.25" y="3.25" width="7.5" height="7.5" rx="2"/>
+            <rect x="3.25" y="13.25" width="7.5" height="7.5" rx="2"/>
+            <rect x="13.25" y="13.25" width="7.5" height="7.5" rx="2"/>
+        </svg>
+        @break
+    @case('chevron-up')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 14.5l6-6 6 6"/>
+        </svg>
+        @break
+    @case('external')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 4h6v6"/>
+            <path d="M20 4l-8.5 8.5"/>
+            <path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>
+        </svg>
+        @break
+    @case('folder')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.1a2 2 0 0 1 1.6.8l.9 1.2h7.4A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
+        </svg>
+        @break
 @endswitch

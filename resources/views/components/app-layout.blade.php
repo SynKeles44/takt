@@ -11,6 +11,7 @@
         ['route' => 'calendar', 'label' => __('app.nav.calendar'), 'icon' => 'calendar-days'],
         ['route' => 'insights', 'label' => __('app.nav.insights'), 'icon' => 'chart'],
         ['route' => 'todos.index', 'label' => __('app.nav.todos'), 'icon' => 'list-check', 'match' => ['todos.*', 'tags.*', 'steps.*', 'attachments.*']],
+        ['route' => 'dev', 'label' => __('app.nav.dev'), 'icon' => 'terminal', 'match' => ['dev', 'dev.*', 'projects', 'projects.*', 'snippets', 'snippets.*']],
     ];
 @endphp
 
@@ -20,6 +21,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @if ($theme->isAutomatic())
         <script>
             (() => {
