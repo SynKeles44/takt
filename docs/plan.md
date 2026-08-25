@@ -358,3 +358,20 @@ Requirement ids refer to `requirements.md`.
 - [x] The test-post preview gained the send button next to copy, behind an in-app confirmation;
       it only shows up once token and channel are stored.
 - [x] 9 tests against a faked Slack API — the real endpoint is never called.
+
+## Phase 45 — One command and a real address (R27)
+
+- [x] `LocalUrl` as the single source for host, port and the hosts line; every place that used
+      a hard-coded `localhost:8000` reads it now (app bundle, launcher, login item, Makefile).
+- [x] `takt:hostname` writes `/etc/hosts` (sudo only when the file needs it, otherwise it
+      prints the one line to run) and `APP_URL` — in that order, and only when the name
+      resolves. `takt:setup` chains the whole install; `install.sh` is down to one command.
+- [x] The macOS shell learned `TaktHost`: the window opens the real address while the health
+      probe and `serve` stay on the loopback.
+- [x] Proven on a fresh clone in /tmp, which surfaced three real faults: a fresh `.env` is not
+      in the config of the running process (the bundle would have been named `Laravel.app`),
+      `make` mistook another installation's login item for its own, and a detached server
+      inherits the command's pipe, so `Process::run` never returned. The server start moved
+      into the shell script for exactly that reason.
+- [x] 13 tests, with the hosts file and the `.env` as options so the machine's own files are
+      never touched.

@@ -128,12 +128,18 @@ file — no cloud, no external services.
 curl -fsSL https://raw.githubusercontent.com/SynKeles44/takt/main/install.sh | bash
 ```
 
-Das Skript prüft die Voraussetzungen, klont nach `~/Takt`, installiert die Abhängigkeiten,
-richtet die lokale Datenbank ein und baut auf macOS die App (`~/Applications/Takt.app`).
-Ein zweiter Aufruf aktualisiert eine vorhandene Installation.
+Danach ist alles fertig — kein weiterer Befehl. Das Skript prüft die Voraussetzungen, klont
+nach `~/Takt`, installiert die Abhängigkeiten, richtet die Datenbank ein, trägt den Namen
+**local.takt.de** ein, baut auf macOS die App (`~/Applications/Takt.app`), startet den Server
+und öffnet die App. Ein zweiter Aufruf aktualisiert eine vorhandene Installation.
 
-Anpassbar über Umgebungsvariablen: `TAKT_DIR` (Zielordner), `TAKT_REPO`, `TAKT_REF`,
-`TAKT_AUTOSTART=0` (ohne Login-Dienst).
+Die Adresse ist **http://local.takt.de:8000**. Der Eintrag in `/etc/hosts` ist der einzige
+Schritt mit Administratorrechten und wird einmal beim Installieren abgefragt; wer ihn
+überspringt, bleibt auf `http://localhost:8000` — Takt sagt es und stellt erst um, wenn der
+Name wirklich auf diesen Rechner zeigt.
+
+Anpassbar über Umgebungsvariablen: `TAKT_DIR` (Zielordner), `TAKT_HOST` (Name), `TAKT_PORT`,
+`TAKT_REPO`, `TAKT_REF`, `TAKT_AUTOSTART=0` (ohne Login-Dienst).
 
 ## Aktualisieren
 
@@ -150,10 +156,15 @@ Von Hand geht es genauso:
 ```bash
 git clone https://github.com/SynKeles44/takt.git && cd takt
 composer install && npm ci && npm run build
-cp .env.example .env && php artisan key:generate
-touch database/database.sqlite && php artisan migrate
-php artisan takt:icons && php artisan takt:app   # macOS-App, optional
-make start                                       # http://localhost:8000
+php artisan takt:setup
+```
+
+`takt:setup` macht den Rest: `.env`, Schlüssel, Datenbank, Icons, den Namen, die macOS-App und
+den Login-Dienst. Der Name allein geht auch nachträglich:
+
+```bash
+php artisan takt:hostname local.takt.de     # sagt Dir die eine sudo-Zeile, falls nötig
+php artisan takt:hostname --remove          # zurück auf localhost
 ```
 
 Beim ersten Start legst Du unter `/registrieren` ein Konto an. Takt läuft vollständig lokal:
@@ -194,7 +205,8 @@ instead of starting a second one. `make autostart-remove` hands the port back.
 make start
 ```
 
-Then open http://localhost:8000. `make stop` shuts it down again, `make restart` does both and
+Then open the address `make start` prints — `http://local.takt.de:8000` once the name is in
+`/etc/hosts`, otherwise `http://localhost:8000`. `make stop` shuts it down again, `make restart` does both and
 `make status` reports whether it is running. The server runs in the background; its output goes
 to `storage/logs/serve.log`.
 
@@ -204,8 +216,10 @@ to `storage/logs/serve.log`.
 | `make stop` | Stops the app and its PHP child process. |
 | `make restart` | `stop`, then `start`. |
 | `make status` | Prints the URL and pid, or that nothing is running. |
+| `make setup` | Runs the whole setup again (name, app, login item) — safe at any time. |
 
-Use another port with `make start PORT=8080`. For frontend development with hot reloading, run
+Host and port come from `APP_URL` in `.env`; the server itself always binds to `127.0.0.1`,
+and the name resolves there. Use another port for one run with `make start PORT=8080`. For frontend development with hot reloading, run
 `npm run dev` alongside `make start`.
 
 ## First run

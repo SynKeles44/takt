@@ -17,7 +17,8 @@ class AutostartCommand extends Command
     protected $signature = 'takt:autostart
                             {--remove : Remove the login item}
                             {--dry-run : Print the launch agent instead of installing it}
-                            {--port=8000}';
+                            {--port=8000}
+                            {--force : Take over a login item that points at another installation}';
 
     protected $description = 'Start the local server automatically at login (macOS launchd)';
 
@@ -54,6 +55,22 @@ class AutostartCommand extends Command
             $this->components->error('Cannot write to '.dirname($path));
 
             return self::FAILURE;
+        }
+
+        /*
+         * Only one login item can hold the port. If the one that is there belongs to another
+         * copy of Takt, taking it over silently would stop that copy's server for good.
+         */
+        if (is_file($path) && ! $this->option('force')) {
+            $existing = (string) file_get_contents($path);
+
+            if (! str_contains($existing, base_path()) && preg_match('#<string>(/[^<]*)/artisan</string>#', $existing) === 1) {
+                $this->components->warn('A login item already points at another installation:');
+                $this->line('  '.trim((string) (preg_match('#<key>WorkingDirectory</key><string>([^<]+)</string>#', $existing, $match) === 1 ? $match[1] : 'unknown')));
+                $this->components->info('Kept it. Use --force to take it over.');
+
+                return self::SUCCESS;
+            }
         }
 
         file_put_contents($path, $this->plist($label, (int) $this->option('port')));
@@ -118,6 +135,7 @@ class AutostartCommand extends Command
                 <string>{$php}</string>
                 <string>{$root}/artisan</string>
                 <string>serve</string>
+                <string>--host=127.0.0.1</string>
                 <string>--port={$port}</string>
             </array>
             <key>WorkingDirectory</key><string>{$root}</string>

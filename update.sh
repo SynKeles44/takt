@@ -49,14 +49,14 @@ composer install --no-interaction --prefer-dist --quiet
 npm ci --silent 2>/dev/null || npm install --silent
 npm run build --silent >/dev/null
 
-bold "Datenbank"
-php artisan migrate --force --quiet
-php artisan takt:icons >/dev/null
+bold "Einrichten"
+# the same setup as the install, which is what keeps an update from needing extra commands
+autostart_flag="--no-autostart"
+[ -f "$HOME/Library/LaunchAgents/de.takt.server.plist" ] && autostart_flag=""
+
+php artisan takt:setup $autostart_flag | sed 's/^/  /'
 
 if [ "$(uname -s)" = "Darwin" ]; then
-    bold "App neu bauen"
-    php artisan takt:app | sed 's/^/  /'
-
     if [ -f "$HOME/Library/LaunchAgents/de.takt.server.plist" ]; then
         launchctl kickstart -k "gui/$(id -u)/de.takt.server" >/dev/null 2>&1 || true
         info "Server neu gestartet."

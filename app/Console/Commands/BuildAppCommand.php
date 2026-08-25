@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Support\AppIcon;
+use App\Support\LocalUrl;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
@@ -85,7 +86,7 @@ class BuildAppCommand extends Command
 
         $this->components->twoColumnDetail('Bundle', $bundle);
         $this->components->twoColumnDetail('Window', $native ? 'native (Cocoa + WebKit)' : 'browser window (swiftc missing)');
-        $this->components->twoColumnDetail('Serves on', 'http://localhost:'.$port);
+        $this->components->twoColumnDetail('Serves on', LocalUrl::url($port));
         $this->components->info('Open it from Finder or the Launchpad. Keep it in the Dock for one-click access.');
 
         return self::SUCCESS;
@@ -142,6 +143,7 @@ class BuildAppCommand extends Command
         $identifier = 'de.'.Str::slug($name).'.app';
         $root = base_path();
         $php = PHP_BINARY;
+        $host = LocalUrl::host();
 
         return <<<PLIST
         <?xml version="1.0" encoding="UTF-8"?>
@@ -160,6 +162,7 @@ class BuildAppCommand extends Command
             <key>LSUIElement</key><false/>
             <key>NSHighResolutionCapable</key><true/>
             <key>TaktPort</key><integer>{$port}</integer>
+            <key>TaktHost</key><string>{$host}</string>
             <key>TaktRoot</key><string>{$root}</string>
             <key>TaktPhp</key><string>{$php}</string>
             <key>NSAppTransportSecurity</key>
@@ -175,6 +178,7 @@ class BuildAppCommand extends Command
     {
         $root = base_path();
         $php = PHP_BINARY;
+        $url = LocalUrl::url($port);
 
         return <<<SHELL
         #!/bin/bash
@@ -184,13 +188,14 @@ class BuildAppCommand extends Command
         ROOT="{$root}"
         PHP="{$php}"
         PORT="{$port}"
-        URL="http://localhost:\$PORT"
+        URL="{$url}"
+        PROBE="http://127.0.0.1:\$PORT"
         LOG="\$ROOT/storage/logs/serve.log"
         PID="\$ROOT/storage/app/takt-serve.pid"
 
         note() { /usr/bin/logger -t takt "\$1"; }
 
-        running() { /usr/bin/curl -s -o /dev/null -m 1 "\$URL"; }
+        running() { /usr/bin/curl -s -o /dev/null -m 1 "\$PROBE"; }
 
         if [ "\${1:-}" = "--dry-run" ]; then
             running && echo "server up" || echo "server down"
@@ -203,14 +208,14 @@ class BuildAppCommand extends Command
         AGENT="\$HOME/Library/LaunchAgents/de.takt.server.plist"
 
         if ! running; then
-            if [ -f "\$AGENT" ]; then
+            if [ -f "\$AGENT" ] && /usr/bin/grep -Fq "\$ROOT" "\$AGENT"; then
                 # the login item owns the server; just make sure it is up
                 note "kickstarting the login item"
                 /bin/launchctl kickstart "gui/\$(id -u)/de.takt.server" >/dev/null 2>&1
             else
                 note "starting server on \$PORT"
                 cd "\$ROOT" || exit 1
-                "\$PHP" artisan serve --port="\$PORT" >>"\$LOG" 2>&1 &
+                "\$PHP" artisan serve --host=127.0.0.1 --port="\$PORT" >>"\$LOG" 2>&1 &
                 echo "\$! \$PORT" > "\$PID"
             fi
 

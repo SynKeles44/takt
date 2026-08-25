@@ -636,3 +636,18 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       my pull requests, project launcher, snippets, test post and repository links.
 - [x] Only the widgets on the board load data — the GitHub-backed ones cost nothing when they
       are not shown.
+
+## R27 One command, and an address with a name
+
+- [x] After `install.sh` nothing is left to run: dependencies, `.env`, key, database, icons,
+      the host name, the macOS app, the login item, the running server and the opened app.
+- [x] Takt answers on `local.takt.de` instead of `localhost`, taken from `APP_URL`. The server
+      binds to `127.0.0.1`; the name resolves there through one line in `/etc/hosts`.
+- [x] That line is the only step needing administrator rights. It is asked for once during the
+      install; skipping it keeps Takt on `localhost` and says so.
+- [x] `APP_URL` only carries the name once the name really reaches this machine — otherwise
+      every link Takt writes, assets included, would point at an address nothing answers on.
+- [x] `takt:hostname <name>` sets it later, `--remove` goes back, `--dry-run` shows what would
+      change; the app bundle is rebuilt afterwards, because it carries the address.
+- [x] A login item that belongs to another copy of Takt is neither used nor taken over
+      silently — `make`, the app bundle and `takt:autostart` all check where it points.

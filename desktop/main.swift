@@ -9,7 +9,10 @@ struct Config {
     static let root = info["TaktRoot"] as? String ?? ""
     static let php = info["TaktPhp"] as? String ?? "/usr/bin/php"
     static let port = info["TaktPort"] as? Int ?? 8000
-    static var url: URL { URL(string: "http://127.0.0.1:\(port)")! }
+    static let host = info["TaktHost"] as? String ?? "local.takt.de"
+    /// What the window shows. The server binds to the loopback; the name resolves there.
+    static var url: URL { URL(string: "http://\(host)\(port == 80 ? "" : ":\(port)")")! }
+    static var loopback: URL { URL(string: "http://127.0.0.1:\(port)")! }
 }
 
 /// Starts the local server unless something already serves the port, and stops
@@ -18,7 +21,7 @@ final class Server {
     private var process: Process?
 
     func responds(timeout: TimeInterval = 0.6) -> Bool {
-        var request = URLRequest(url: Config.url)
+        var request = URLRequest(url: Config.loopback)
         request.timeoutInterval = timeout
         request.httpMethod = "HEAD"
 
@@ -40,7 +43,7 @@ final class Server {
 
         let task = Process()
         task.executableURL = URL(fileURLWithPath: Config.php)
-        task.arguments = ["artisan", "serve", "--port=\(Config.port)"]
+        task.arguments = ["artisan", "serve", "--host=127.0.0.1", "--port=\(Config.port)"]
         task.currentDirectoryURL = URL(fileURLWithPath: Config.root)
 
         let log = URL(fileURLWithPath: Config.root).appendingPathComponent("storage/logs/serve.log")
@@ -225,7 +228,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
 
         // anything that is not the app itself belongs in the browser
-        if url.host == "127.0.0.1" || url.host == "localhost" || url.scheme == "about" || url.scheme == "blob" {
+        if url.host == "127.0.0.1" || url.host == "localhost" || url.host == Config.host || url.scheme == "about" || url.scheme == "blob" {
             decisionHandler(.allow)
 
             return
