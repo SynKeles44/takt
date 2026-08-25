@@ -300,6 +300,10 @@ Requirement ids refer to `requirements.md`.
       `[data-theme='midnight']` block lets a preview keep its colours inside another theme.
 - [x] Automatic shows both halves of the same mock-up as a diagonal split, so no slide
       changes the element's height.
+- [x] The design-style slides did resize the card anyway (154–186 px, measured in the browser).
+      Every slide now stays in the layout, stacked in one grid cell and hidden by visibility,
+      so the tallest one sets the height once: both cards hold a single height across all
+      slides (407 px and 382 px).
 
 ## Phase 41 — Registering a project (R24.6)
 

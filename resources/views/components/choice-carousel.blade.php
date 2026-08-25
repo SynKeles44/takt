@@ -23,7 +23,7 @@
             <x-icon name="chevron-left" class="size-4"/>
         </a>
 
-        <div class="min-w-0 flex-1">
+        <div class="carousel-stack min-w-0 flex-1">
             {{ $slot }}
         </div>
 

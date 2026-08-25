@@ -4,6 +4,7 @@
      data-label="{{ $case->label() }}"
      data-description="{{ $case->description() }}"
      data-position="{{ $position }}"
-     @class(['hidden' => ! $shown])>
+     @class(['is-off' => ! $shown])
+     @if (! $shown) aria-hidden="true" @endif>
     {{ $slot }}
 </div>

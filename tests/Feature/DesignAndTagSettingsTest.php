@@ -68,6 +68,17 @@ class DesignAndTagSettingsTest extends TestCase
             ->assertSee('data-theme="daylight"', escape: false);
     }
 
+    public function test_the_slides_stay_in_the_layout_so_the_card_keeps_its_height(): void
+    {
+        $response = $this->get(route('settings'))->assertOk();
+
+        // stacked in one grid cell and only hidden by visibility — display:none would
+        // let the card resize with every slide
+        $response->assertSee('carousel-stack', escape: false);
+        $response->assertSee('class="is-off"', escape: false);
+        $response->assertDontSee('data-position="2"'."\n".'     class="hidden"', escape: false);
+    }
+
     public function test_the_previewed_style_follows_the_query_parameter(): void
     {
         $this->get(route('settings', ['stil' => DesignStyle::Terminal->value]))

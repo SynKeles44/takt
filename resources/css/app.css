@@ -1043,6 +1043,24 @@ body {
     opacity: 0.8;
 }
 
+/*
+ * The flip-through picker keeps every slide in the layout, stacked in one grid cell: the
+ * tallest one sets the height, so paging through them never resizes the card.
+ */
+.carousel-stack {
+    display: grid;
+    align-items: center;
+}
+
+.carousel-stack > [data-slide] {
+    grid-area: 1 / 1;
+}
+
+.carousel-stack > [data-slide].is-off {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 /* the flip-through picker slides in from the side it came from */
 @keyframes wb-slide-right {
     from { opacity: 0; transform: translateX(14px); }

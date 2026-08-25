@@ -122,13 +122,18 @@ document.querySelectorAll('[data-carousel]').forEach((carousel) => {
     const field = form?.querySelector('input[type="hidden"]');
     const param = carousel.dataset.param;
 
-    let current = Math.max(0, slides.findIndex((slide) => ! slide.classList.contains('hidden')));
+    let current = Math.max(0, slides.findIndex((slide) => ! slide.classList.contains('is-off')));
 
     const show = (target) => {
         const previous = current;
         current = (target + slides.length) % slides.length;
 
-        slides.forEach((slide, position) => slide.classList.toggle('hidden', position !== current));
+        slides.forEach((slide, position) => {
+            const off = position !== current;
+
+            slide.classList.toggle('is-off', off);
+            slide.toggleAttribute('aria-hidden', off);
+        });
 
         const slide = slides[current];
         const value = slide.dataset.slide;
