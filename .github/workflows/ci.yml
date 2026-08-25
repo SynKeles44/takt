@@ -32,6 +32,7 @@ jobs:
           php artisan key:generate
           touch database/database.sqlite
           php artisan migrate --force
+          php artisan takt:icons
 
       - name: Build the frontend
         run: |
