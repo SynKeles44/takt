@@ -242,6 +242,13 @@
             <rect x="2.75" y="4.25" width="18.5" height="15.5" rx="3"/>
         </svg>
         @break
+    @case('info')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 11v5.5"/>
+            <path d="M12 7.6h.01"/>
+        </svg>
+        @break
     @case('send')
         <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4.5 12l15.5-7-7 15.5-2.2-6.3z"/>

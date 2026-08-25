@@ -350,7 +350,20 @@
                     @method('PUT')
 
                     <div>
-                        <label for="github_token" class="label">{{ __('app.settings.github_token') }}</label>
+                        <span class="flex items-center justify-between gap-2">
+                            <label for="github_token" class="label">{{ __('app.settings.github_token') }}</label>
+
+                            <x-hint :title="__('app.dev.github_guide_title')">
+                                <ol>
+                                    <li>{!! __('app.dev.github_guide_1') !!}</li>
+                                    <li>{!! __('app.dev.github_guide_2') !!}</li>
+                                    <li>{!! __('app.dev.github_guide_3') !!}</li>
+                                    <li>{!! __('app.dev.github_guide_4') !!}</li>
+                                </ol>
+
+                                <span class="mt-2 block text-[11px] text-faint">{!! __('app.dev.github_guide_note') !!}</span>
+                            </x-hint>
+                        </span>
                         <input id="github_token" type="password" name="github_token" class="control metric text-xs"
                                autocomplete="off" placeholder="{{ $user->github_token ? __('app.settings.token_set') : 'ghp_…' }}">
                         <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.github_token_hint') }}</p>
@@ -358,7 +371,22 @@
                     </div>
 
                     <div>
-                        <label for="slack_token" class="label">{{ __('app.settings.slack_token') }}</label>
+                        <span class="flex items-center justify-between gap-2">
+                            <label for="slack_token" class="label">{{ __('app.settings.slack_token') }}</label>
+
+                            <x-hint :title="__('app.slack.guide_title')">
+                                <ol>
+                                    <li>{!! __('app.slack.guide_1') !!}</li>
+                                    <li>{!! __('app.slack.guide_2') !!}</li>
+                                    <li>{!! __('app.slack.guide_3') !!}</li>
+                                    <li>{!! __('app.slack.guide_4') !!}</li>
+                                    <li>{!! __('app.slack.guide_5') !!}</li>
+                                    <li>{!! __('app.slack.guide_6') !!}</li>
+                                </ol>
+
+                                <span class="mt-2 block text-[11px] text-faint">{!! __('app.slack.guide_note') !!}</span>
+                            </x-hint>
+                        </span>
                         <input id="slack_token" type="password" name="slack_token" class="control metric text-xs"
                                autocomplete="off" placeholder="{{ $user->slack_token ? __('app.settings.token_set') : 'xoxp-…' }}">
                         <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_token_hint') }}</p>

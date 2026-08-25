@@ -42,10 +42,23 @@ file — no cloud, no external services.
   name and avatar. That needs a user token (`xoxp-`) with `chat:write`, which you store once in
   the settings together with the channel; the token is kept encrypted and never rendered back
   into the page. Sending asks first, then links to the message.
-- **Registering a project** — in the app a Finder panel picks the folder and the rest of the
-  form fills itself: name, GitHub remote, start command (`make start` by default) and, if the
-  project states one, the port. The port stays optional; it only feeds the state dot and the
-  open link.
+- **Registering a project** — the button inside the folder field opens Takt's own folder
+  dialog (crumbs to walk back up, git repositories marked), and the rest of the form fills
+  itself: name, GitHub remote, start command (`make start` by default) and, if the project
+  states one, the port. The dialog only ever reads below your home directory. The port stays
+  optional; it only feeds the state dot and the open link.
+- **Make targets** — Takt reads the Makefile of every registered project, lists the targets
+  with their `##` descriptions and runs one with a click: the dialog follows the output live,
+  shows the exit code and can stop the run. Only a target that is actually in the Makefile is
+  ever run, and the run goes through your login shell, so `docker` and friends are found.
+  Projects are collapsed by default and a filter searches every target at once.
+- **Interactive runs** — a target that expects a terminal gets one, so `docker compose exec`
+  works and a prompt can be answered right in the dialog. Terminal output is cleaned up before
+  it is shown, so progress bars stay one line.
+- **Docker** — the containers of this machine, grouped the way compose groups them: state,
+  image, published ports as links, start/stop/restart per container and the logs in a window.
+  The list keeps itself current while the page is in front. Only a container from the current
+  list is ever acted on, and removing one is deliberately not offered.
 - **Development section** — today's commits across your registered repositories, the pull
   requests waiting for your review (and yours waiting for others), a launcher for local
   environments with port state, reusable command snippets one ⌘K away from the clipboard,

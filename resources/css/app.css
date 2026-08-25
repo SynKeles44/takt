@@ -699,6 +699,143 @@ body {
         transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
+    .folder-crumb {
+        border-radius: var(--radius-pill);
+        padding: 0.15rem 0.5rem;
+        font-family: var(--metric-font);
+        font-size: 0.75rem;
+        color: var(--color-muted);
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .folder-crumb:hover {
+        background-color: var(--color-hover);
+        color: var(--color-ink);
+    }
+
+    .folder-crumb.is-current {
+        background-color: var(--color-raised);
+        color: var(--color-ink);
+        font-weight: 600;
+    }
+
+    .folder-crumb-sep {
+        font-size: 0.75rem;
+        color: var(--color-dim);
+    }
+
+    /* a small (i) whose help appears on hover, and on keyboard focus just the same */
+    .hint {
+        position: relative;
+        display: inline-flex;
+        vertical-align: middle;
+    }
+
+    .hint-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 1.15rem;
+        block-size: 1.15rem;
+        border-radius: 50%;
+        border: var(--border-w) solid var(--color-line-strong);
+        color: var(--color-faint);
+        transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .hint:hover .hint-toggle,
+    .hint:focus-within .hint-toggle {
+        color: var(--color-accent-text);
+        border-color: color-mix(in oklab, var(--color-accent) 50%, transparent);
+        background-color: color-mix(in oklab, var(--color-accent) 12%, transparent);
+    }
+
+    .hint-panel {
+        position: absolute;
+        inset-block-end: calc(100% + 0.5rem);
+        inset-inline-end: -0.35rem;
+        z-index: 60;
+        display: block;
+        inline-size: min(22rem, calc(100vw - 2.5rem));
+        padding: 0.85rem 0.95rem;
+        border-radius: var(--radius-card);
+        border: var(--border-w) solid var(--color-line);
+        background-color: var(--color-popover);
+        box-shadow: 0 24px 48px -20px var(--shadow-color);
+        font-size: 0.6875rem;
+        line-height: 1.65;
+        color: var(--color-muted);
+        opacity: 0;
+        transform: translateY(4px);
+        pointer-events: none;
+        transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .hint-panel-start {
+        inset-inline: -0.35rem auto;
+    }
+
+    .hint-panel a {
+        color: var(--color-accent-text);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .hint-panel a:hover {
+        color: var(--color-ink);
+    }
+
+    .hint-panel ol {
+        margin-block-start: 0.35rem;
+        padding-inline-start: 1.1rem;
+        list-style: decimal;
+    }
+
+    .hint-panel li + li {
+        margin-block-start: 0.3rem;
+    }
+
+    .hint-panel code {
+        font-family: var(--metric-font);
+        font-size: 0.65rem;
+        padding: 0.05rem 0.25rem;
+        border-radius: 0.3rem;
+        background-color: var(--color-raised);
+        color: var(--color-ink);
+    }
+
+    /* a field with one action sitting inside it, like a search box */
+    .field-with-action {
+        position: relative;
+        display: block;
+    }
+
+    .field-with-action > .control {
+        padding-inline-end: 2.9rem;
+    }
+
+    .field-action {
+        position: absolute;
+        inset-block: 0.28rem;
+        inset-inline-end: 0.3rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 2.1rem;
+        border-radius: var(--radius-control);
+        color: var(--color-muted);
+        transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+    }
+
+    .field-action:hover {
+        background-color: var(--color-hover);
+        color: var(--color-ink);
+    }
+
+    .field-action:active {
+        transform: scale(0.94);
+    }
+
     .heading {
         font-family: var(--heading-font);
         font-size: var(--heading-size);
@@ -1434,6 +1571,24 @@ body {
     border-color: color-mix(in oklab, var(--color-ink) 12%, transparent);
 }
 
+/*
+ * Hint visibility, deliberately unlayered: the panel's own rule ends up unlayered too, and an
+ * unlayered rule beats anything inside a layer — a pinned panel stayed invisible otherwise.
+ */
+.hint:hover .hint-panel,
+.hint:focus-within .hint-panel,
+.hint[data-open] .hint-panel {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.hint[data-open] .hint-toggle {
+    color: var(--color-accent-text);
+    border-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+    background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
+}
+
 /* days marked with the mouse, before the absence window opens */
 [data-day][data-selected] {
     border-color: color-mix(in oklab, var(--color-accent) 65%, transparent) !important;
@@ -1596,6 +1751,19 @@ details summary {
     transition: background-color 0.15s ease;
 }
 
+details summary:hover {
+    background-color: var(--color-hover);
+}
+
+/* the chevron follows the block it opens */
+details > summary svg:first-of-type {
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+details[open] > summary svg:first-of-type {
+    transform: rotate(90deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -1624,15 +1792,6 @@ input[type='time'] {
  * scrolling shiver in WebKit), no reserved scrollbar gutter, no visible scrollbars,
  * and room at the top for the window buttons that float over the surface.
  */
-/* Only the native shell can open a Finder panel, so that button exists only there. */
-.native-only {
-    display: none;
-}
-
-:root[data-shell='native'] .native-only {
-    display: inline-flex;
-}
-
 :root[data-shell='native'] {
     overflow: hidden;
     scrollbar-gutter: auto;

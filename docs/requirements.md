@@ -567,6 +567,10 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       red mark above 24 hours; cached for two minutes with a manual reload.
 - [x] Needs a GitHub token with read access, entered once in the settings; a rejected token
       (401) or an unreachable API is reported in plain words instead of an empty list.
+- [x] Only strings and numbers reach the cache. Laravel refuses to unserialize classes from a
+      cache store (`serializable_classes: false`), so a cached Carbon came back as an
+      incomplete object and took the whole page down; dates are cached as ISO strings. A cache
+      entry that is not the expected shape is thrown away and fetched again.
 
 ### R24.4 Project launcher
 
@@ -595,8 +599,12 @@ A section for the programmer's day, reachable as its own sidebar entry with four
 
 ### R24.6 Registering a project
 
-- [x] In the native app a Finder panel picks the folder; typing or pasting a path works the
-      same way in the browser.
+- [x] The folder is picked inside the page: the button sits in the field itself and opens
+      Takt's own folder dialog — path as clickable crumbs, one row per sub-folder, git
+      repositories marked. A browser hands out no absolute path, and the local server does.
+- [x] The dialog reads only below the home directory: a path is resolved first and refused
+      unless it still sits inside it, files and hidden folders stay out of the list.
+- [x] Typing or pasting a path still works the same way.
 - [x] What the folder already states fills the rest of the form: name from the folder,
       repository from `git remote origin`, start command from a `Makefile` target,
       `package.json` script or `artisan`, port from `Makefile`, `.env` or the vite config.
@@ -611,6 +619,66 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       the range spelled out in words; escape or cancel closes it and clears the marking.
 - [x] Saving books the absence through the existing endpoint and swaps the calendar back in,
       so the new range shows up without a reload.
+
+## R28 Make targets from Takt
+
+- [x] The targets of a project's Makefile are read, listed with their `## description`, and run
+      with one click. Special targets, pattern rules and variables are not offered.
+- [x] A run is detached and writes into its own log; the dialog follows the output while it
+      runs, shows the state and the exit code, and can stop it. Polling only happens while a
+      run is open.
+- [x] The target is never taken from the request as a command: it is looked up in the project's
+      own Makefile and only its name is passed on. A shell fragment fails validation.
+- [x] The run goes through a login shell with the usual tool directories on the PATH — Takt is
+      normally started by a login item, whose bare PATH made every Makefile calling docker fail
+      with "docker: No such file or directory".
+- [x] Projects are collapsed by default and remember what was opened; a filter narrows the
+      targets across all projects at once.
+- [x] Finished runs and their output are pruned after a week, together with the trash.
+
+## R29 Reviews per repository
+
+- [x] The pull requests of a registered project are read per repository, not through the search
+      API: search silently returns nothing for a repository the token cannot see, while the
+      repository endpoint answers 404 — so Takt says "no access to this repository" instead of
+      showing an empty list.
+- [x] "My open pull requests" is grouped per project, with everything else under other
+      repositories; both sections are collapsed by default.
+- [x] The development page renders what the cache holds and fetches the sections afterwards —
+      a fresh fetch costs over a second and the rest of the page has no reason to wait.
+- [x] Commits are collapsible per project, closed by default, and remember what was opened.
+- [x] Paging through the days replaces only the header and the commits; the reviews stay as they
+      are, and the browser's back button pages back.
+
+## R30 Interactive runs
+
+- [x] A target that expects a terminal gets one: the run happens inside a pseudo terminal
+      (`bin/takt-pty`), which is what `docker compose exec` without `-T` needs to work at all.
+- [x] A prompt can be answered from the dialog: what is typed goes through the run's FIFO into
+      the command's input. The field only appears while such a run is going.
+- [x] Terminal output is cleaned before it is shown — colour codes dropped, and a carriage
+      return rewrites its line, so a progress bar stays one line instead of hundreds.
+- [x] Without python3 for the helper, runs work as before, just without a terminal and without
+      the input field.
+
+## R31 Docker
+
+- [x] The containers of this machine, grouped by compose project, running groups first, with
+      state, image, age and the published ports as links.
+- [x] Start, stop and restart per container; logs in a window. Removing a container is not
+      offered — reversible actions only.
+- [x] Only an id from the current list is ever acted on: the page sends an id, it is looked up,
+      and the looked-up id reaches docker. A shell fragment fails validation.
+- [x] A missing docker, a stopped daemon and any other error are reported in plain words.
+- [x] The list refreshes itself every few seconds while the page is in front, and stops when the
+      tab goes to the back.
+
+## R32 Guides where the field is
+
+- [x] Slack and GitHub tokens carry an (i) whose help appears on hover and on keyboard focus:
+      the steps to create the token, with the scope that actually matters.
+- [x] A click pins the help open so the links in it can be used; a click outside or escape
+      closes it again, and a click inside it never does. The links open in a new tab.
 
 ## R25 Dashboard of widgets
 

@@ -101,15 +101,18 @@
                 </div>
 
                 <div>
-                    <div class="flex items-center justify-between gap-2">
-                        <label for="path" class="label">{{ __('app.dev.path') }}</label>
-                        <button type="button" class="btn btn-ghost native-only px-2 py-1 text-[11px]" data-pick-folder>
-                            <x-icon name="folder" class="size-3.5"/>
-                            {{ __('app.dev.pick_folder') }}
+                    <label for="path" class="label">{{ __('app.dev.path') }}</label>
+
+                    <div class="field-with-action">
+                        <input id="path" type="text" name="path" value="{{ old('path') }}" class="control metric text-xs"
+                               maxlength="400" placeholder="~/PhpstormProjects/…" required data-scan-path>
+
+                        <button type="button" class="field-action" data-pick-folder
+                                aria-label="{{ __('app.dev.pick_folder') }}" title="{{ __('app.dev.pick_folder') }}">
+                            <x-icon name="folder" class="size-4"/>
                         </button>
                     </div>
-                    <input id="path" type="text" name="path" value="{{ old('path') }}" class="control metric text-xs"
-                           maxlength="400" placeholder="~/PhpstormProjects/…" required data-scan-path>
+
                     <p class="mt-1 text-[11px] text-dim">{{ __('app.dev.path_hint') }}</p>
                     @error('path') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
@@ -140,5 +143,40 @@
                 </button>
             </form>
         </x-card>
+    </div>
+
+    {{-- Takt's own folder picker: a browser hands out no absolute path, the local server does --}}
+    <div class="pointer-events-none fixed inset-0 z-[70] hidden items-center justify-center p-4"
+         data-folder-dialog data-folders-url="{{ route('projects.folders') }}"
+         data-empty-label="{{ __('app.dev.folder_empty') }}" data-failed-label="{{ __('app.dev.folder_failed') }}"
+         role="dialog" aria-modal="true" aria-labelledby="folder-dialog-title">
+        <div class="absolute inset-0 bg-canvas/75 backdrop-blur-sm" data-folder-cancel></div>
+
+        <div class="surface-plain dialog-panel pointer-events-auto relative flex max-h-[32rem] w-full max-w-lg flex-col p-0">
+            <div class="border-b border-line px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <span class="grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text">
+                        <x-icon name="folder" class="size-4"/>
+                    </span>
+                    <h2 id="folder-dialog-title" class="text-sm font-semibold text-ink">{{ __('app.dev.pick_folder') }}</h2>
+                </div>
+
+                {{-- the path as crumbs: one click goes back up as far as you like --}}
+                <nav class="folder-crumbs mt-3 flex flex-wrap items-center gap-x-1 gap-y-1" data-folder-crumbs
+                     aria-label="{{ __('app.dev.path') }}"></nav>
+            </div>
+
+            <div class="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3" data-folder-list></div>
+
+            <div class="flex gap-2 border-t border-line px-5 py-4">
+                <button type="button" class="btn btn-ghost flex-1" data-folder-cancel>
+                    {{ __('app.dialog.cancel') }}
+                </button>
+                <button type="button" class="btn btn-primary flex-1" data-folder-choose>
+                    <x-icon name="check" class="size-4"/>
+                    {{ __('app.dev.folder_choose') }}
+                </button>
+            </div>
+        </div>
     </div>
 </x-app-layout>

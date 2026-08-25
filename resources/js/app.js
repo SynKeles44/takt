@@ -1,5 +1,8 @@
 import { createBoard } from './board';
 import { dayRange } from './day-range';
+import { commandRunner } from './command-runner';
+import { docker } from './docker';
+import { folderPicker } from './folder-picker';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -438,11 +441,20 @@ navigator.serviceWorker?.getRegistrations?.().then((registrations) => {
 
 const NAV_SAFE = ['/login', '/registrieren', '/logout'];
 
-const swapRegions = (html) => {
+/**
+ * Swaps the marked regions of the current page for the ones in `html`. With `only` given,
+ * exactly those regions are replaced — that is how paging through the days leaves the
+ * reviews alone instead of fetching them from GitHub again.
+ */
+const swapRegions = (html, only = null) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     let swapped = false;
 
     document.querySelectorAll('[data-region]').forEach((node) => {
+        if (only !== null && ! only.includes(node.dataset.region)) {
+            return;
+        }
+
         const fresh = doc.querySelector(`[data-region="${node.dataset.region}"]`);
 
         if (! fresh) {
@@ -460,6 +472,9 @@ const swapRegions = (html) => {
         fresh.dataset.swapped = '';
         requestAnimationFrame(() => requestAnimationFrame(() => delete fresh.dataset.swapped));
     });
+
+    // a swapped-in region brings new collapsible blocks with it
+    if (swapped) rememberBlocks();
 
     const title = doc.querySelector('title')?.textContent;
 
@@ -854,3 +869,153 @@ boardApi.apply();
 
 // marking a range of days in the calendar
 dayRange();
+
+// picking a project folder without leaving the page
+folderPicker({ toast });
+
+// running a project's make targets from the page
+commandRunner({ toast });
+
+// the container list, its actions and its logs
+docker({ swapRegions, toast });
+
+/*
+ * The review sections arrive after the page: fetching them from GitHub costs more than a
+ * second, and the rest of the development page has no reason to wait for it.
+ */
+const loadReviews = () => {
+    const slot = document.querySelector('[data-reviews-slot]:not([data-loaded])');
+
+    if (! slot || slot.querySelector('[data-review-sections]')) return;
+
+    fetch(slot.dataset.reviewsUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then((response) => (response.ok ? response.text() : Promise.reject()))
+        .then((html) => {
+            slot.innerHTML = html;
+            slot.dataset.loaded = '';
+            rememberBlocks(slot);
+        })
+        .catch(() => {});
+};
+
+loadReviews();
+
+/* Collapsible blocks start closed and remember what was opened, per key. */
+const rememberBlocks = (root = document) => {
+    root.querySelectorAll('details[data-remember]:not([data-wired])').forEach((block) => {
+        const key = 'takt.open.' + block.dataset.remember;
+
+        block.dataset.wired = '';
+        block.open = localStorage.getItem(key) === '1';
+
+        block.addEventListener('toggle', () => localStorage.setItem(key, block.open ? '1' : '0'));
+    });
+};
+
+rememberBlocks();
+
+/*
+ * Filtering the make targets. Typing opens every project that still has a match and closes
+ * the ones that have none, so the list reads as one flat result while a filter is active.
+ */
+const commandFilter = document.querySelector('[data-command-filter]');
+
+if (commandFilter) {
+    const projects = [...document.querySelectorAll('[data-command-project]')];
+
+    commandFilter.addEventListener('input', () => {
+        const term = commandFilter.value.trim().toLowerCase();
+
+        projects.forEach((card) => {
+            const block = card.querySelector('details');
+            const targets = [...card.querySelectorAll('[data-search]')];
+            let hits = 0;
+
+            targets.forEach((target) => {
+                const match = term === '' || target.dataset.search.includes(term);
+
+                target.classList.toggle('hidden', ! match);
+
+                if (match) hits += 1;
+            });
+
+            const nameMatches = term !== '' && card.dataset.name.includes(term);
+
+            card.classList.toggle('hidden', term !== '' && hits === 0 && ! nameMatches);
+            card.querySelector('[data-command-empty]')?.classList.toggle('hidden', hits > 0 || term === '');
+
+            if (block && term !== '') {
+                block.open = hits > 0 || nameMatches;
+            } else if (block) {
+                block.open = localStorage.getItem('takt.open.' + block.dataset.remember) === '1';
+            }
+        });
+    });
+}
+
+/*
+ * Links that only change part of the page: the day navigation in the development section
+ * replaces the header and the commits, and leaves everything else — above all the reviews,
+ * which come from GitHub — untouched.
+ */
+const partialLink = (url, regions, push = true) =>
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then((response) => (response.ok ? response.text() : Promise.reject()))
+        .then((html) => {
+            if (! swapRegions(html, regions)) return Promise.reject();
+
+            if (push) window.history.pushState({ regions }, '', url);
+
+            return true;
+        });
+
+document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[data-partial]');
+
+    if (! link || event.metaKey || event.ctrlKey || event.shiftKey || link.target === '_blank') return;
+
+    event.preventDefault();
+
+    partialLink(link.href, link.dataset.partial.split(' ')).catch(() => {
+        window.location.href = link.href;
+    });
+});
+
+window.addEventListener('popstate', (event) => {
+    const regions = event.state?.regions;
+
+    if (! Array.isArray(regions)) return;
+
+    partialLink(window.location.href, regions, false).catch(() => window.location.reload());
+});
+
+/*
+ * The (i) next to a field: hovering shows its help, clicking pins it open so the links in it
+ * can actually be used. A click outside or escape closes it again.
+ */
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('.hint-toggle');
+    const inside = event.target.closest('.hint-panel');
+
+    if (inside) return;
+
+    document.querySelectorAll('.hint[data-open]').forEach((hint) => {
+        if (! toggle || hint !== toggle.closest('.hint')) delete hint.dataset.open;
+    });
+
+    if (! toggle) return;
+
+    const hint = toggle.closest('.hint');
+
+    if (hint.dataset.open === undefined) {
+        hint.dataset.open = '';
+    } else {
+        delete hint.dataset.open;
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    document.querySelectorAll('.hint[data-open]').forEach((hint) => delete hint.dataset.open);
+});

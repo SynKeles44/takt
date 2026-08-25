@@ -4,6 +4,8 @@
     $tabs = [
         'dev' => __('app.dev.overview'),
         'projects' => __('app.dev.projects'),
+        'commands' => __('app.dev.commands'),
+        'docker' => __('app.docker.title'),
         'snippets' => __('app.dev.snippets'),
         'dev.testpost' => __('app.dev.testpost'),
     ];

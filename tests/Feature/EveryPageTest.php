@@ -60,7 +60,11 @@ class EveryPageTest extends TestCase
     private function pages(): Collection
     {
         // downloads and JSON endpoints are not pages
-        $skip = ['calendar.export', 'backup', 'settings.export', 'logout', 'search', 'month.csv', 'month.timesheet'];
+        $skip = [
+            'calendar.export', 'backup', 'settings.export', 'logout', 'search',
+            'month.csv', 'month.timesheet', 'projects.folders', 'dev.reviews.sections',
+            'docker.list', 'docker.logs',
+        ];
 
         return collect(Route::getRoutes()->getRoutesByMethod()['GET'] ?? [])
             ->filter(fn (\Illuminate\Routing\Route $route): bool => $route->getName() !== null)

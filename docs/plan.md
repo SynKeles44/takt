@@ -391,3 +391,84 @@ Requirement ids refer to `requirements.md`.
 - [x] The gallery went from 19.5rem to 16.5rem and the board's padding with it: at 1440 px the
       board keeps ~1000 px instead of ~700, where the timer's own heading wrapped.
 - [x] Room for the tool pill inside a tile, and a badge that lifts above its neighbours.
+
+## Phase 47 — The review cache (R24.3)
+
+- [x] The development page broke as soon as a GitHub token existed: `Reviews` cached Carbon
+      objects, and `config/cache.php` ships `serializable_classes: false`, so every cached
+      object returned as `__PHP_Incomplete_Class`. Proven both ways in tinker.
+- [x] Dates are cached as ISO strings and hydrated on the way out; a cache entry of the wrong
+      shape is discarded instead of rendered.
+- [x] 4 tests against the store the app really uses (`cache.default: database`), including the
+      second visit that reads from the cache — the case that failed in the wild.
+
+## Phase 48 — Picking a folder in the page (R24.6)
+
+- [x] `FolderBrowser` lists sub-folders below the home directory, resolving every path first
+      and refusing anything outside — that also settles symlinks and typed "..".
+- [x] `folder-picker.js` plus a dialog: crumbs to jump back up any number of levels, one row
+      per folder, `git` marked, "take this folder" hands it to the field and the existing scan
+      fills name, repository, start command and port.
+- [x] The Finder bridge in the shell is gone. It only worked in the app window — and there it
+      did not fire at all — so one path that works everywhere replaced it, and the
+      `native-only` helper and its callback went with it.
+- [x] 7 tests, mostly about where the browser refuses to look.
+
+## Phase 49 — Make targets, and an honest review list (R28, R29)
+
+- [x] `MakeTargets` parses the Makefile (48 real targets out of galawork-web, descriptions
+      included); `CommandRunner` starts one detached with its log and exit-code file;
+      `CommandRun` + `RunStatus` keep the state. New page "Befehle" with a run dialog.
+- [x] Measured before touching anything: reviews 1367 ms uncached, commits 107 ms, project
+      state 1 ms. So only the reviews moved out of the request — the page renders from the
+      cache and pulls the sections in afterwards.
+- [x] The first real run failed with `make: docker: No such file or directory`: a login item
+      passes down a bare PATH. Runs now go through the user's own login shell with the usual
+      tool directories ahead of it, verified with `command -v docker`.
+- [x] "My open pull requests" was empty although pull requests existed. The token carries only
+      `public_repo, repo:status`, so the search API returned nothing at all. Reviews now read
+      each project's repository directly, which answers 404, and that is reported per project.
+- [x] Collapsible per project everywhere (commits, pull requests, targets), closed by default,
+      remembered per key; plus a filter over all targets.
+- [x] 14 new tests, including a Makefile of its own in the test, a stopped run, a pruned run and
+      a repository the token cannot see.
+
+## Phase 50 — Paging the days without reloading the reviews (R29)
+
+- [x] `swapRegions` takes an optional list of regions, and a link marked `data-partial` swaps
+      exactly those: the development header and the commits card. The reviews sit outside both,
+      so paging through the days never touches GitHub again.
+- [x] `pushState` per day with a `popstate` handler, so the browser's back button pages back.
+- [x] The review cache went from 2 to 10 minutes — a fetch costs over a second and the refresh
+      button is right there.
+
+## Phase 51 — Interactive runs, Docker, and help at the field (R30, R31, R32)
+
+- [x] `bin/takt-pty`: a pty helper (python3, ~120 lines) that runs a command in a pseudo
+      terminal, writes what the terminal produced into the log, passes the FIFO into the
+      command's input and records the exit code. Proven by hand first: `test -t 0` says TTY,
+      a `read` prompt is answered, exit 0.
+- [x] `TerminalText` turns that raw output into something a page can show — colour codes gone,
+      carriage returns rewriting their line, backspaces applied.
+- [x] `ShellEnvironment` now holds the PATH and shell logic both the command runner and docker
+      need; `CommandRunner` grew `write()` and an `interactive` flag per run.
+- [x] `Docker` reads `docker ps` with a 0x1f-separated format (the first attempt kept the
+      literal "\x1f" in the Go template and split nothing), groups by compose project, and
+      only ever acts on an id it just listed. Logs come through `TerminalText`.
+- [x] `x-hint`: a small (i) with the setup steps for the Slack and GitHub tokens — hover or
+      keyboard focus, no JavaScript.
+- [x] 15 new tests. Docker is faked throughout, so no test ever starts or stops a container;
+      the pty tests skip on a machine without python3.
+
+## Phase 52 — The hint, pinned (R32)
+
+- [x] Clicking the (i) pins the panel open, so its links are usable; outside click and escape
+      close it, a click inside does not.
+- [x] The visibility rules moved out of the component layer: the panel's own rule ends up
+      unlayered, and an unlayered rule beats a layered one — inside the layer the pinned state
+      never applied.
+- [x] Slack renamed "From scratch" to "Blank app"; the guide says what the dialog says today,
+      and a test keeps it that way.
+- [x] One measurement trap worth writing down: a background tab never advances a transition, so
+      `getComputedStyle(...).opacity` read 0 for a panel that was in fact shown. Verified by
+      switching the transition off.

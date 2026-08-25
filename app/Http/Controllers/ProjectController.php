@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Services\FolderBrowser;
 use App\Services\ProjectRunner;
 use App\Services\ProjectScanner;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,14 @@ class ProjectController extends Controller
                 $project->getKey() => $runner->state($project),
             ]),
         ]);
+    }
+
+    /** Lists the folders below one folder, so a project can be picked inside the page. */
+    public function folders(Request $request, FolderBrowser $browser): JsonResponse
+    {
+        $data = $request->validate(['pfad' => ['nullable', 'string', 'max:400']]);
+
+        return response()->json($browser->list($data['pfad'] ?? null));
     }
 
     /** Reads a picked folder so the form fills itself. */

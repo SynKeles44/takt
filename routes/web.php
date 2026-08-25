@@ -7,10 +7,12 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CommandController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\DayNoteController;
 use App\Http\Controllers\DeveloperController;
+use App\Http\Controllers\DockerController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\MonthController;
@@ -58,12 +60,25 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/entwicklung', [DeveloperController::class, 'index'])->name('dev');
     Route::post('/entwicklung/reviews', [DeveloperController::class, 'refreshReviews'])->name('dev.reviews');
+    Route::get('/entwicklung/reviews', [DeveloperController::class, 'reviewSections'])->name('dev.reviews.sections');
+    Route::get('/entwicklung/befehle', [CommandController::class, 'index'])->name('commands');
+    Route::post('/entwicklung/befehle/{project}', [CommandController::class, 'store'])->name('commands.run');
+    Route::get('/entwicklung/laeufe/{run}', [CommandController::class, 'show'])->name('commands.show');
+    Route::post('/entwicklung/laeufe/{run}/eingabe', [CommandController::class, 'input'])->name('commands.input');
+    Route::delete('/entwicklung/laeufe/{run}', [CommandController::class, 'destroy'])->name('commands.stop');
+
+    Route::get('/entwicklung/docker', [DockerController::class, 'index'])->name('docker');
+    Route::get('/entwicklung/docker/liste', [DockerController::class, 'list'])->name('docker.list');
+    Route::post('/entwicklung/docker/aktion', [DockerController::class, 'act'])->name('docker.act');
+    Route::get('/entwicklung/docker/logs', [DockerController::class, 'logs'])->name('docker.logs');
+
     Route::get('/entwicklung/testpost', [DeveloperController::class, 'post'])->name('dev.testpost');
     Route::post('/entwicklung/testpost/slack', [DeveloperController::class, 'send'])->name('dev.testpost.send');
 
     Route::get('/entwicklung/projekte', [ProjectController::class, 'index'])->name('projects');
     Route::post('/entwicklung/projekte', [ProjectController::class, 'store'])->name('projects.store');
     Route::post('/entwicklung/projekte/scan', [ProjectController::class, 'scan'])->name('projects.scan');
+    Route::get('/entwicklung/projekte/ordner', [ProjectController::class, 'folders'])->name('projects.folders');
     Route::put('/entwicklung/projekte/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::delete('/entwicklung/projekte/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     Route::post('/entwicklung/projekte/{project}/start', [ProjectController::class, 'start'])->name('projects.start');

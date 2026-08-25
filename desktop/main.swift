@@ -147,7 +147,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         // the layout keys its app-window styling off this, no JS timing involved
         configuration.applicationNameForUserAgent = "TaktShell/1.0"
         configuration.userContentController.add(self, name: "notify")
-        configuration.userContentController.add(self, name: "pickFolder")
         configuration.userContentController.addUserScript(WKUserScript(
             source: Self.notificationBridge,
             injectionTime: .atDocumentStart,
@@ -258,12 +257,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     // MARK: notifications from the page
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-        if message.name == "pickFolder" {
-            pickFolder()
-
-            return
-        }
-
         guard let payload = message.body as? [String: Any] else { return }
 
         let content = UNMutableNotificationContent()
@@ -274,23 +267,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         UNUserNotificationCenter.current().add(
             UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         )
-    }
-
-    /// Opens the real Finder panel and hands the chosen folder back to the page.
-    private func pickFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Auswählen"
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
-
-        panel.beginSheetModal(for: window) { [weak self] response in
-            guard response == .OK, let path = panel.url?.path else { return }
-
-            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
-            self?.webView.evaluateJavaScript("window.takt?.folderPicked?.('\(escaped)')")
-        }
     }
 
     /// Web Notification API mapped onto the native centre.
@@ -310,8 +286,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
 
         Object.defineProperty(window, 'Notification', { value: NativeNotification, writable: false });
-        window.takt = window.takt ?? {};
-        window.takt.pickFolder = () => window.webkit?.messageHandlers?.pickFolder?.postMessage({});
         document.documentElement.dataset.shell = 'native';
     })();
     """
