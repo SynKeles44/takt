@@ -1,0 +1,1069 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --color-canvas: #060911;
+    --color-surface: rgb(255 255 255 / 0.035);
+    --color-raised: rgb(255 255 255 / 0.05);
+    --color-hover: rgb(255 255 255 / 0.1);
+    --color-panel: rgb(2 6 23 / 0.6);
+    --color-popover: #121a2b;
+    --color-line: rgb(255 255 255 / 0.1);
+    --color-line-strong: rgb(255 255 255 / 0.18);
+    --color-ink: #f1f5f9;
+    --color-muted: #94a3b8;
+    --color-faint: #64748b;
+    --color-dim: #475569;
+    --color-accent: #6366f1;
+    --color-accent-2: #8b5cf6;
+    --color-accent-text: #c7d2fe;
+    --color-accent-ink: #ffffff;
+    --color-work: #10b981;
+    --color-work-2: #34d399;
+    --color-work-text: #a7f3d0;
+    --color-work-ink: #052e1b;
+    --color-rest: #f59e0b;
+    --color-rest-2: #fbbf24;
+    --color-rest-text: #fde68a;
+    --color-rest-ink: #3a2506;
+    --color-danger: #f43f5e;
+    --color-danger-text: #fda4af;
+    --color-info: #22d3ee;
+    --color-info-text: #a5f3fc;
+}
+
+:root {
+    --ambient:
+        radial-gradient(900px 500px at 12% -8%, rgb(99 102 241 / 0.22), transparent 60%),
+        radial-gradient(760px 420px at 96% 4%, rgb(6 182 212 / 0.16), transparent 60%),
+        radial-gradient(900px 700px at 50% 108%, rgb(139 92 246 / 0.12), transparent 65%);
+    --brand-gradient: linear-gradient(100deg, #a78bfa, #818cf8 45%, #22d3ee);
+    --shadow-color: rgb(0 0 0 / 0.9);
+    --scheme: dark;
+}
+
+[data-theme='daylight'] {
+    --color-canvas: #f4f6fb;
+    --color-surface: #ffffff;
+    --color-raised: #f1f5f9;
+    --color-hover: #e2e8f0;
+    --color-panel: #f8fafc;
+    --color-popover: #ffffff;
+    --color-line: #e2e8f0;
+    --color-line-strong: #cbd5e1;
+    --color-ink: #0f172a;
+    --color-muted: #475569;
+    --color-faint: #64748b;
+    --color-dim: #94a3b8;
+    --color-accent: #4f46e5;
+    --color-accent-2: #7c3aed;
+    --color-accent-text: #4338ca;
+    --color-accent-ink: #ffffff;
+    --color-work: #059669;
+    --color-work-2: #10b981;
+    --color-work-text: #047857;
+    --color-work-ink: #ffffff;
+    --color-rest: #d97706;
+    --color-rest-2: #f59e0b;
+    --color-rest-text: #b45309;
+    --color-rest-ink: #ffffff;
+    --color-danger: #e11d48;
+    --color-danger-text: #be123c;
+    --color-info: #0891b2;
+    --color-info-text: #0e7490;
+
+    --ambient:
+        radial-gradient(900px 500px at 10% -10%, rgb(99 102 241 / 0.1), transparent 60%),
+        radial-gradient(700px 420px at 95% 0%, rgb(6 182 212 / 0.08), transparent 60%);
+    --brand-gradient: linear-gradient(100deg, #7c3aed, #4f46e5 45%, #0891b2);
+    --shadow-color: rgb(15 23 42 / 0.28);
+    --scheme: light;
+}
+
+[data-theme='onyx'] {
+    --color-canvas: #000000;
+    --color-surface: #0e0e10;
+    --color-raised: #17171a;
+    --color-hover: #232327;
+    --color-panel: #08080a;
+    --color-popover: #16161a;
+    --color-line: rgb(255 255 255 / 0.09);
+    --color-line-strong: rgb(255 255 255 / 0.2);
+    --color-ink: #fafafa;
+    --color-muted: #a1a1aa;
+    --color-faint: #71717a;
+    --color-dim: #52525b;
+    --color-accent: #fafafa;
+    --color-accent-2: #d4d4d8;
+    --color-accent-text: #e4e4e7;
+    --color-accent-ink: #09090b;
+    --color-work: #22c55e;
+    --color-work-2: #4ade80;
+    --color-work-text: #86efac;
+    --color-work-ink: #052e16;
+    --color-rest: #eab308;
+    --color-rest-2: #facc15;
+    --color-rest-text: #fde047;
+    --color-rest-ink: #1c1701;
+    --color-danger: #ef4444;
+    --color-danger-text: #fca5a5;
+    --color-info: #38bdf8;
+    --color-info-text: #7dd3fc;
+
+    --ambient: none;
+    --brand-gradient: linear-gradient(100deg, #ffffff, #a1a1aa);
+    --shadow-color: rgb(0 0 0 / 1);
+    --scheme: dark;
+}
+
+[data-theme='sage'] {
+    --color-canvas: #2f3a34;
+    --color-surface: #0f1613;
+    --color-raised: rgb(255 255 255 / 0.05);
+    --color-hover: rgb(255 255 255 / 0.1);
+    --color-panel: #0a100d;
+    --color-popover: #16211c;
+    --color-line: rgb(255 255 255 / 0.08);
+    --color-line-strong: rgb(255 255 255 / 0.16);
+    --color-ink: #eef4ef;
+    --color-muted: #a9b8ad;
+    --color-faint: #7d8d82;
+    --color-dim: #5d6b62;
+    --color-accent: #8fe39a;
+    --color-accent-2: #b7f0b6;
+    --color-accent-text: #a8ecad;
+    --color-accent-ink: #0b1a0f;
+    --color-work: #5bc47a;
+    --color-work-2: #86e39b;
+    --color-work-text: #b7f0b6;
+    --color-work-ink: #06210f;
+    --color-rest: #d9a95f;
+    --color-rest-2: #e8c07d;
+    --color-rest-text: #f0d7a8;
+    --color-rest-ink: #241703;
+    --color-danger: #ef8a83;
+    --color-danger-text: #f7b1ac;
+    --color-info: #5fc9b5;
+    --color-info-text: #a7ede0;
+
+    --ambient:
+        radial-gradient(900px 600px at 8% 112%, rgb(143 227 154 / 0.18), transparent 62%),
+        radial-gradient(700px 420px at 96% -10%, rgb(143 227 154 / 0.1), transparent 60%);
+    --brand-gradient: linear-gradient(100deg, #b7f0b6, #8fe39a 50%, #5bc7a0);
+    --shadow-color: rgb(0 0 0 / 0.85);
+    --scheme: dark;
+}
+
+
+/* ---------- shape layer: one block per design style ---------- */
+
+:root {
+    --root-size: 16px;
+    --radius-card: 1rem;
+    --radius-control: 0.75rem;
+    --radius-pill: 9999px;
+    --border-w: 1px;
+    --blur: 16px;
+    --pad-card: 1.25rem;
+    --pad-card-lg: 1.5rem;
+    --pad-row: 0.75rem 1rem;
+    --shadow-card: 0 20px 60px -30px var(--shadow-color);
+    --shadow-btn: 0 10px 30px -12px color-mix(in oklab, var(--color-accent) 45%, transparent);
+    --heading-transform: uppercase;
+    --heading-spacing: 0.08em;
+    --heading-size: 0.8125rem;
+    --heading-font: var(--font-sans);
+    --body-font: var(--font-sans);
+    --metric-font: var(--font-mono);
+    --metric-shadow: none;
+    --dot-radius: 9999px;
+    --radius-bar: 4px;
+    --surface-extra: none;
+    --surface-image: none;
+    --control-shadow: none;
+    --btn-image: linear-gradient(100deg, var(--color-accent), var(--color-accent-2));
+    --stack-gap: 1.25rem;
+}
+
+[data-style='minimal'] {
+    --root-size: 16.5px;
+    --radius-card: 0px;
+    --radius-control: 0px;
+    --radius-pill: 0px;
+    --radius-bar: 0px;
+    --border-w: 0px;
+    --blur: 0px;
+    --pad-card: 1.5rem;
+    --pad-card-lg: 1.9rem;
+    --pad-row: 0.85rem 0;
+    --shadow-card: none;
+    --shadow-btn: none;
+    --heading-transform: none;
+    --heading-spacing: -0.01em;
+    --heading-size: 0.95rem;
+    --surface-extra: inset 0 1px 0 0 var(--color-line-strong);
+    --stack-gap: 1.75rem;
+}
+
+[data-style='bento'] {
+    --radius-card: 1.6rem;
+    --radius-control: 1rem;
+    --radius-pill: 9999px;
+    --radius-bar: 8px;
+    --border-w: 0px;
+    --blur: 10px;
+    --pad-card: 1.35rem;
+    --pad-card-lg: 1.6rem;
+    --shadow-card: none;
+    --surface-image: linear-gradient(150deg, color-mix(in oklab, var(--color-accent) 9%, transparent), transparent 55%);
+    --stack-gap: 1rem;
+}
+
+[data-style='glassmorphism'] {
+    --radius-card: 1.35rem;
+    --radius-control: 1rem;
+    --border-w: 1px;
+    --blur: 34px;
+    --pad-card: 1.35rem;
+    --pad-card-lg: 1.65rem;
+    --shadow-card: 0 30px 80px -34px var(--shadow-color);
+    --surface-image: linear-gradient(140deg, color-mix(in oklab, var(--color-ink) 10%, transparent), transparent 60%);
+}
+
+[data-style='neumorphism'] {
+    --color-surface: var(--color-canvas);
+    --color-raised: var(--color-canvas);
+    --color-panel: var(--color-canvas);
+    --radius-card: 1.5rem;
+    --radius-control: 1rem;
+    --border-w: 0px;
+    --blur: 0px;
+    --pad-card: 1.4rem;
+    --pad-card-lg: 1.7rem;
+    --shadow-card:
+        7px 7px 16px color-mix(in oklab, black 40%, transparent),
+        -7px -7px 16px color-mix(in oklab, white 7%, transparent);
+    --control-shadow:
+        inset 4px 4px 10px color-mix(in oklab, black 35%, transparent),
+        inset -4px -4px 10px color-mix(in oklab, white 6%, transparent);
+    --shadow-btn: 5px 5px 12px color-mix(in oklab, black 35%, transparent);
+    --stack-gap: 1.6rem;
+}
+
+[data-style='skeuomorphism'] {
+    --radius-card: 0.9rem;
+    --radius-control: 0.55rem;
+    --border-w: 1px;
+    --blur: 0px;
+    --pad-card: 1.3rem;
+    --pad-card-lg: 1.55rem;
+    --shadow-card:
+        0 14px 30px -18px var(--shadow-color),
+        inset 0 1px 0 0 color-mix(in oklab, var(--color-ink) 16%, transparent);
+    --surface-image: linear-gradient(180deg, color-mix(in oklab, var(--color-ink) 8%, transparent), transparent 42%);
+    --control-shadow: inset 0 2px 4px color-mix(in oklab, black 30%, transparent);
+    --btn-image: linear-gradient(180deg, color-mix(in oklab, white 22%, var(--color-accent)), var(--color-accent-2));
+    --shadow-btn: 0 3px 0 0 color-mix(in oklab, black 45%, var(--color-accent-2)), 0 8px 16px -8px var(--shadow-color);
+    --heading-spacing: 0.06em;
+}
+
+[data-style='industrial'] {
+    --root-size: 15.5px;
+    --radius-card: 3px;
+    --radius-control: 2px;
+    --radius-pill: 2px;
+    --radius-bar: 0px;
+    --border-w: 2px;
+    --blur: 0px;
+    --pad-card: 1.05rem;
+    --pad-card-lg: 1.25rem;
+    --pad-row: 0.6rem 0.85rem;
+    --shadow-card: inset 0 0 0 1px color-mix(in oklab, var(--color-line) 55%, transparent);
+    --shadow-btn: none;
+    --heading-spacing: 0.18em;
+    --heading-size: 0.7rem;
+    --heading-font: var(--font-mono);
+    --metric-shadow: 0 0 16px color-mix(in oklab, currentColor 35%, transparent);
+    --dot-radius: 2px;
+    --stack-gap: 1rem;
+}
+
+[data-style='brutalist'] {
+    --radius-card: 0px;
+    --radius-control: 0px;
+    --radius-pill: 0px;
+    --radius-bar: 0px;
+    --border-w: 3px;
+    --blur: 0px;
+    --pad-card: 1.25rem;
+    --pad-card-lg: 1.5rem;
+    --shadow-card: 6px 6px 0 0 var(--color-line-strong);
+    --shadow-btn: 3px 3px 0 0 var(--color-line-strong);
+    --heading-spacing: 0.02em;
+    --heading-size: 0.95rem;
+    --dot-radius: 0px;
+    --stack-gap: 1.6rem;
+}
+
+[data-style='terminal'] {
+    --radius-card: 0px;
+    --radius-control: 0px;
+    --radius-pill: 0px;
+    --radius-bar: 0px;
+    --border-w: 1px;
+    --blur: 0px;
+    --pad-card: 1rem;
+    --pad-card-lg: 1.15rem;
+    --shadow-card: none;
+    --shadow-btn: none;
+    --heading-spacing: 0.14em;
+    --heading-font: var(--font-mono);
+    --body-font: var(--font-mono);
+    --dot-radius: 0px;
+    --btn-image: none;
+}
+
+[data-style='compact'] {
+    --root-size: 15px;
+    --radius-card: 0.6rem;
+    --radius-control: 0.45rem;
+    --radius-pill: 0.45rem;
+    --radius-bar: 3px;
+    --border-w: 1px;
+    --blur: 8px;
+    --pad-card: 0.85rem;
+    --pad-card-lg: 1rem;
+    --pad-row: 0.45rem 0.7rem;
+    --shadow-card: 0 8px 24px -18px var(--shadow-color);
+    --heading-size: 0.68rem;
+    --stack-gap: 0.8rem;
+}
+
+[data-theme='daylight'][data-style='industrial'] {
+    --metric-shadow: none;
+}
+
+html {
+    font-size: var(--root-size);
+    scrollbar-gutter: stable;
+}
+
+body {
+    font-family: var(--body-font);
+}
+
+/* ---------- component layer ---------- */
+
+@layer components {
+    .surface {
+        background-color: var(--color-surface);
+        background-image: var(--surface-image);
+        border: var(--border-w) solid var(--color-line);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card), var(--surface-extra);
+        padding: var(--pad-card);
+    }
+
+    @media (min-width: 640px) {
+        .surface {
+            padding: var(--pad-card-lg);
+        }
+    }
+
+    .surface-plain {
+        background-color: var(--color-surface);
+        background-image: var(--surface-image);
+        border: var(--border-w) solid var(--color-line);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card), var(--surface-extra);
+    }
+
+    .tile {
+        background-color: var(--color-raised);
+        border: var(--border-w) solid var(--color-line);
+        border-radius: var(--radius-control);
+    }
+
+    .row {
+        background-color: var(--color-raised);
+        border: var(--border-w) solid var(--color-line);
+        border-radius: var(--radius-control);
+        padding: var(--pad-row);
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .row-accent {
+        box-shadow: inset 3px 0 0 0 var(--row-accent, transparent);
+    }
+
+    .row-accent-danger { --row-accent: var(--color-danger); }
+    .row-accent-rest { --row-accent: var(--color-rest); }
+    .row-accent-accent { --row-accent: var(--color-accent); }
+    .row-accent-info { --row-accent: var(--color-info); }
+    .row-accent-work { --row-accent: var(--color-work); }
+    .row-accent-neutral { --row-accent: var(--color-line-strong); }
+
+    .row:hover {
+        background-color: var(--color-hover);
+        border-color: var(--color-line-strong);
+    }
+
+    .control {
+        width: 100%;
+        background-color: var(--color-panel);
+        border: var(--border-w) solid var(--color-line);
+        border-radius: var(--radius-control);
+        padding: 0.62rem 0.85rem;
+        font-size: 0.875rem;
+        color: var(--color-ink);
+        outline: none;
+        box-shadow: var(--control-shadow);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .control::placeholder {
+        color: var(--color-faint);
+    }
+
+    /*
+     * Selects and number fields keep their native look otherwise: a select renders at the
+     * system's own height and a spinner shrinks the field, so they end up smaller than the
+     * text inputs next to them.
+     */
+    select.control {
+        appearance: none;
+        padding-right: 2.4rem;
+        background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+            linear-gradient(135deg, currentColor 50%, transparent 50%);
+        background-position: right 1.05rem center, right 0.8rem center;
+        background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+        background-repeat: no-repeat;
+        cursor: pointer;
+    }
+
+    .control::-webkit-inner-spin-button,
+    .control::-webkit-outer-spin-button {
+        appearance: none;
+        margin: 0;
+    }
+
+    .control:focus {
+        border-color: color-mix(in oklab, var(--color-accent) 60%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 22%, transparent);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--radius-control);
+        border: var(--border-w) solid transparent;
+        padding: 0.62rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.2;
+        transition: filter 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn:active {
+        transform: scale(0.99);
+    }
+
+    .btn:focus-visible {
+        outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, transparent);
+        outline-offset: 2px;
+    }
+
+    .btn-lg {
+        padding: 0.8rem 1.25rem;
+    }
+
+    .btn-primary {
+        background-color: var(--color-accent);
+        background-image: var(--btn-image);
+        color: var(--color-accent-ink);
+        box-shadow: var(--shadow-btn);
+    }
+
+    .btn-work {
+        background-color: var(--color-work);
+        color: var(--color-work-ink);
+        box-shadow: var(--shadow-btn);
+    }
+
+    .btn-rest {
+        background-color: var(--color-rest);
+        color: var(--color-rest-ink);
+        box-shadow: var(--shadow-btn);
+    }
+
+    .btn-primary:hover,
+    .btn-work:hover,
+    .btn-rest:hover {
+        filter: brightness(1.08);
+    }
+
+    .btn-ghost {
+        background-color: var(--color-raised);
+        border-color: var(--color-line);
+        color: var(--color-ink);
+    }
+
+    .btn-ghost:hover {
+        background-color: var(--color-hover);
+    }
+
+    .btn-danger {
+        background-color: color-mix(in oklab, var(--color-danger) 14%, transparent);
+        border-color: color-mix(in oklab, var(--color-danger) 35%, transparent);
+        color: var(--color-danger-text);
+    }
+
+    .btn-danger:hover {
+        background-color: color-mix(in oklab, var(--color-danger) 24%, transparent);
+    }
+
+    .btn-icon {
+        padding: 0.5rem;
+        background-color: var(--color-raised);
+        border-color: var(--color-line);
+        color: var(--color-muted);
+    }
+
+    .btn-icon:hover {
+        background-color: var(--color-hover);
+        color: var(--color-ink);
+    }
+
+    .icon-action {
+        display: inline-flex;
+        padding: 0.35rem;
+        border-radius: var(--radius-control);
+        color: var(--color-muted);
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .icon-action:hover {
+        background-color: var(--color-hover);
+        color: var(--color-ink);
+    }
+
+    .icon-action-danger:hover {
+        background-color: color-mix(in oklab, var(--color-danger) 18%, transparent);
+        color: var(--color-danger-text);
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        border-radius: var(--radius-control);
+        border: var(--border-w) solid transparent;
+        padding: 0.55rem 0.7rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-muted);
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-item:hover {
+        background-color: var(--color-raised);
+        color: var(--color-ink);
+    }
+
+    .nav-item-active {
+        background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
+        border-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+        color: var(--color-accent-text);
+    }
+
+    .avatar {
+        display: grid;
+        place-items: center;
+        border-radius: var(--radius-control);
+        background-image: linear-gradient(140deg, var(--color-accent), var(--color-accent-2));
+        color: var(--color-accent-ink);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        border-radius: var(--radius-pill);
+        border: var(--border-w) solid var(--color-line);
+        background-color: var(--color-raised);
+        padding: 0.2rem 0.55rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--color-muted);
+    }
+
+    .heading {
+        font-family: var(--heading-font);
+        font-size: var(--heading-size);
+        font-weight: 600;
+        text-transform: var(--heading-transform);
+        letter-spacing: var(--heading-spacing);
+        color: var(--color-muted);
+    }
+
+    .metric {
+        font-family: var(--metric-font);
+        font-variant-numeric: tabular-nums;
+        text-shadow: var(--metric-shadow);
+    }
+
+    .toast {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        max-width: min(26rem, 100%);
+        border: var(--border-w) solid color-mix(in oklab, var(--color-work) 35%, transparent);
+        border-radius: var(--radius-control);
+        background-color: color-mix(in oklab, var(--color-work) 14%, var(--color-surface));
+        box-shadow: 0 18px 45px -20px var(--shadow-color);
+        padding: 0.7rem 0.95rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-work-text);
+        backdrop-filter: blur(var(--blur));
+        animation: wb-toast 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .nav-shell {
+        --nav-w: 15.5rem;
+    }
+
+    /*
+     * A popover floats over the page, so it needs an opaque ground of its own —
+     * --color-surface is nearly transparent in the dark themes.
+     */
+    .nav-menu {
+        background-color: var(--color-popover);
+        border: var(--border-w) solid var(--color-line);
+        border-radius: var(--radius-card);
+        box-shadow: 0 26px 55px -22px var(--shadow-color);
+    }
+
+    /*
+     * The entrance animation on main's children keeps filling, so every card owns a
+     * stacking context and a later card would paint over a popover in an earlier one.
+     * A card that hosts a menu is raised above its siblings.
+     */
+    .surface:has([data-menu-wrap]),
+    .surface-plain:has([data-menu-wrap]) {
+        position: relative;
+        z-index: 30;
+    }
+
+    .nav-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        border-radius: var(--radius-control);
+        padding: 0.5rem 0.65rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-muted);
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-menu-item:hover {
+        background-color: var(--color-hover);
+        color: var(--color-ink);
+    }
+
+    .nav-menu-item-stacked {
+        align-items: flex-start;
+        padding-block: 0.55rem;
+    }
+
+    .nav-menu-item-active {
+        color: var(--color-accent-text);
+    }
+
+    /* both toggles are driven from here, so no utility can outrank the state */
+    .nav-expand,
+    .nav-collapse {
+        display: none;
+    }
+
+    @media (width >= 64rem) {
+        .nav-shell {
+            grid-template-columns: var(--nav-w) 1fr;
+            transition: grid-template-columns 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        /* the rail clips the labels while it narrows instead of letting them jump out */
+        /*
+         * Nothing here moves horizontally when the rail collapses: the aside padding,
+         * the brand offset and the item padding are the same in both states, so only
+         * the label boxes shrink and the rail's right edge travels. A logo that never
+         * moves cannot stutter.
+         */
+        .nav-aside {
+            padding-inline: 0.75rem;
+        }
+
+        /*
+         * One shared vertical axis at 44px from the rail's edge: every glyph — logo,
+         * nav icon, search icon, avatar — is centred on it in BOTH states, so
+         * collapsing moves nothing but the label boxes and the rail's right edge.
+         */
+        .nav-brand {
+            padding-inline-start: 0.875rem;
+        }
+
+        .nav-item,
+        .nav-search {
+            padding-block: 0.5rem;
+        }
+
+        .nav-item {
+            padding-inline: 1.36rem;
+        }
+
+        .nav-search {
+            padding-inline: 1.4375rem;
+        }
+
+        .nav-account-trigger {
+            padding: 0.25rem 0.875rem 0.25rem 0.875rem;
+        }
+
+        .nav-collapse {
+            display: grid;
+        }
+
+        /*
+         * Every inner change is continuous: the labels fade, the icons glide to the
+         * centre through padding. Nothing switches position or alignment abruptly,
+         * which is what made the collapse look like it stuttered.
+         */
+        /*
+         * The label box itself shrinks (max-width, not display), so the icon glides
+         * to the centre of the rail instead of snapping there.
+         */
+        .nav-label {
+            max-inline-size: 12rem;
+            overflow: hidden;
+            transition: max-inline-size 0.26s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.16s ease;
+        }
+
+        .nav-item,
+        .nav-search {
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .nav-brand {
+            padding-inline-start: 0.875rem;
+        }
+
+        .nav-item {
+            min-block-size: 2.54rem;
+        }
+
+        .nav-brand {
+            min-block-size: 2.36rem;
+        }
+
+        .nav-toggle svg,
+        .nav-logo,
+        .nav-expand {
+            transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.18s ease, filter 0.18s ease;
+        }
+
+        :root[data-nav='collapsed'] .nav-shell {
+            --nav-w: 5.5rem;
+        }
+
+        :root[data-nav='collapsed'] .nav-label {
+            max-inline-size: 0;
+            opacity: 0;
+        }
+
+        /* collapsed: the toggle lives on top of the logo, Personio style */
+        :root[data-nav='collapsed'] .nav-collapse {
+            display: none;
+        }
+
+        :root[data-nav='collapsed'] .nav-expand {
+            display: grid;
+            opacity: 0;
+        }
+
+        :root[data-nav='collapsed'] .nav-logo-slot:hover .nav-logo {
+            opacity: 0.2;
+            filter: grayscale(1);
+        }
+
+        :root[data-nav='collapsed'] .nav-logo-slot:hover .nav-expand,
+        :root[data-nav='collapsed'] .nav-expand:focus-visible {
+            opacity: 1;
+        }
+    }
+
+    .dialog-panel {
+        background-color: var(--color-popover);
+        overflow: hidden;
+        box-shadow: 0 40px 80px -32px var(--shadow-color), 0 0 0 1px color-mix(in oklab, var(--color-line) 60%, transparent);
+        animation: wb-dialog 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .check {
+        display: grid;
+        place-items: center;
+        inline-size: 1.25rem;
+        block-size: 1.25rem;
+        flex: none;
+        border: 1px solid var(--color-line-strong);
+        border-radius: var(--radius-control);
+        color: transparent;
+        transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
+    }
+
+    .check:hover {
+        border-color: var(--color-work);
+        color: color-mix(in oklab, var(--color-work-text) 55%, transparent);
+    }
+
+    .check:active {
+        transform: scale(0.88);
+    }
+
+    [data-done='1'] > * .check,
+    [data-done='1'] .check {
+        border-color: var(--color-work);
+        background-color: var(--color-work);
+        color: var(--color-work-ink);
+    }
+
+    [data-done='1'] [data-done-strike] {
+        color: var(--color-faint);
+        text-decoration-line: line-through;
+    }
+
+    [data-done='1'] [data-done-hide] {
+        display: none;
+    }
+
+    [data-item] {
+        transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    [data-item][data-done='1'] {
+        opacity: 0.55;
+    }
+
+    [data-item][data-leaving] {
+        opacity: 0;
+        transform: translateX(0.75rem);
+    }
+
+    .stack > * + * {
+        margin-top: var(--stack-gap);
+    }
+
+    .stack-grid {
+        gap: var(--stack-gap);
+    }
+
+    /* grid children default to min-width:auto and would push past the viewport */
+    .stack-grid > * {
+        min-inline-size: 0;
+    }
+
+    .dot {
+        border-radius: var(--dot-radius);
+    }
+
+    .bar {
+        border-radius: var(--radius-bar);
+    }
+
+    .label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-faint);
+    }
+
+    .field-error {
+        margin-top: 0.4rem;
+        font-size: 0.75rem;
+        color: var(--color-danger-text);
+    }
+
+    [data-style='terminal'] .heading::before {
+        content: '[ ';
+    }
+
+    [data-style='terminal'] .heading::after {
+        content: ' ]';
+    }
+
+    [data-style='minimal'] .heading {
+        color: var(--color-ink);
+    }
+
+    [data-style='brutalist'] .heading {
+        color: var(--color-ink);
+        font-weight: 800;
+    }
+}
+
+html {
+    color-scheme: var(--scheme);
+}
+
+body {
+    background-color: var(--color-canvas);
+    background-image: var(--ambient);
+    background-attachment: fixed;
+}
+
+.brand-gradient {
+    background-image: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.pulse-ring::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
+    opacity: 0.45;
+    animation: wb-pulse 2.4s ease-out infinite;
+}
+
+@keyframes wb-pulse {
+    0% { transform: scale(0.75); opacity: 0.55; }
+    70% { transform: scale(1.5); opacity: 0; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes wb-toast {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes wb-dialog {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes wb-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.rise {
+    animation: wb-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* entrance for page content, lightly staggered */
+main > *,
+main > .grid > * {
+    animation: wb-rise 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+main > .grid > *:nth-child(2) { animation-delay: 40ms; }
+main > .grid > *:nth-child(3) { animation-delay: 80ms; }
+main > .grid > *:nth-child(4) { animation-delay: 120ms; }
+
+/* smooth open/close for the collapsible blocks */
+@supports (interpolate-size: allow-keywords) {
+    :root {
+        interpolate-size: allow-keywords;
+    }
+
+    details::details-content {
+        height: 0;
+        overflow: hidden;
+        transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1), content-visibility 0.28s allow-discrete;
+    }
+
+    details[open]::details-content {
+        height: auto;
+    }
+}
+
+details summary {
+    transition: background-color 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+input[type='date'],
+input[type='time'] {
+    color-scheme: var(--scheme);
+}
+
+::selection {
+    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+}
+
+/*
+ * App-window overrides. Deliberately unlayered — unlayered CSS outranks every
+ * Tailwind layer, which the padding rules below need.
+ *
+ * The shell behaves like an app, not like a document: the sidebar is a fixed column,
+ * only the content scrolls (a sticky element inside a grid track is what made
+ * scrolling shiver in WebKit), no reserved scrollbar gutter, no visible scrollbars,
+ * and room at the top for the window buttons that float over the surface.
+ */
+:root[data-shell='native'] {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+}
+
+:root[data-shell='native'] body {
+    overflow: hidden;
+}
+
+:root[data-shell='native'] .nav-aside {
+    position: static;
+    padding-top: 3rem;
+    backdrop-filter: none;
+}
+
+:root[data-shell='native'] ::-webkit-scrollbar {
+    inline-size: 0;
+    block-size: 0;
+}
+
+@media (width >= 64rem) {
+    :root[data-shell='native'] .nav-shell {
+        block-size: 100dvh;
+    }
+
+    :root[data-shell='native'] .nav-main {
+        block-size: 100dvh;
+        padding-top: 3.5rem;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
