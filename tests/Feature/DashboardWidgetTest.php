@@ -148,6 +148,33 @@ class DashboardWidgetTest extends TestCase
             ->assertSee(route('dashboard.arrange'), escape: false);
     }
 
+    public function test_a_single_widget_can_be_rendered_for_the_edit_mode(): void
+    {
+        // this is what a freshly pushed-in tile fetches, so it shows content before it is saved
+        $this->get(route('dashboard.widget', ['widget' => Widget::MonthSummary->value]))
+            ->assertOk()
+            ->assertSee(__('app.widget.month_summary.days'))
+            ->assertDontSee('<html', escape: false);
+    }
+
+    public function test_the_widget_preview_refuses_an_unknown_key_and_needs_a_login(): void
+    {
+        $this->get(route('dashboard.widget', ['widget' => 'nonsense']))->assertNotFound();
+
+        auth()->logout();
+
+        $this->get(route('dashboard.widget', ['widget' => Widget::Timer->value]))->assertRedirect(route('login'));
+    }
+
+    public function test_the_board_knows_where_to_fetch_a_widget_and_how_to_cancel(): void
+    {
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-widget-url', escape: false)
+            ->assertSee('data-board-cancel', escape: false)
+            ->assertSee(__('app.widget.discard'));
+    }
+
     public function test_every_widget_renders_on_its_own(): void
     {
         foreach (Widget::cases() as $widget) {

@@ -10,6 +10,7 @@ use App\Services\Dashboard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 /**
@@ -40,6 +41,17 @@ class DashboardLayoutController extends Controller
         }
 
         return response()->json(['saved' => true]);
+    }
+
+    /**
+     * One widget, rendered on its own. The edit mode pulls this when a widget is pushed onto
+     * the board, so a fresh tile shows its real content long before anything is stored.
+     */
+    public function preview(Request $request, Dashboard $dashboard, Widget $widget): Response
+    {
+        $user = $request->user();
+
+        return response()->view($widget->view(), $dashboard->data($widget, $user));
     }
 
     public function reset(Request $request, Dashboard $dashboard): RedirectResponse

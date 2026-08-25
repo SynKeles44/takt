@@ -2,8 +2,8 @@
  * The dashboard in edit mode, modelled on the iOS home screen: tiles wiggle, a minus badge
  * takes one off, a tile can be dragged to a new place, and the gallery on the right holds
  * what is not on the board. Nothing is stored while arranging: "Fertig" writes the whole
- * layout at once and pulls the page back in place, so a widget that was just pushed in stays
- * marked until exactly that moment.
+ * layout at once, the x next to the gallery throws the changes away, and a widget that was
+ * just pushed in shows its real content — fetched on its own — while it stays marked as new.
  *
  * Every listener is bound to the document once, so a region swap never loses the wiring.
  */
@@ -38,23 +38,51 @@ export const createBoard = ({ swapRegions, toast }) => {
         body: JSON.stringify({ widgets: layout() }),
     });
 
+    /** Pulls the page back in place, so the board shows exactly what the server has. */
+    const reload = () => fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then((response) => response.text())
+        .then((html) => {
+            swapRegions(html);
+
+            // the tiles are new nodes after the swap; letting them fly in again looks like
+            // the page rebuilt itself, which is exactly what it should not look like
+            slots().forEach((slot) => {
+                slot.style.animation = 'none';
+            });
+
+            apply();
+        });
+
     /** Everything stays local while arranging; this is the one moment it is written. */
     const commit = () => {
         if (! dirty) return;
 
+        const label = root()?.dataset.savedLabel ?? '';
+
         dirty = false;
 
         put()
-            .then(() => fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }))
-            .then((response) => response.text())
-            .then((html) => {
-                swapRegions(html);
-                apply();
-                toast(root()?.dataset.savedLabel ?? '');
-            })
+            .then(reload)
+            .then(() => toast(label))
             .catch(() => {
                 dirty = true;
             });
+    };
+
+    /** The x throws the arrangement away — nothing was stored, so the server still knows. */
+    const discard = () => {
+        const label = root()?.dataset.discardedLabel ?? '';
+        const changed = dirty;
+
+        dirty = false;
+        editing = false;
+
+        // leave the mode at once — waiting for the server keeps the wobble on screen
+        apply();
+
+        if (! changed) return;
+
+        reload().then(() => toast(label));
     };
 
     // MARK: FLIP — a tile that moved slides to its new place instead of jumping
@@ -210,6 +238,7 @@ export const createBoard = ({ swapRegions, toast }) => {
         slot.style.setProperty('--widget-rows', chip.dataset.rows);
         const label = chip.querySelector('span span')?.textContent?.trim() ?? '';
 
+        slot.dataset.label = label;
         slot.innerHTML = `<div class="widget-body"><div class="card grid h-full place-items-center">
             <span class="text-xs text-faint">${label}</span>
         </div></div>`;
@@ -218,6 +247,29 @@ export const createBoard = ({ swapRegions, toast }) => {
             grid().insertBefore(slot, before);
             chip.remove();
         });
+
+        fill(slot);
+    };
+
+    /** The widget's own markup, rendered by the server without storing anything. */
+    const fill = (slot) => {
+        const template = root()?.dataset.widgetUrl;
+
+        if (! template) return;
+
+        fetch(template.replace('__widget__', slot.dataset.widget), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then((response) => (response.ok ? response.text() : Promise.reject()))
+            .then((html) => {
+                const body = slot.querySelector('.widget-body');
+
+                if (! body) return;
+
+                body.innerHTML = html;
+                apply();
+            })
+            .catch(() => {});
     };
 
     /** A removed tile goes straight back into the gallery, so it can come right back. */
@@ -253,8 +305,8 @@ export const createBoard = ({ swapRegions, toast }) => {
             return;
         }
 
-        if (event.target.closest('[data-board-close]')) {
-            setEditing(false);
+        if (event.target.closest('[data-board-cancel]')) {
+            discard();
 
             return;
         }
@@ -319,7 +371,7 @@ export const createBoard = ({ swapRegions, toast }) => {
     window.addEventListener('pointercancel', endDrag);
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && editing) setEditing(false);
+        if (event.key === 'Escape' && editing) discard();
     });
 
     // leaving the page with an unsaved arrangement still writes it, without holding it up

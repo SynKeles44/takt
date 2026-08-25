@@ -1,7 +1,9 @@
 <x-app-layout :title="__('app.nav.dashboard')">
     <div data-board
          data-arrange-url="{{ route('dashboard.arrange') }}"
-         data-saved-label="{{ __('app.widget.saved') }}">
+         data-widget-url="{{ route('dashboard.widget', ['widget' => '__widget__']) }}"
+         data-saved-label="{{ __('app.widget.saved') }}"
+         data-discarded-label="{{ __('app.widget.discarded') }}">
 
         <div class="mb-4 flex items-center justify-end gap-2">
             <span class="pill hidden text-[10px]" data-board-badge>{{ __('app.widget.editing') }}</span>
@@ -79,7 +81,8 @@
                     <p class="mt-0.5 text-[11px] leading-snug text-faint">{{ __('app.widget.drawer_hint') }}</p>
                 </div>
 
-                <button type="button" class="icon-action shrink-0" data-board-close aria-label="{{ __('app.palette.close') }}">
+                <button type="button" class="icon-action shrink-0" data-board-cancel
+                        aria-label="{{ __('app.widget.discard') }}" title="{{ __('app.widget.discard') }}">
                     <x-icon name="close" class="size-4"/>
                 </button>
             </div>

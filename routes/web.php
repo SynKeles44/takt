@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::put('/dashboard/anordnung', [DashboardLayoutController::class, 'arrange'])->name('dashboard.arrange');
+    Route::get('/dashboard/widget/{widget}', [DashboardLayoutController::class, 'preview'])->name('dashboard.widget');
     Route::post('/dashboard/anordnung/zuruecksetzen', [DashboardLayoutController::class, 'reset'])->name('dashboard.reset');
     Route::get('/verlauf', HistoryController::class)->name('history');
 

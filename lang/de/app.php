@@ -550,6 +550,8 @@ return [
         'customize' => 'Dashboard anpassen',
         'editing' => 'Bearbeiten',
         'saved' => 'Dashboard gespeichert.',
+        'discard' => 'Änderungen verwerfen',
+        'discarded' => 'Änderungen verworfen.',
         'drag' => 'Ziehen zum Verschieben',
         'narrower' => 'Schmaler',
         'wider' => 'Breiter',

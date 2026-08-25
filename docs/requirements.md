@@ -626,8 +626,13 @@ A section for the programmer's day, reachable as its own sidebar entry with four
 - [x] Nothing is stored while arranging: "Fertig" writes the whole layout at once and pulls the
       page back in place through the region swap, never a reload. Leaving the page with an
       unsaved arrangement still writes it.
-- [x] A widget pushed onto the board stays marked — dashed, softly pulsing, with its name on
-      the placeholder — until exactly that save happens.
+- [x] A widget pushed onto the board shows its real content right away — rendered on its own
+      by the server, without storing anything — and stays marked (dashed, softly pulsing)
+      until the save happens.
+- [x] "Fertig" saves, the x next to the gallery throws the arrangement away and escape does
+      the same; the mode is left the moment it is clicked, not when the server answers.
+- [x] The gallery takes only the width it needs; the board keeps enough room that no tile is
+      squeezed into a column of headlines, and the tool pill never sits on a widget's content.
 - [x] Until something is arranged, the dashboard is the default set — timer, key figures, week
       chart, day note, tasks, booking form, entries — and it can be restored at any time. An
       empty board stays empty, because that was a decision, not an untouched default.

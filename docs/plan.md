@@ -379,3 +379,15 @@ Requirement ids refer to `requirements.md`.
       into the shell script for exactly that reason.
 - [x] 13 tests, with the hosts file and the `.env` as options so the machine's own files are
       never touched.
+
+## Phase 46 — The edit mode, after using it (R25)
+
+- [x] `dashboard.widget` renders one widget on its own, so a pushed-in tile fetches its real
+      content instead of showing a named placeholder until the save.
+- [x] The x is a cancel: it reloads the board from the server and stores nothing (verified in
+      the browser — no PUT leaves), escape does the same, "Fertig" is the only save.
+- [x] Leaving the mode applies at once instead of after the round trip, and the swapped-in
+      tiles skip their entrance animation, which is what made the page look like it rebuilt.
+- [x] The gallery went from 19.5rem to 16.5rem and the board's padding with it: at 1440 px the
+      board keeps ~1000 px instead of ~700, where the timer's own heading wrapped.
+- [x] Room for the tool pill inside a tile, and a badge that lifts above its neighbours.

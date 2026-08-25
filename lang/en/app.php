@@ -550,6 +550,8 @@ return [
         'customize' => 'Customise dashboard',
         'editing' => 'Editing',
         'saved' => 'Dashboard saved.',
+        'discard' => 'Discard changes',
+        'discarded' => 'Changes discarded.',
         'drag' => 'Drag to move',
         'narrower' => 'Narrower',
         'wider' => 'Wider',
