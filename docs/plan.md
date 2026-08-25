@@ -472,3 +472,15 @@ Requirement ids refer to `requirements.md`.
 - [x] One measurement trap worth writing down: a background tab never advances a transition, so
       `getComputedStyle(...).opacity` read 0 for a panel that was in fact shown. Verified by
       switching the transition off.
+
+## Phase 53 — Where the +25 h came from (R33, R34)
+
+- [x] Traced instead of guessed: every generated week hit exactly 40 h over exactly five days,
+      so the balance had to be right — and it was. The plus came from three days the generator
+      had booked on public holidays (1 May, 14 May, 25 May), worth exactly 22 h. A holiday has
+      no target, so work on it is overtime; the balance was correct, the data was not.
+- [x] `WorkHistoryGenerator` takes the exempt dates and skips them; a week with a holiday
+      covers fewer days and its target shrinks with it. A test generates across Ascension Day
+      and Whit Monday with `--balance 0` and asserts the balance is exactly zero.
+- [x] The "current week" / "current month" buttons stay in place and go inactive, in the
+      history, the calendar and the dashboard's week chart.

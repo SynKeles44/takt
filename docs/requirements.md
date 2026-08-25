@@ -724,3 +724,15 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       change; the app bundle is rebuilt afterwards, because it carries the address.
 - [x] A login item that belongs to another copy of Takt is neither used nor taken over
       silently — `make`, the app bundle and `takt:autostart` all check where it points.
+
+## R33 Navigation that stays put
+
+- [x] A "back to now" button (current week, current month) is always there and simply inactive
+      while it has nothing to do — a button that appears and disappears moves its neighbours.
+
+## R34 Generated history respects the calendar
+
+- [x] `takt:history` skips public holidays and absences. Such a day carries no target, so work
+      booked on it is overtime by definition — which is right for real work and wrong for
+      generated data: it left the balance permanently in the plus (measured: +22 h from three
+      holidays in one generated range).

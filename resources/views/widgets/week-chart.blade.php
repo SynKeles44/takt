@@ -21,11 +21,13 @@
                 <x-icon name="chevron-left" class="size-4"/>
             </a>
 
-            @unless ($isCurrentWeek)
+            @if ($isCurrentWeek)
+                <span class="btn btn-icon is-current px-2.5 text-xs">{{ __('app.week.current') }}</span>
+            @else
                 <a href="{{ route('dashboard') }}" class="btn btn-icon border-accent/30 bg-accent/10 px-2.5 text-xs text-accent-text">
                     {{ __('app.week.current') }}
                 </a>
-            @endunless
+            @endif
 
             <a href="{{ route('dashboard', ['woche' => $nextWeek]) }}" class="btn btn-icon"
                aria-label="{{ __('app.week.next') }}" title="{{ __('app.week.next') }}">

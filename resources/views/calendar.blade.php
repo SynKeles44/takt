@@ -24,9 +24,11 @@
                     <x-icon name="chevron-left" class="size-4"/>
                 </a>
 
-                @unless ($isCurrentMonth)
+                @if ($isCurrentMonth)
+                    <span class="btn btn-ghost is-current text-xs">{{ __('app.calendar.today') }}</span>
+                @else
                     <a href="{{ route('calendar') }}" class="btn btn-ghost text-xs">{{ __('app.calendar.today') }}</a>
-                @endunless
+                @endif
 
                 <a href="{{ route('calendar', ['monat' => $nextMonth]) }}" class="btn btn-icon" aria-label="{{ __('app.calendar.next') }}">
                     <x-icon name="chevron-right" class="size-4"/>

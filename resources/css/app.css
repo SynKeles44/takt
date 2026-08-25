@@ -1589,6 +1589,16 @@ body {
     background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
 }
 
+/*
+ * A "back to now" button stays in place when it has nothing to do: it is simply inactive,
+ * because a button that appears and disappears moves everything next to it.
+ */
+.is-current {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+}
+
 /* days marked with the mouse, before the absence window opens */
 [data-day][data-selected] {
     border-color: color-mix(in oklab, var(--color-accent) 65%, transparent) !important;

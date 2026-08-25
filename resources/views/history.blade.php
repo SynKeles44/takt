@@ -26,9 +26,12 @@
                     <x-icon name="chevron-left" class="size-4"/>
                 </a>
 
-                @unless ($isCurrentWeek)
+                {{-- always here, only inactive: a button that appears moves its neighbours --}}
+                @if ($isCurrentWeek)
+                    <span class="{{ $navLink }} is-current">{{ __('app.week.current') }}</span>
+                @else
                     <a href="{{ route('history') }}" class="{{ $navLink }}">{{ __('app.week.current') }}</a>
-                @endunless
+                @endif
 
                 <a href="{{ route('history', ['from' => $nextWeek]) }}" class="{{ $navLink }}" aria-label="{{ __('app.week.next') }}">
                     <x-icon name="chevron-right" class="size-4"/>
