@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/entwicklung', [DeveloperController::class, 'index'])->name('dev');
     Route::post('/entwicklung/reviews', [DeveloperController::class, 'refreshReviews'])->name('dev.reviews');
     Route::get('/entwicklung/testpost', [DeveloperController::class, 'post'])->name('dev.testpost');
+    Route::post('/entwicklung/testpost/slack', [DeveloperController::class, 'send'])->name('dev.testpost.send');
 
     Route::get('/entwicklung/projekte', [ProjectController::class, 'index'])->name('projects');
     Route::post('/entwicklung/projekte', [ProjectController::class, 'store'])->name('projects.store');

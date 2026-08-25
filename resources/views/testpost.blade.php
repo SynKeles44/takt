@@ -44,6 +44,12 @@
             </form>
 
             <div class="mt-5 space-y-1.5 border-t border-line pt-4 text-[11px] text-faint">
+                @unless ($slackReady)
+                    <p>{{ __('app.slack.setup_note') }}
+                        <a href="{{ route('settings') }}" class="text-accent-text hover:underline">{{ __('app.nav.settings') }}</a>
+                    </p>
+                @endunless
+
                 <p>{{ __('app.dev.templates_note') }}</p>
                 <p class="metric break-all">{{ $defaults['ticket'] }}</p>
                 <p class="metric break-all">{{ $defaults['pr'] }}</p>
@@ -56,12 +62,44 @@
                 <h2 class="heading">{{ __('app.dev.preview') }}</h2>
 
                 @if ($result['missing'] === [])
-                    <button type="button" class="btn btn-primary text-xs" data-copy="{{ $result['text'] }}">
-                        <x-icon name="paperclip" class="size-4"/>
-                        {{ __('app.dev.copy_post') }}
-                    </button>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" class="btn btn-ghost text-xs" data-copy="{{ $result['text'] }}"
+                                data-copy-label="{{ __('app.dev.copied') }}">
+                            <x-icon name="paperclip" class="size-4"/>
+                            {{ __('app.dev.copy_post') }}
+                        </button>
+
+                        @if ($slackReady)
+                            <form method="POST" action="{{ route('dev.testpost.send') }}"
+                                  data-confirm="{{ __('app.slack.confirm') }}" data-live>
+                                @csrf
+                                <input type="hidden" name="ticket" value="{{ $input['ticket'] ?? '' }}">
+                                <input type="hidden" name="pr" value="{{ $input['pr'] ?? '' }}">
+                                <input type="hidden" name="instance" value="{{ $input['instance'] ?? '' }}">
+
+                                <button type="submit" class="btn btn-primary text-xs">
+                                    <x-icon name="send" class="size-4"/>
+                                    {{ __('app.slack.send') }}
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 @endif
             </div>
+
+            @error('slack')
+                <p class="mt-4 rounded-[var(--radius-control)] border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger-text">
+                    {{ $message }}
+                </p>
+            @enderror
+
+            @if (session('slack_permalink'))
+                <a href="{{ session('slack_permalink') }}" target="_blank"
+                   class="row mt-4 flex items-center gap-2 px-3 py-2 text-xs text-accent-text hover:text-ink">
+                    <x-icon name="external" class="size-3.5 shrink-0"/>
+                    {{ __('app.slack.open_message') }}
+                </a>
+            @endif
 
             <pre class="metric mt-4 whitespace-pre-wrap break-all rounded-[var(--radius-control)] border border-line bg-panel p-4 text-xs leading-relaxed text-ink">{{ $result['text'] }}</pre>
 

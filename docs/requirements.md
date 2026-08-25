@@ -585,6 +585,13 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       whole block copies with one click.
 - [x] Three fields only: ticket, PR, instance. The instance field carries the id and, behind
       a slash, the path (`b63d4865/mod/zeiterfassung/?fn=…`).
+- [x] The block posts straight into Slack, under the user's own name and avatar — which needs a
+      user token (`xoxp-`) with `chat:write`; a bot token would post as an app. Token and
+      channel live in the settings, the token stored encrypted and never rendered back.
+- [x] The button only appears once both are set; posting asks for confirmation first (a post
+      cannot be taken back) and links to the message afterwards. A rejected token, an unknown
+      channel, a channel the user has not joined, a missing scope or an unreachable API are
+      reported in plain words, and an incomplete block is never sent.
 
 ### R24.6 Registering a project
 

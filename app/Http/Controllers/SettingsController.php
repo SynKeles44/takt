@@ -99,6 +99,8 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'github_token' => ['nullable', 'string', 'max:255'],
+            'slack_token' => ['nullable', 'string', 'max:255'],
+            'slack_channel' => ['nullable', 'string', 'max:120'],
             'ticket_url_template' => ['nullable', 'string', 'max:255'],
             'pr_url_template' => ['nullable', 'string', 'max:255'],
             'instance_url_template' => ['nullable', 'string', 'max:255'],
@@ -108,6 +110,7 @@ class SettingsController extends Controller
 
         // an empty token field keeps the stored one, "-" clears it
         $token = trim((string) ($data['github_token'] ?? ''));
+        $slack = trim((string) ($data['slack_token'] ?? ''));
 
         $user->update([
             'github_token' => match (true) {
@@ -115,6 +118,12 @@ class SettingsController extends Controller
                 $token === '-' => null,
                 default => $token,
             },
+            'slack_token' => match (true) {
+                $slack === '' => $user->slack_token,
+                $slack === '-' => null,
+                default => $slack,
+            },
+            'slack_channel' => trim((string) ($data['slack_channel'] ?? '')) ?: null,
             'ticket_url_template' => $data['ticket_url_template'] ?? null ?: null,
             'pr_url_template' => $data['pr_url_template'] ?? null ?: null,
             'instance_url_template' => $data['instance_url_template'] ?? null ?: null,

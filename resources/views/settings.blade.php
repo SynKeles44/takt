@@ -358,6 +358,21 @@
                     </div>
 
                     <div>
+                        <label for="slack_token" class="label">{{ __('app.settings.slack_token') }}</label>
+                        <input id="slack_token" type="password" name="slack_token" class="control metric text-xs"
+                               autocomplete="off" placeholder="{{ $user->slack_token ? __('app.settings.token_set') : 'xoxp-…' }}">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_token_hint') }}</p>
+                        @error('slack_token') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="slack_channel" class="label">{{ __('app.settings.slack_channel') }}</label>
+                        <input id="slack_channel" type="text" name="slack_channel" class="control metric text-xs"
+                               value="{{ old('slack_channel', $user->slack_channel) }}" maxlength="120" placeholder="#testing">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_channel_hint') }}</p>
+                    </div>
+
+                    <div>
                         <label for="ticket_url_template" class="label">{{ __('app.settings.ticket_template') }}</label>
                         <input id="ticket_url_template" type="text" name="ticket_url_template" class="control metric text-xs"
                                value="{{ old('ticket_url_template', $user->ticket_url_template) }}"

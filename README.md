@@ -38,6 +38,10 @@ file — no cloud, no external services.
   four tiles (work, target, balance, completed) and the same distribution list; switching
   the period changes the numbers, not the layout. The year adds a day-by-day heatmap, the
   month adds a print-ready timesheet with signature lines and a CSV export.
+- **Posting to Slack** — the test post can go straight into the testing channel, under your own
+  name and avatar. That needs a user token (`xoxp-`) with `chat:write`, which you store once in
+  the settings together with the channel; the token is kept encrypted and never rendered back
+  into the page. Sending asks first, then links to the message.
 - **Registering a project** — in the app a Finder panel picks the folder and the rest of the
   form fills itself: name, GitHub remote, start command (`make start` by default) and, if the
   project states one, the port. The port stays optional; it only feeds the state dot and the

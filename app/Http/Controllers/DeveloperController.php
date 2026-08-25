@@ -9,6 +9,7 @@ use App\Models\Snippet;
 use App\Services\Commits;
 use App\Services\ProjectRunner;
 use App\Services\Reviews;
+use App\Services\Slack;
 use App\Services\TestPost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,11 +64,41 @@ class DeveloperController extends Controller
         return view('testpost', [
             'input' => $input,
             'result' => $builder->build($request->user(), $input),
+            'slackReady' => app(Slack::class)->configured($request->user()),
             'defaults' => [
                 'ticket' => $request->user()->ticket_url_template ?: TestPost::TICKET_DEFAULT,
                 'pr' => $request->user()->pr_url_template ?: TestPost::PR_DEFAULT,
                 'instance' => $request->user()->instance_url_template ?: TestPost::INSTANCE_DEFAULT,
             ],
         ]);
+    }
+
+    /** Sends the built block to Slack, under the user's own name. */
+    public function send(Request $request, TestPost $builder, Slack $slack): RedirectResponse
+    {
+        $input = $request->validate([
+            'ticket' => ['nullable', 'string', 'max:400'],
+            'pr' => ['nullable', 'string', 'max:400'],
+            'instance' => ['nullable', 'string', 'max:400'],
+        ]);
+
+        $user = $request->user();
+        $result = $builder->build($user, $input);
+
+        if ($result['missing'] !== []) {
+            return back()->withErrors([
+                'slack' => __('app.dev.missing_fields', [
+                    'fields' => collect($result['missing'])->map(fn (string $key): string => __('app.dev.'.$key))->implode(', '),
+                ]),
+            ]);
+        }
+
+        $sent = $slack->post($user, $result['text']);
+
+        if (! $sent['ok']) {
+            return back()->withErrors(['slack' => $sent['error']]);
+        }
+
+        return back()->with('status', __('app.slack.sent'))->with('slack_permalink', $sent['permalink']);
     }
 }

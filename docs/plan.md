@@ -347,3 +347,14 @@ Requirement ids refer to `requirements.md`.
       with its own drag-and-drop. `draggable="false"` plus `preventDefault()` on pointerdown
       fixed it; synthetic events had passed because they skip exactly that default. Verified
       afterwards with real mouse drags in the browser.
+
+## Phase 44 — Posting to Slack (R24.5)
+
+- [x] `users.slack_token` (encrypted cast) + `slack_channel`; the settings card takes both with
+      the same semantics as the GitHub token (empty keeps, `-` clears).
+- [x] `Slack` service: `chat.postMessage` with the user's own token so the message appears under
+      their name, link unfurling off, `chat.getPermalink` for the link back, and Slack's error
+      codes translated into plain words.
+- [x] The test-post preview gained the send button next to copy, behind an in-app confirmation;
+      it only shows up once token and channel are stored.
+- [x] 9 tests against a faked Slack API — the real endpoint is never called.
