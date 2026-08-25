@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""
+Runs one command inside a pseudo terminal, so a Makefile target that expects a terminal
+behaves the way it does in a shell: `docker compose exec` keeps working, and a prompt can
+actually be answered.
+
+    takt-pty <log> <exit> <fifo> <shell> <command>
+
+Output goes to <log> (append, exactly what the terminal produced). Whatever is written into
+the FIFO is passed to the command's input, which is how Takt answers a prompt. The command's
+exit code lands in <exit> — that is how a finished run is told from one that died.
+"""
+
+import errno
+import fcntl
+import os
+import pty
+import select
+import signal
+import struct
+import sys
+import termios
+
+WIDTH, HEIGHT = 120, 36
+CHUNK = 65536
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 6:
+        sys.stderr.write(__doc__ or '')
+        return 64
+
+    log_path, exit_path, fifo_path, shell, command = argv[1:]
+
+    primary, secondary = pty.openpty()
+    _resize(primary)
+
+    pid = os.fork()
+
+    if pid == 0:
+        # the child becomes its own session so the terminal really is its controlling one
+        os.setsid()
+
+        try:
+            fcntl.ioctl(secondary, termios.TIOCSCTTY, 0)
+        except OSError:
+            pass
+
+        for stream in (0, 1, 2):
+            os.dup2(secondary, stream)
+
+        if secondary > 2:
+            os.close(secondary)
+
+        os.close(primary)
+
+        env = dict(os.environ, TERM=os.environ.get('TERM', 'xterm-256color'))
+        os.execvpe(shell, [shell, '-lc', command], env)
+
+        os._exit(127)
+
+    os.close(secondary)
+
+    log = open(log_path, 'ab', buffering=0)
+    fifo = _open_fifo(fifo_path)
+
+    try:
+        _pump(primary, fifo, log)
+    finally:
+        log.close()
+
+        if fifo is not None:
+            os.close(fifo)
+
+        os.close(primary)
+
+    code = _wait(pid)
+
+    with open(exit_path, 'w') as handle:
+        handle.write(str(code))
+
+    return code
+
+
+def _pump(primary: int, fifo: int | None, log) -> None:
+    """Terminal output into the log, whatever arrives in the FIFO into the terminal."""
+    sources = [primary] + ([fifo] if fifo is not None else [])
+
+    while True:
+        try:
+            ready, _, _ = select.select(sources, [], [], 30)
+        except InterruptedError:
+            continue
+        except OSError:
+            return
+
+        if primary in ready:
+            try:
+                data = os.read(primary, CHUNK)
+            except OSError:
+                return
+
+            if not data:
+                return
+
+            log.write(data)
+
+        if fifo is not None and fifo in ready:
+            try:
+                typed = os.read(fifo, CHUNK)
+            except OSError:
+                typed = b''
+
+            if typed:
+                os.write(primary, typed)
+
+
+def _open_fifo(path: str) -> int | None:
+    """Read-write, so opening never waits for someone on the other end."""
+    try:
+        return os.open(path, os.O_RDWR | os.O_NONBLOCK)
+    except OSError:
+        return None
+
+
+def _resize(fd: int) -> None:
+    try:
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', HEIGHT, WIDTH, 0, 0))
+    except OSError:
+        pass
+
+
+def _wait(pid: int) -> int:
+    while True:
+        try:
+            _, status = os.waitpid(pid, 0)
+        except InterruptedError:
+            continue
+        except ChildProcessError:
+            return 0
+
+        if os.WIFEXITED(status):
+            return os.WEXITSTATUS(status)
+
+        if os.WIFSIGNALED(status):
+            return 128 + os.WTERMSIG(status)
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    sys.exit(main(sys.argv))
