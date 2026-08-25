@@ -273,25 +273,59 @@
     --surface-image: linear-gradient(140deg, color-mix(in oklab, var(--color-ink) 10%, transparent), transparent 60%);
 }
 
+/*
+ * Neumorphism only reads as extruded when the surface sits a touch off the canvas and both
+ * shadows are present: dark below-right, light above-left. A surface that is exactly the
+ * canvas colour with soft shadows just dissolves — that is what it used to do.
+ */
 [data-style='neumorphism'] {
-    --color-surface: var(--color-canvas);
-    --color-raised: var(--color-canvas);
-    --color-panel: var(--color-canvas);
+    --color-surface: color-mix(in oklab, var(--color-canvas) 90%, var(--color-ink) 10%);
+    --color-raised: color-mix(in oklab, var(--color-canvas) 85%, var(--color-ink) 15%);
+    --color-hover: color-mix(in oklab, var(--color-canvas) 78%, var(--color-ink) 22%);
+    --color-panel: color-mix(in oklab, var(--color-canvas) 94%, black 6%);
+    --color-popover: color-mix(in oklab, var(--color-canvas) 86%, var(--color-ink) 14%);
+    --color-line: color-mix(in oklab, var(--color-ink) 14%, transparent);
+    --color-line-strong: color-mix(in oklab, var(--color-ink) 26%, transparent);
+    /* the surface sits lighter than the default, so the quiet text needs to come along */
+    --color-dim: color-mix(in oklab, var(--color-ink) 52%, var(--color-canvas));
+    --color-faint: color-mix(in oklab, var(--color-ink) 66%, var(--color-canvas));
     --radius-card: 1.5rem;
-    --radius-control: 1rem;
+    --radius-control: 0.95rem;
     --border-w: 0px;
     --blur: 0px;
     --pad-card: 1.4rem;
     --pad-card-lg: 1.7rem;
+    --neu-dark: color-mix(in oklab, black 46%, transparent);
+    --neu-light: color-mix(in oklab, white 9%, transparent);
     --shadow-card:
-        7px 7px 16px color-mix(in oklab, black 40%, transparent),
-        -7px -7px 16px color-mix(in oklab, white 7%, transparent);
+        9px 9px 20px var(--neu-dark),
+        -6px -6px 16px var(--neu-light);
     --control-shadow:
-        inset 4px 4px 10px color-mix(in oklab, black 35%, transparent),
-        inset -4px -4px 10px color-mix(in oklab, white 6%, transparent);
-    --shadow-btn: 5px 5px 12px color-mix(in oklab, black 35%, transparent);
+        inset 5px 5px 11px var(--neu-dark),
+        inset -3px -3px 9px var(--neu-light);
+    --shadow-btn:
+        6px 6px 14px var(--neu-dark),
+        -4px -4px 10px var(--neu-light);
     --stack-gap: 1.6rem;
 }
+
+/* light schemes need the opposite balance: a real white highlight, a softer shadow */
+[data-theme='daylight'][data-style='neumorphism'] {
+    --color-surface: #eef1f7;
+    --color-raised: #e7ebf3;
+    --color-hover: #dfe4ee;
+    --color-panel: #e9edf4;
+    --color-popover: #f2f5fa;
+    --neu-dark: color-mix(in oklab, #94a3c4 55%, transparent);
+    --neu-light: color-mix(in oklab, white 95%, transparent);
+}
+
+/* the flattest of the dark schemes needs a touch more separation than the others */
+[data-theme='onyx'][data-style='neumorphism'] {
+    --neu-dark: color-mix(in oklab, black 75%, transparent);
+    --neu-light: color-mix(in oklab, white 7%, transparent);
+}
+
 
 [data-style='skeuomorphism'] {
     --radius-card: 0.9rem;
@@ -1101,16 +1135,23 @@ body {
     }
 }
 
-/* the gallery must not cover the board, so the board makes room for it */
+/*
+ * The gallery must not cover the board, so the board makes room for it — but only as much as
+ * it needs. Taking a third of the width away squeezed every tile into a column of headlines.
+ */
+:root {
+    --drawer-w: 16.5rem;
+}
+
 .dashboard-grid,
 [data-board] > .mb-4 {
     transition: padding 0.42s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
-@media (width >= 80rem) {
+@media (width >= 78rem) {
     [data-board='editing'] .dashboard-grid,
     [data-board='editing'] > .mb-4 {
-        padding-inline-end: 21rem;
+        padding-inline-end: calc(var(--drawer-w) + 1.75rem);
     }
 }
 
@@ -1186,9 +1227,20 @@ body {
     pointer-events: auto;
 }
 
+/* room for the tool pill, so it never sits on top of the widget's own content */
+[data-board='editing'] .widget-body > * {
+    padding-block-end: 2.9rem;
+}
+
+/* a badge belongs above its neighbours, not underneath them */
+[data-board='editing'] .widget-slot:hover {
+    z-index: 4;
+}
+
 /* the badge sits half outside the tile corner, exactly like a home-screen icon */
 .widget-remove {
     position: absolute;
+    z-index: 3;
     inset-block-start: -0.55rem;
     inset-inline-start: -0.55rem;
     display: inline-flex;
@@ -1326,6 +1378,62 @@ body {
     filter: saturate(0.35);
 }
 
+/*
+ * MARK: neumorphism, component level. Unlayered on purpose — these override Tailwind
+ * utilities and the component layer, which is where the flat look came from.
+ */
+
+/* a solid tone instead of the neon gradient, so the extrusion is what stands out */
+:root[data-style='neumorphism'] .btn-primary,
+:root[data-style='neumorphism'] .btn-work,
+:root[data-style='neumorphism'] .btn-rest {
+    background-image: none;
+}
+
+/* pressing a button sinks it in — the one interaction neumorphism is actually good at */
+:root[data-style='neumorphism'] .btn:active,
+:root[data-style='neumorphism'] .icon-action:active {
+    box-shadow:
+        inset 4px 4px 10px var(--neu-dark),
+        inset -3px -3px 8px var(--neu-light);
+    transform: none;
+}
+
+:root[data-style='neumorphism'] .btn-ghost,
+:root[data-style='neumorphism'] .btn-icon,
+:root[data-style='neumorphism'] .tile,
+:root[data-style='neumorphism'] .pill {
+    background-color: var(--color-raised);
+    box-shadow:
+        4px 4px 10px var(--neu-dark),
+        -3px -3px 8px var(--neu-light);
+}
+
+/* rows and inputs are recessed, so a list reads as carved into the card */
+:root[data-style='neumorphism'] .row {
+    background-color: var(--color-panel);
+    box-shadow:
+        inset 3px 3px 8px var(--neu-dark),
+        inset -2px -2px 6px var(--neu-light);
+}
+
+:root[data-style='neumorphism'] .row:hover {
+    background-color: var(--color-hover);
+}
+
+:root[data-style='neumorphism'] .check {
+    box-shadow:
+        inset 3px 3px 7px var(--neu-dark),
+        inset -2px -2px 5px var(--neu-light);
+}
+
+/* separators keep their job: without them the card has no structure at all */
+:root[data-style='neumorphism'] .border-line,
+:root[data-style='neumorphism'] .border-t,
+:root[data-style='neumorphism'] .border-b {
+    border-color: color-mix(in oklab, var(--color-ink) 12%, transparent);
+}
+
 /* days marked with the mouse, before the absence window opens */
 [data-day][data-selected] {
     border-color: color-mix(in oklab, var(--color-accent) 65%, transparent) !important;
@@ -1368,7 +1476,7 @@ body {
     position: fixed;
     inset-block: 4.75rem 1.25rem;
     inset-inline-end: 1.25rem;
-    inline-size: min(19.5rem, calc(100vw - 2.5rem));
+    inline-size: min(var(--drawer-w), calc(100vw - 2.5rem));
     display: flex;
     flex-direction: column;
     gap: 0.85rem;

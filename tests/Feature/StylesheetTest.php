@@ -24,6 +24,22 @@ class StylesheetTest extends TestCase
         return (string) file_get_contents($files[0]);
     }
 
+    public function test_neumorphism_lifts_its_surfaces_off_the_canvas(): void
+    {
+        $css = $this->stylesheet();
+
+        // a surface that equals the canvas with soft shadows dissolves — it needs its own tone
+        $this->assertStringNotContainsString(
+            '[data-style=neumorphism]{--color-surface:var(--color-canvas)',
+            $css,
+        );
+
+        // both directions of the extrusion, and the light scheme's own balance
+        $this->assertMatchesRegularExpression('/\[data-style=neumorphism\][^{]*\{[^}]*--neu-dark:/', $css);
+        $this->assertMatchesRegularExpression('/\[data-style=neumorphism\][^{]*\{[^}]*--neu-light:/', $css);
+        $this->assertStringContainsString('[data-theme=daylight][data-style=neumorphism]', $css);
+    }
+
     public function test_floating_surfaces_have_an_opaque_ground(): void
     {
         $css = $this->stylesheet();
@@ -31,16 +47,21 @@ class StylesheetTest extends TestCase
         $this->assertMatchesRegularExpression('/\.nav-menu\{[^}]*background-color:var\(--color-popover\)/', $css);
         $this->assertMatchesRegularExpression('/\.dialog-panel\{[^}]*background-color:var\(--color-popover\)/', $css);
 
-        // one opaque value for the root plus every named theme, never a translucent one
-        preg_match_all('/--color-popover:\s*([^;]+);/', $css, $matches);
+        // the root, every named theme, and any style that overrides it — all opaque
+        preg_match_all('/--color-popover:\s*([^;}]+)/', $css, $matches);
 
         $named = count(array_filter(Theme::cases(), fn (Theme $theme): bool => ! $theme->isAutomatic()));
 
-        $this->assertCount($named + 1, $matches[1]);
+        $this->assertGreaterThanOrEqual($named + 1, count($matches[1]));
 
         foreach ($matches[1] as $value) {
-            // the minifier shortens #ffffff to #fff — either way it must be a plain hex
-            $this->assertMatchesRegularExpression('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', trim($value));
+            $value = trim($value);
+
+            // a plain hex (the minifier shortens #ffffff to #fff), or a mix of opaque colours
+            $opaque = preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $value) === 1
+                || (str_starts_with($value, 'color-mix(') && ! str_contains($value, 'transparent'));
+
+            $this->assertTrue($opaque, 'Translucent popover ground: '.$value);
         }
     }
 
