@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logo.svg" width="96" alt="Takt logo">
+  <img src="public/favicon.svg" width="96" alt="Takt logo">
 </p>
 
 <h1 align="center">Takt</h1>
