@@ -153,39 +153,158 @@ class DeveloperTest extends TestCase
         $this->assertNull($this->user->fresh()->github_token);
     }
 
+    /** @param  array<int, array<string, mixed>>  $pulls */
+    private function fakeGithub(array $pulls, int $status = 200): void
+    {
+        Http::fake([
+            'api.github.com/user' => Http::response(['login' => 'ich']),
+            'api.github.com/repos/*/pulls*' => Http::response($pulls, $status),
+            'api.github.com/search/issues*' => Http::response(['items' => []]),
+        ]);
+    }
+
+    private function project(string $repository = 'galabau-workgroup/galawork-web'): Project
+    {
+        return Project::query()->create([
+            'name' => 'Galawork Web',
+            'path' => base_path(),
+            'repository' => $repository,
+            'position' => 0,
+        ]);
+    }
+
     public function test_open_pull_requests_are_shown_in_both_directions(): void
     {
         $this->user->update(['github_token' => 'ghp_test']);
+        $this->project();
 
-        Http::fake([
-            'api.github.com/search/issues*' => Http::sequence()
-                ->push(['items' => [[
-                    'title' => 'Gerätezeiten zurücksetzen',
-                    'number' => 2456,
-                    'html_url' => 'https://github.com/galabau-workgroup/galawork-web/pull/2456',
-                    'repository_url' => 'https://api.github.com/repos/galabau-workgroup/galawork-web',
-                    'draft' => false,
-                    'updated_at' => now()->subDays(2)->toIso8601String(),
-                    'created_at' => now()->subDays(3)->toIso8601String(),
-                ]]])
-                ->push(['items' => [[
-                    'title' => 'Eigener Entwurf',
-                    'number' => 12,
-                    'html_url' => 'https://github.com/x/y/pull/12',
-                    'repository_url' => 'https://api.github.com/repos/x/y',
-                    'draft' => true,
-                    'updated_at' => now()->toIso8601String(),
-                    'created_at' => now()->toIso8601String(),
-                ]]]),
+        $this->fakeGithub([
+            [
+                'title' => 'Gerätezeiten zurücksetzen',
+                'number' => 2456,
+                'html_url' => 'https://github.com/galabau-workgroup/galawork-web/pull/2456',
+                'draft' => false,
+                'user' => ['login' => 'kollege'],
+                'requested_reviewers' => [['login' => 'ich']],
+                'updated_at' => now()->subDays(2)->toIso8601String(),
+                'created_at' => now()->subDays(3)->toIso8601String(),
+            ],
+            [
+                'title' => 'Eigener Entwurf',
+                'number' => 12,
+                'html_url' => 'https://github.com/galabau-workgroup/galawork-web/pull/12',
+                'draft' => true,
+                'user' => ['login' => 'ich'],
+                'requested_reviewers' => [],
+                'updated_at' => now()->toIso8601String(),
+                'created_at' => now()->toIso8601String(),
+            ],
         ]);
 
-        $this->get(route('dev'))
+        // the sections are fetched after the page, because GitHub costs over a second
+        $this->get(route('dev.reviews.sections'))
             ->assertOk()
             ->assertSee('Wartet auf mich')
             ->assertSee('Gerätezeiten zurücksetzen')
-            ->assertSee('galabau-workgroup/galawork-web #2456')
             ->assertSee('Eigener Entwurf')
             ->assertSee('Entwurf');
+
+        // once they are cached the page itself carries them
+        $this->get(route('dev'))
+            ->assertOk()
+            ->assertSee('Gerätezeiten zurücksetzen')
+            ->assertDontSee(__('app.dev.reviews_loading'));
+    }
+
+    public function test_the_page_does_not_wait_for_github_when_nothing_is_cached(): void
+    {
+        $this->user->update(['github_token' => 'ghp_test']);
+
+        $this->fakeGithub([]);
+
+        $this->get(route('dev'))->assertOk()->assertSee(__('app.dev.reviews_loading'));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_my_pull_requests_are_grouped_per_project(): void
+    {
+        $this->user->update(['github_token' => 'ghp_test']);
+        $this->project();
+
+        Http::fake([
+            'api.github.com/user' => Http::response(['login' => 'ich']),
+            'api.github.com/repos/*/pulls*' => Http::response([[
+                'title' => 'Im Projekt',
+                'number' => 1,
+                'html_url' => 'https://github.test/1',
+                'draft' => false,
+                'user' => ['login' => 'ich'],
+                'requested_reviewers' => [],
+                'updated_at' => now()->toIso8601String(),
+                'created_at' => now()->toIso8601String(),
+            ]]),
+            // a pull request in a repository that is not a registered project
+            'api.github.com/search/issues*' => Http::response(['items' => [[
+                'title' => 'Woanders',
+                'number' => 2,
+                'html_url' => 'https://github.test/2',
+                'repository_url' => 'https://api.github.com/repos/somebody/else',
+                'draft' => false,
+                'updated_at' => now()->toIso8601String(),
+                'created_at' => now()->toIso8601String(),
+            ]]]),
+        ]);
+
+        $this->get(route('dev.reviews.sections'))
+            ->assertOk()
+            ->assertSee(__('app.dev.my_pulls'))
+            ->assertSeeInOrder(['Galawork Web', 'Im Projekt'])
+            ->assertSeeInOrder([__('app.dev.other_repositories'), 'Woanders']);
+    }
+
+    public function test_a_repository_the_token_cannot_see_says_so(): void
+    {
+        $this->user->update(['github_token' => 'ghp_public_only']);
+        $this->project();
+
+        // a private repository answers 404 for a token without the repo scope — search would
+        // just return nothing, which is why the repository endpoint is asked directly
+        $this->fakeGithub(['message' => 'Not Found'], status: 404);
+
+        $this->get(route('dev.reviews.sections'))
+            ->assertOk()
+            ->assertSee(__('app.dev.no_repo_access'))
+            ->assertSee('galabau-workgroup/galawork-web');
+    }
+
+    public function test_paging_through_the_days_only_replaces_the_commits(): void
+    {
+        Project::query()->create(['name' => 'Takt', 'path' => base_path(), 'position' => 0]);
+
+        $response = $this->get(route('dev'))->assertOk();
+
+        // the two regions the day navigation swaps — the reviews are in neither of them
+        $response->assertSee('data-region="dev-head"', escape: false);
+        $response->assertSee('data-region="dev-commits"', escape: false);
+        $response->assertSee('data-partial="dev-head dev-commits"', escape: false);
+
+        $content = (string) $response->getContent();
+        $reviews = strpos($content, 'data-reviews-slot');
+        $commitsEnd = strpos($content, 'data-region="dev-commits"');
+
+        $this->assertNotFalse($reviews);
+        $this->assertGreaterThan($commitsEnd, $reviews);
+    }
+
+    public function test_the_commits_of_each_project_can_be_collapsed(): void
+    {
+        Project::query()->create(['name' => 'Takt', 'path' => base_path(), 'position' => 0]);
+
+        $this->get(route('dev'))
+            ->assertOk()
+            ->assertSee('<details', escape: false)
+            ->assertSee('data-remember="commits.', escape: false);
     }
 
     public function test_a_rejected_token_is_reported_plainly(): void
@@ -194,7 +313,7 @@ class DeveloperTest extends TestCase
 
         Http::fake(['api.github.com/*' => Http::response(['message' => 'Bad credentials'], 401)]);
 
-        $this->get(route('dev'))->assertOk()->assertSee('Das GitHub-Token wird abgelehnt (401)');
+        $this->get(route('dev.reviews.sections'))->assertOk()->assertSee('Das GitHub-Token wird abgelehnt (401)');
     }
 
     public function test_snippets_are_stored_copied_and_counted(): void

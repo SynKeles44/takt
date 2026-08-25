@@ -14,6 +14,7 @@ use App\Services\TestPost;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DeveloperController extends Controller
@@ -29,6 +30,9 @@ class DeveloperController extends Controller
         $projects = Project::query()->inOrder()->get();
         $groups = $commits->forDay($day, $projects);
 
+        // the reviews cost over a second when they are not cached, so the page does not wait
+        $cachedReviews = $reviews->cached($request->user());
+
         return view('developer', [
             'day' => $day,
             'previousDay' => $day->copy()->subDay()->toDateString(),
@@ -40,8 +44,12 @@ class DeveloperController extends Controller
             'states' => $projects->mapWithKeys(fn (Project $project): array => [
                 $project->getKey() => $runner->state($project),
             ]),
-            'reviews' => $reviews->forUser($request->user()),
+            'reviews' => $cachedReviews,
             'reviewsConfigured' => $reviews->configured($request->user()),
+            'byProject' => $cachedReviews === null ? collect() : $projects->mapWithKeys(fn (Project $project): array => [
+                $project->getKey() => $reviews->mineFor($cachedReviews, $project->slug()),
+            ]),
+            'unassigned' => $cachedReviews === null ? [] : $this->unassigned($cachedReviews, $projects),
             'snippets' => Snippet::query()->inOrder()->limit(8)->get(),
         ]);
     }
@@ -51,6 +59,40 @@ class DeveloperController extends Controller
         $reviews->forget($request->user());
 
         return back()->with('status', __('app.dev.reviews_refreshed'));
+    }
+
+    /** The review sections on their own, fetched by the page once it stands. */
+    public function reviewSections(Request $request, Reviews $reviews): View
+    {
+        $projects = Project::query()->inOrder()->get();
+        $data = $reviews->forUser($request->user());
+
+        return view('partials.reviews', [
+            'reviews' => $data,
+            'reviewsConfigured' => $reviews->configured($request->user()),
+            'projects' => $projects,
+            'byProject' => $projects->mapWithKeys(fn (Project $project): array => [
+                $project->getKey() => $reviews->mineFor($data, $project->slug()),
+            ]),
+            'unassigned' => $this->unassigned($data, $projects),
+        ]);
+    }
+
+    /**
+     * Pull requests that belong to no registered project — otherwise they would vanish.
+     *
+     * @param  array{mine: list<array>}  $reviews
+     * @param  Collection<int, Project>  $projects
+     * @return list<array>
+     */
+    private function unassigned(array $reviews, $projects): array
+    {
+        $known = $projects->map(fn (Project $project): ?string => $project->slug())->filter()->map('strtolower')->all();
+
+        return array_values(array_filter(
+            $reviews['mine'],
+            fn (array $pull): bool => ! in_array(strtolower($pull['repository']), $known, true),
+        ));
     }
 
     public function post(Request $request, TestPost $builder): View

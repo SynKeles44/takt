@@ -1,6 +1,7 @@
 @use('App\Support\Duration')
 
 <x-app-layout :title="__('app.nav.dev')">
+    <div data-region="dev-head">
     <x-card class="rise">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -11,14 +12,16 @@
             {{-- the day navigation sits left of the tabs, so the tabs keep their place on every page --}}
             <div class="flex flex-wrap items-center justify-end gap-2">
                 <div class="tile flex items-center gap-1 p-1">
-                    <a href="{{ route('dev', ['tag' => $previousDay]) }}" class="icon-action" aria-label="{{ __('app.calendar.previous') }}">
+                    <a href="{{ route('dev', ['tag' => $previousDay]) }}" class="icon-action"
+                       data-partial="dev-head dev-commits" aria-label="{{ __('app.calendar.previous') }}">
                         <x-icon name="chevron-left" class="size-4"/>
                     </a>
-                    <a href="{{ route('dev') }}"
+                    <a href="{{ route('dev') }}" data-partial="dev-head dev-commits"
                        @class(['rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition', 'text-dim' => $isToday, 'text-muted hover:text-ink' => ! $isToday])>
                         {{ __('app.insights.now') }}
                     </a>
-                    <a href="{{ route('dev', ['tag' => $nextDay]) }}" class="icon-action" aria-label="{{ __('app.calendar.next') }}">
+                    <a href="{{ route('dev', ['tag' => $nextDay]) }}" class="icon-action"
+                       data-partial="dev-head dev-commits" aria-label="{{ __('app.calendar.next') }}">
                         <x-icon name="chevron-right" class="size-4"/>
                     </a>
                 </div>
@@ -27,9 +30,10 @@
             </div>
         </div>
     </x-card>
+    </div>
 
     <div class="stack-grid mt-5 grid lg:grid-cols-[1.25fr_1fr]">
-        <x-card class="rise">
+        <x-card class="rise" data-region="dev-commits">
             <h2 class="heading">{{ __('app.dev.commits') }}</h2>
 
             @if ($groups->isEmpty())
@@ -38,104 +42,77 @@
                     <a href="{{ route('projects') }}" class="text-accent-text hover:underline">{{ __('app.dev.projects') }}</a>
                 </p>
             @else
-                <div class="mt-4 space-y-4">
+                <div class="mt-4 space-y-2">
                     @foreach ($groups as $group)
-                        <div>
-                            <div class="flex items-center justify-between gap-3 px-1">
-                                <h3 class="heading">{{ $group['project']->name }}</h3>
-                                <span class="metric text-xs text-dim">{{ count($group['commits']) }}</span>
-                            </div>
+                        @php $count = count($group['commits']); @endphp
 
-                            @if ($group['error'])
-                                <p class="mt-2 rounded-[var(--radius-control)] border border-rest/30 bg-rest/10 px-3 py-2 text-xs text-rest-text">
-                                    {{ $group['error'] }}
-                                </p>
-                            @elseif ($group['commits'] === [])
-                                <p class="mt-2 px-1 text-xs text-dim">{{ __('app.dev.no_commits') }}</p>
-                            @else
-                                <ul class="mt-2 space-y-1.5">
-                                    @foreach ($group['commits'] as $commit)
-                                        <li class="row flex items-start gap-3 px-3 py-2">
-                                            <span class="metric shrink-0 text-xs text-accent-text">{{ $commit['short'] }}</span>
-                                            <span class="min-w-0 flex-1 text-sm text-ink">{{ $commit['subject'] }}</span>
-                                            <span class="metric shrink-0 text-[11px] text-dim">{{ $commit['at']->format('H:i') }}</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endif
-                        </div>
+                        {{-- collapsible per project, and it remembers what you closed --}}
+                        <details class="tile overflow-hidden" data-remember="commits.{{ $group['project']->getKey() }}">
+                            <summary class="flex cursor-pointer items-center gap-3 px-3 py-2">
+                                <x-icon name="chevron-right" class="size-3.5 shrink-0 text-dim transition"/>
+                                <span class="min-w-0 flex-1 truncate text-xs font-semibold text-ink">{{ $group['project']->name }}</span>
+
+                                @if ($group['error'])
+                                    <span class="pill shrink-0 border-rest/40 bg-rest/10 text-[10px] text-rest-text">!</span>
+                                @else
+                                    <span @class(['pill shrink-0 text-[10px]', 'text-dim' => $count === 0])>{{ $count }}</span>
+                                @endif
+                            </summary>
+
+                            <div class="border-t border-line p-2">
+                                @if ($group['error'])
+                                    <p class="rounded-[var(--radius-control)] border border-rest/30 bg-rest/10 px-3 py-2 text-xs text-rest-text">
+                                        {{ $group['error'] }}
+                                    </p>
+                                @elseif ($count === 0)
+                                    <p class="px-2 py-1 text-xs text-dim">{{ __('app.dev.no_commits') }}</p>
+                                @else
+                                    <ul class="space-y-1.5">
+                                        @foreach ($group['commits'] as $commit)
+                                            <li class="row flex items-start gap-3 px-3 py-2">
+                                                <span class="metric shrink-0 text-xs text-accent-text">{{ $commit['short'] }}</span>
+                                                <span class="min-w-0 flex-1 text-sm text-ink">{{ $commit['subject'] }}</span>
+                                                <span class="metric shrink-0 text-[11px] text-dim">{{ $commit['at']->format('H:i') }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                        </details>
                     @endforeach
                 </div>
             @endif
         </x-card>
 
         <div class="stack">
-            <x-card class="rise">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <h2 class="heading">{{ __('app.dev.reviews') }}</h2>
-
-                    @if ($reviewsConfigured)
-                        <form method="POST" action="{{ route('dev.reviews') }}" data-live>
-                            @csrf
-                            <button type="submit" class="icon-action" aria-label="{{ __('app.dev.refresh') }}" title="{{ __('app.dev.refresh') }}">
-                                <x-icon name="repeat" class="size-4"/>
-                            </button>
-                        </form>
-                    @endif
-                </div>
-
-                @if (! $reviewsConfigured)
-                    <p class="mt-4 text-sm text-dim">{{ __('app.dev.no_token') }}</p>
-                    <a href="{{ route('settings') }}" class="btn btn-ghost mt-3 w-full text-xs">
-                        <x-icon name="gear" class="size-3.5"/>
-                        {{ __('app.nav.settings') }}
-                    </a>
-                @elseif ($reviews['error'])
-                    <p class="mt-4 rounded-[var(--radius-control)] border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger-text">
-                        {{ $reviews['error'] }}
-                    </p>
+            {{--
+                The reviews come from GitHub and cost over a second when nothing is cached, so
+                the page renders what the cache has and fetches the rest once it stands.
+            --}}
+            <div data-reviews-slot data-reviews-url="{{ route('dev.reviews.sections') }}">
+                @if ($reviews !== null)
+                    @include('partials.reviews', [
+                        'reviews' => $reviews,
+                        'reviewsConfigured' => $reviewsConfigured,
+                        'projects' => $projects,
+                        'byProject' => $byProject,
+                        'unassigned' => $unassigned,
+                    ])
                 @else
-                    @foreach ([['incoming', __('app.dev.reviews_incoming')], ['mine', __('app.dev.reviews_mine')]] as [$key, $label])
-                        <div class="mt-4">
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <h3 class="heading">{{ $label }}</h3>
-                                <span class="metric text-xs text-dim">{{ count($reviews[$key]) }}</span>
-                            </div>
-
-                            @if ($reviews[$key] === [])
-                                <p class="mt-2 px-1 text-xs text-dim">{{ __('app.dev.reviews_empty') }}</p>
-                            @else
-                                <ul class="mt-2 space-y-1.5">
-                                    @foreach ($reviews[$key] as $pull)
-                                        <li class="row flex items-start gap-3 px-3 py-2">
-                                            <span class="min-w-0 flex-1">
-                                                <a href="{{ $pull['url'] }}" target="_blank" class="block truncate text-sm text-ink hover:text-accent-text">
-                                                    {{ $pull['title'] }}
-                                                </a>
-                                                <span class="block truncate text-[11px] text-dim">
-                                                    {{ $pull['repository'] }} #{{ $pull['number'] }}
-                                                    @if ($pull['draft']) · {{ __('app.dev.draft') }} @endif
-                                                </span>
-                                            </span>
-
-                                            <span @class([
-                                                    'pill shrink-0 text-[10px]',
-                                                    'border-danger/40 bg-danger/10 text-danger-text' => $pull['updated_at']->diffInHours() >= 24,
-                                                ])>
-                                                {{ $pull['updated_at']->diffForHumans(['short' => true, 'parts' => 1]) }}
-                                            </span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endif
+                    <x-card>
+                        <div class="flex items-center justify-between gap-3">
+                            <h2 class="heading">{{ __('app.dev.reviews') }}</h2>
+                            <span class="pill text-[10px]">{{ __('app.dev.reviews_loading') }}</span>
                         </div>
-                    @endforeach
 
-                    @if ($reviews['fetched_at'])
-                        <p class="mt-3 text-[11px] text-dim">{{ __('app.dev.fetched', ['time' => $reviews['fetched_at']->format('H:i')]) }}</p>
-                    @endif
+                        <div class="mt-4 space-y-1.5">
+                            @foreach (range(1, 3) as $ignored)
+                                <div class="row h-11 animate-pulse px-3 py-2"></div>
+                            @endforeach
+                        </div>
+                    </x-card>
                 @endif
-            </x-card>
+            </div>
 
             <x-card class="rise">
                 <div class="flex items-center justify-between gap-3">
