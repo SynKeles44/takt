@@ -6,7 +6,9 @@ namespace Tests\Feature;
 
 use App\Enums\EntryType;
 use App\Models\TimeEntry;
+use App\Models\User;
 use App\Services\TimeTracker;
+use App\Services\WorkCalendar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -18,11 +20,13 @@ class GenerateHistoryCommandTest extends TestCase
 
     private const int DAILY_TARGET = 28_800;
 
+    private User $user;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->login();
+        $this->user = $this->login();
 
         Carbon::setTestNow('2026-08-20 14:00:00');
     }
@@ -50,25 +54,68 @@ class GenerateHistoryCommandTest extends TestCase
         $this->assertGreaterThan(50, $balance['days']);
     }
 
-    public function test_every_week_hits_the_weekly_target(): void
+    public function test_every_week_hits_the_target_of_the_days_it_covers(): void
     {
-        $weeks = $this->generate(2)
-            ->where('type', EntryType::Work)
-            ->groupBy(fn (TimeEntry $entry): string => $entry->started_at->isoFormat('GGGG-WW'));
+        $entries = $this->generate(2)->where('type', EntryType::Work);
+        $weeks = $entries->groupBy(fn (TimeEntry $entry): string => $entry->started_at->isoFormat('GGGG-WW'));
 
+        $exempt = app(WorkCalendar::class)->exemptDatesForBalance($this->user);
         $overtimeWeeks = 0;
 
-        foreach ($weeks as $week => $entries) {
-            $days = $entries->groupBy(fn (TimeEntry $entry): string => $entry->started_at->toDateString())->count();
-            $worked = $entries->sum(fn (TimeEntry $entry): int => $entry->durationInSeconds());
+        foreach ($weeks as $week => $group) {
+            $days = $group->groupBy(fn (TimeEntry $entry): string => $entry->started_at->toDateString());
+            $worked = $group->sum(fn (TimeEntry $entry): int => $entry->durationInSeconds());
 
-            $this->assertSame(5, $days, "week {$week} should cover five workdays");
-            $this->assertContains($worked, [$days * self::DAILY_TARGET, $days * self::DAILY_TARGET + 3_600], "week {$week} is off target");
+            // a week with a public holiday covers fewer days, and its target shrinks with it
+            $workdays = $this->workdaysOf($group->first()->started_at, $exempt);
 
-            $overtimeWeeks += $worked > $days * self::DAILY_TARGET ? 1 : 0;
+            $this->assertSame($workdays, $days->count(), "week {$week} should cover its workdays");
+            $this->assertContains($worked, [$days->count() * self::DAILY_TARGET, $days->count() * self::DAILY_TARGET + 3_600], "week {$week} is off target");
+
+            // and no day of it is a holiday: work on one is overtime and would skew the balance
+            foreach ($days->keys() as $date) {
+                $this->assertNotContains($date, $exempt, "{$date} is exempt and must stay empty");
+            }
+
+            $overtimeWeeks += $worked > $days->count() * self::DAILY_TARGET ? 1 : 0;
         }
 
         $this->assertSame(1, $overtimeWeeks);
+    }
+
+    /** @param  list<string>  $exempt */
+    private function workdaysOf(Carbon $anyDayOfWeek, array $exempt): int
+    {
+        $day = $anyDayOfWeek->copy()->startOfWeek();
+        $count = 0;
+
+        foreach (range(1, 5) as $ignored) {
+            if (! in_array($day->toDateString(), $exempt, true)) {
+                $count++;
+            }
+
+            $day->addDay();
+        }
+
+        return $count;
+    }
+
+    public function test_the_balance_is_not_pushed_up_by_public_holidays(): void
+    {
+        // Ascension Day and Whit Monday fall into this range; work on either is overtime,
+        // which used to leave a generated history permanently in the plus
+        Carbon::setTestNow('2026-06-10 14:00:00');
+
+        $this->artisan('takt:history', ['--months' => 3, '--balance' => 0, '--seed' => 7, '--force' => true])
+            ->assertSuccessful();
+
+        $balance = app(TimeTracker::class)->balance(
+            self::DAILY_TARGET,
+            null,
+            app(WorkCalendar::class)->exemptDatesForBalance($this->user),
+        );
+
+        $this->assertSame(0, $balance['seconds']);
     }
 
     public function test_the_skipped_weeks_and_weekends_stay_empty(): void

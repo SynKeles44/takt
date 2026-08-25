@@ -36,9 +36,11 @@ final class WorkHistoryGenerator
         'Konzept Zeiterfassung', 'Testing', 'Onboarding', 'Release-Vorbereitung',
     ];
 
+    /** @param  list<string>  $exemptDates public holidays and absences, in Y-m-d */
     public function __construct(
         private readonly Randomizer $randomizer,
         private readonly int $dailyTargetSeconds,
+        private readonly array $exemptDates = [],
     ) {}
 
     public function generate(CarbonInterface $from, CarbonInterface $to, int $balanceSeconds): Collection
@@ -67,7 +69,12 @@ final class WorkHistoryGenerator
         $days = collect();
 
         for ($day = Carbon::instance($from->toDateTimeImmutable())->startOfDay(); $day->lessThanOrEqualTo($to); $day->addDay()) {
-            if ($day->isWeekend()) {
+            /*
+             * A public holiday or an absence carries no target, so booking work on it turns
+             * straight into overtime — which is right for real work, and wrong for generated
+             * history: it left the balance permanently in the plus.
+             */
+            if ($day->isWeekend() || in_array($day->toDateString(), $this->exemptDates, true)) {
                 continue;
             }
 

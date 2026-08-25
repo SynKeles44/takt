@@ -8,6 +8,7 @@ use App\Enums\EntryType;
 use App\Models\TimeEntry;
 use App\Models\User;
 use App\Services\TimeTracker;
+use App\Services\WorkCalendar;
 use App\Services\WorkHistoryGenerator;
 use App\Support\Duration;
 use Illuminate\Console\Command;
@@ -87,6 +88,7 @@ class GenerateHistoryCommand extends Command
         $generator = new WorkHistoryGenerator(
             $seed === null ? new Randomizer : new Randomizer(new Mt19937((int) $seed)),
             $dailyTarget,
+            app(WorkCalendar::class)->exemptDatesForBalance($user, $to),
         );
 
         $blocks = $generator->generate($from, $to, (int) round((float) $this->option('balance') * 3600));
