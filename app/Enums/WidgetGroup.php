@@ -14,4 +14,10 @@ enum WidgetGroup: string
     {
         return __('app.widget.group.'.$this->value);
     }
+
+    /** The filter chip has room for one word. */
+    public function short(): string
+    {
+        return __('app.widget.group_short.'.$this->value);
+    }
 }

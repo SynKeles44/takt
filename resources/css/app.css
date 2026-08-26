@@ -699,6 +699,36 @@ body {
         transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
+    .segmented {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 0.15rem;
+        border-radius: var(--radius-control);
+        border: var(--border-w) solid var(--color-line);
+        background-color: var(--color-raised);
+        padding: 0.15rem;
+    }
+
+    .segment {
+        border-radius: calc(var(--radius-control) - 0.2rem);
+        padding: 0.3rem 0.35rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--color-muted);
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .segment:hover {
+        color: var(--color-ink);
+    }
+
+    .segment-active {
+        background-color: var(--color-surface);
+        color: var(--color-ink);
+        box-shadow: var(--shadow-card);
+    }
+
     .folder-crumb {
         border-radius: var(--radius-pill);
         padding: 0.15rem 0.5rem;
@@ -1277,7 +1307,7 @@ body {
  * it needs. Taking a third of the width away squeezed every tile into a column of headlines.
  */
 :root {
-    --drawer-w: 16.5rem;
+    --drawer-w: 21rem;
 }
 
 .dashboard-grid,
@@ -1681,6 +1711,338 @@ body {
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    color: var(--color-faint);
+}
+
+/*
+ * The schematic of a widget: bars, lines, tiles — the shape of the tile without its data.
+ * Everything here is decoration, so nothing carries text and nothing can be interacted with.
+ */
+.shape {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.45rem 0.5rem;
+    pointer-events: none;
+}
+
+.shape-head {
+    block-size: 0.3rem;
+    inline-size: 38%;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-line-strong);
+    flex: none;
+}
+
+.shape-clock {
+    block-size: 0.85rem;
+    inline-size: 46%;
+    border-radius: 0.2rem;
+    background-color: color-mix(in oklab, var(--color-ink) 42%, transparent);
+    flex: none;
+}
+
+.shape-row {
+    display: flex;
+    gap: 0.25rem;
+    margin-block-start: auto;
+}
+
+.shape-btn {
+    block-size: 0.45rem;
+    flex: 1;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-line-strong);
+}
+
+.shape-btn-accent {
+    background-color: color-mix(in oklab, var(--color-work) 75%, transparent);
+}
+
+.shape-tiles {
+    display: grid;
+    grid-template-columns: repeat(var(--tiles, 2), 1fr);
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.shape-tile {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    border-radius: 0.3rem;
+    background-color: color-mix(in oklab, var(--color-raised) 85%, transparent);
+    border: 1px solid var(--color-line);
+}
+
+.shape-tile-value {
+    block-size: 0.3rem;
+    inline-size: 50%;
+    border-radius: var(--radius-pill);
+    background-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+}
+
+.shape-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.18rem;
+    flex: 1;
+}
+
+.shape-bar {
+    flex: 1;
+    block-size: var(--bar);
+    border-radius: var(--radius-bar);
+    background: linear-gradient(to top, color-mix(in oklab, var(--color-work) 70%, transparent), color-mix(in oklab, var(--color-work-2, var(--color-work)) 45%, transparent));
+}
+
+.shape-grid {
+    display: grid;
+    grid-template-columns: repeat(14, 1fr);
+    gap: 0.1rem;
+    flex: 1;
+    align-content: center;
+}
+
+.shape-cell {
+    aspect-ratio: 1;
+    border-radius: 1.5px;
+    background-color: color-mix(in oklab, var(--color-work) calc(var(--cell) * 22%), var(--color-line));
+}
+
+.shape-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.24rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.shape-line {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.shape-dot {
+    inline-size: 0.28rem;
+    block-size: 0.28rem;
+    border-radius: 50%;
+    background-color: color-mix(in oklab, var(--color-accent) 60%, transparent);
+    flex: none;
+}
+
+.shape-fill {
+    block-size: 0.26rem;
+    inline-size: var(--w, 80%);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-line-strong);
+}
+
+.shape-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.shape-field {
+    block-size: 0.55rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-line);
+    background-color: color-mix(in oklab, var(--color-raised) 70%, transparent);
+}
+
+.shape-field-short {
+    inline-size: 60%;
+}
+
+.shape-form .shape-btn,
+.shape-buttons .shape-btn {
+    flex: none;
+}
+
+.shape-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.shape-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.22rem;
+    align-content: center;
+    flex: 1;
+}
+
+.shape-pill {
+    block-size: 0.42rem;
+    inline-size: var(--w);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-line);
+    background-color: color-mix(in oklab, var(--color-raised) 80%, transparent);
+}
+
+.shape-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.shape-block {
+    block-size: 0.6rem;
+    border-radius: 0.25rem;
+    background-color: color-mix(in oklab, var(--color-raised) 85%, transparent);
+    border: 1px solid var(--color-line);
+}
+
+/*
+ * A gallery entry shows the widget the way it will sit on the board: the frame carries the
+ * real span-to-rows silhouette, and inside it the widget renders at board width and is
+ * scaled down. That is why a wide tile reads as wide here, without any second layout.
+ */
+.gallery-card {
+    display: block;
+    text-align: start;
+    cursor: grab;
+    touch-action: none;
+    border-radius: 1rem;
+    padding: 0.5rem 0.55rem 0.6rem;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.16s var(--spring);
+}
+
+.gallery-card:hover {
+    background-color: var(--color-hover);
+    border-color: var(--color-line);
+    transform: translateY(-1px);
+}
+
+.gallery-card:active {
+    cursor: grabbing;
+    transform: scale(0.985);
+}
+
+.gallery-card.is-hidden {
+    display: none;
+}
+
+/* the frame carries the tile's proportion, so a wide widget reads as wide in the gallery */
+.gallery-frame {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background-color: var(--color-canvas);
+    aspect-ratio: var(--frame-ratio, 1.5);
+    /* the height is the cap, so a tall tile stays narrow instead of being stretched wide */
+    inline-size: min(100%, calc(7rem * var(--frame-ratio, 1.5)));
+    max-block-size: 7rem;
+    min-block-size: 2.4rem;
+}
+
+.gallery-size {
+    position: absolute;
+    inset-block-end: 0.3rem;
+    inset-inline-start: 0.35rem;
+    z-index: 1;
+    border-radius: var(--radius-pill);
+    background-color: color-mix(in oklab, var(--color-popover) 85%, transparent);
+    padding: 0.05rem 0.4rem;
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.gallery-add {
+    position: absolute;
+    inset-block-end: 0.3rem;
+    inset-inline-end: 0.35rem;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-accent);
+    color: var(--color-accent-ink);
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.16s ease, transform 0.2s var(--spring);
+}
+
+.gallery-card:hover .gallery-add,
+.gallery-card:focus-visible .gallery-add {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.gallery-peek {
+    position: fixed;
+    inset-inline-end: calc(min(var(--drawer-w), 100vw - 2.5rem) + 2.25rem);
+    inline-size: min(30rem, 42vw);
+    z-index: 61;
+    padding: 0.85rem 0.875rem 0.9rem;
+    border-radius: 1.15rem;
+    border: 1px solid var(--color-line);
+    background-color: color-mix(in oklab, var(--color-popover) 94%, transparent);
+    backdrop-filter: blur(24px) saturate(1.3);
+    box-shadow: 0 30px 60px -24px var(--shadow-color);
+    opacity: 0;
+    transform: translateX(0.6rem) scale(0.98);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.28s var(--spring);
+}
+
+.gallery-peek[data-open] {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+
+.gallery-peek-frame {
+    position: relative;
+    max-inline-size: 100%;
+    margin-block-start: 0.6rem;
+    overflow: hidden;
+    border-radius: 0.9rem;
+    background-color: var(--color-canvas);
+}
+
+.gallery-peek-stage {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: var(--peek-width, 30rem);
+    transform-origin: top left;
+}
+
+/* the peek is a picture of the widget, never a second interactive copy of it */
+.gallery-peek-stage * {
+    pointer-events: none !important;
+    animation: none !important;
+}
+
+@media (width < 78rem) {
+    .gallery-peek {
+        display: none;
+    }
+}
+
+.board-drawer-empty {
+    border-radius: var(--radius-control);
+    border: 1px dashed var(--color-line);
+    padding: 1.25rem 0.75rem;
+    text-align: center;
+    font-size: 0.6875rem;
     color: var(--color-faint);
 }
 

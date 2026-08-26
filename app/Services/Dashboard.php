@@ -100,6 +100,7 @@ final class Dashboard
                 'dailyTarget' => $user->dailyTargetSeconds(),
             ],
             Widget::Absences => ['absences' => $this->absences($user)],
+            Widget::HomeOffice => $this->homeOffice($user),
             Widget::Todos => ['todos' => $this->todos()],
             Widget::TodoTags => ['tags' => $this->todoTags()],
             Widget::TodoProgress => $this->todoProgress(),
@@ -225,6 +226,23 @@ final class Dashboard
         }
 
         return ['weeks' => $weeks, 'target' => $target];
+    }
+
+    /** @return array<string, mixed> */
+    private function homeOffice(User $user): array
+    {
+        $windows = [7, 30, 365];
+        $window = in_array($user->home_office_window, $windows, true) ? $user->home_office_window : 30;
+
+        return [
+            'summary' => $this->calendar->homeOfficeSummary($user, $window),
+            'thisWeek' => count($this->calendar->homeOfficeDates(
+                $this->weekStart(),
+                $this->weekStart()->copy()->addDays(6),
+            )),
+            'windows' => $windows,
+            'window' => $window,
+        ];
     }
 
     /** @return Collection<int, array{date: Carbon, label: string, tone: string}> */

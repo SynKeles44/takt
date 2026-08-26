@@ -77,7 +77,7 @@ class MonthController extends Controller
         return $calendar->exemptions($request->user(), $month, $month->copy()->endOfMonth());
     }
 
-    /** @param array<string, array{label: string, tone: string, absence: mixed}> $exemptions */
+    /** @param array<string, array{label: string, tone: string, absence: mixed, blocking: bool}> $exemptions */
     private function summary(Carbon $month, TimeTracker $tracker, int $dailyTarget, array $exemptions = []): array
     {
         $entries = $this->entries($month);
@@ -91,7 +91,9 @@ class MonthController extends Controller
         );
 
         $bookedDays = $workDays->count();
-        $targetDays = $workDays->keys()->reject(fn (string $date): bool => isset($exemptions[$date]))->count();
+        $targetDays = $workDays->keys()
+            ->reject(fn (string $date): bool => $exemptions[$date]['blocking'] ?? false)
+            ->count();
 
         return [
             'month' => $month,

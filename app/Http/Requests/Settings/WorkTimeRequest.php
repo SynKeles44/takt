@@ -17,6 +17,7 @@ class WorkTimeRequest extends FormRequest
             'working_days' => ['required', 'integer', 'min:1', 'max:7'],
             'holiday_region' => ['nullable', 'string', 'size:2', Rule::in(array_keys(Holidays::regions()))],
             'vacation_days' => ['nullable', 'numeric', 'min:0', 'max:99'],
+            'home_office_days' => ['nullable', 'integer', 'min:0', 'max:7'],
         ];
     }
 
@@ -29,6 +30,7 @@ class WorkTimeRequest extends FormRequest
             'working_days' => (int) $this->validated('working_days'),
             'holiday_region' => $this->validated('holiday_region') ?? $user->holiday_region,
             'vacation_days' => (float) ($this->validated('vacation_days') ?? $user->vacation_days),
+            'home_office_days' => (int) ($this->validated('home_office_days') ?? $user->home_office_days),
         ];
     }
 

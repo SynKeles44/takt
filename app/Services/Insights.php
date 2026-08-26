@@ -36,7 +36,9 @@ final class Insights
         $break = (int) $entries->where('type', EntryType::Break)->sum(fn (TimeEntry $entry): int => $entry->durationInSeconds());
 
         $bookedDays = $perDay->filter(fn (int $seconds): bool => $seconds > 0);
-        $targetDays = $bookedDays->keys()->reject(fn (string $date): bool => isset($exemptions[$date]))->count();
+        $targetDays = $bookedDays->keys()
+            ->reject(fn (string $date): bool => $exemptions[$date]['blocking'] ?? false)
+            ->count();
 
         $buckets = $this->buckets($period, $from, $to, $perDay, $exemptions, $dailyTarget);
 
@@ -139,7 +141,7 @@ final class Insights
                 $days = $perDay
                     ->filter(fn (int $seconds, string $date): bool => $seconds > 0 && str_starts_with($date, $month->format('Y-m')))
                     ->keys()
-                    ->reject(fn (string $date): bool => isset($exemptions[$date]))
+                    ->reject(fn (string $date): bool => $exemptions[$date]['blocking'] ?? false)
                     ->count();
 
                 $buckets[] = [
@@ -166,7 +168,7 @@ final class Insights
                 'label' => $day->isoFormat('dd'),
                 'sub' => $day->isoFormat('D.MM.'),
                 'work' => (int) $perDay->get($key, 0),
-                'target' => $exemption !== null || $day->isWeekend() ? 0 : $dailyTarget,
+                'target' => ($exemption['blocking'] ?? false) || $day->isWeekend() ? 0 : $dailyTarget,
                 'note' => $exemption['label'] ?? null,
                 'tone' => $exemption['tone'] ?? null,
                 'today' => $day->isSameDay($today),

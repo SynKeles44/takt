@@ -21,6 +21,7 @@ enum Widget: string
     case WeekBalance = 'week_balance';
     case YearHeatmap = 'year_heatmap';
     case Absences = 'absences';
+    case HomeOffice = 'home_office';
 
     // tasks
     case Todos = 'todos';
@@ -51,7 +52,8 @@ enum Widget: string
     {
         return match ($this) {
             self::Timer, self::Stats, self::WeekChart, self::Entries, self::Booking,
-            self::Note, self::MonthSummary, self::WeekBalance, self::YearHeatmap, self::Absences => WidgetGroup::Time,
+            self::Note, self::MonthSummary, self::WeekBalance, self::YearHeatmap, self::Absences,
+            self::HomeOffice => WidgetGroup::Time,
             self::Todos, self::TodoTags, self::TodoProgress => WidgetGroup::Tasks,
             default => WidgetGroup::Development,
         };
@@ -82,6 +84,27 @@ enum Widget: string
             self::WeekChart, self::Todos, self::CommitsToday, self::ReviewQueue,
             self::MyPullRequests, self::Snippets, self::TestPost => 4,
             default => 3,
+        };
+    }
+
+    /**
+     * The silhouette the gallery draws — what the tile looks like, not what is in it. A
+     * scaled-down copy of the real widget is unreadable at gallery width, a schematic of
+     * its shape is not.
+     */
+    public function shape(): string
+    {
+        return match ($this) {
+            self::Timer => 'timer',
+            self::Stats, self::MonthSummary, self::HomeOffice, self::TodoProgress => 'metrics',
+            self::WeekChart, self::WeekBalance => 'chart',
+            self::YearHeatmap => 'heatmap',
+            self::Entries, self::Absences, self::Todos, self::CommitsToday, self::CommitsWeek,
+            self::ReviewQueue, self::MyPullRequests, self::Snippets => 'list',
+            self::Booking, self::TestPost => 'form',
+            self::Note => 'text',
+            self::TodoTags, self::DevLinks => 'pills',
+            self::ProjectLauncher => 'buttons',
         };
     }
 

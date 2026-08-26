@@ -108,6 +108,10 @@ file — no cloud, no external services.
 - **Absences and public holidays** — vacation, sick leave and other day ranges, plus German
   public holidays for the chosen federal state (Easter-based ones computed). Those days carry
   no daily target, so they never create minus hours; a vacation account tracks the rest.
+- **Home office as a marker** — a `home_office` day is not an absence: it keeps its normal
+  target, so its hours stay normal hours. Settings hold the agreed days per week; the absence
+  page reports the days this year, the days in the chosen window and the average per week, and
+  a widget shows this week against the agreement over 7, 30 or 365 days.
 - **Working time hints** — informational warnings for missing breaks above 6 h and 9 h, more
   than 10 h a day and less than 11 h rest between two days.
 - **Time on a task** — a booking can belong to a task; a task can be started directly and
@@ -120,6 +124,11 @@ file — no cloud, no external services.
   the system light/dark preference.
 - **In-app dialogs** — confirmations are rendered inside the app in its own design, never as
   a browser alert; toasts appear without shifting the layout.
+- **A widget gallery that shows the shape** — while the board is in edit mode, the gallery on
+  the right holds every widget that is not on the board, each card carrying the tile's real
+  proportion and a schematic of its content. Pointing at a card opens the peek: the real
+  widget, at the width its span gets on the board. Filter by group or by text; a removed tile
+  goes straight back into the gallery.
 - **No hard reloads** — adding a task, booking time, deleting a row or restoring from the
   trash posts in place and only re-renders the affected region; without JavaScript the plain
   form submit still works.

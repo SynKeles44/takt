@@ -757,3 +757,14 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       full — correct for real work, and the one way the balance can look inexplicable. The
       balance reports that share separately and the stats widget names it ("davon 22h an
       freien Tagen"), so the number can be traced instead of doubted.
+## R38 Home office is a marker, not an absence
+
+- [x] `home_office` is an absence type that changes nothing about the working day: it keeps
+      its target, so the hours booked on it are normal hours and not overtime. Every
+      calculation reads the `blocking` flag of an exemption instead of its mere presence.
+- [x] A home-office entry never displaces a holiday on the same day — the marker loses, the
+      day without a target wins.
+- [x] Settings hold the agreed days per week; the absence page reports the days this year, the
+      days in the chosen window, and the average per week against that agreement.
+- [x] The widget shows this week against the agreement plus the average, over 7, 30 or 365
+      days — the choice is stored, so it survives a reload.

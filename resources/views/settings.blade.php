@@ -51,6 +51,14 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label for="home_office_days" class="label">{{ __('app.settings.home_office_days') }}</label>
+                        <input id="home_office_days" type="number" name="home_office_days" min="0" max="7" step="1"
+                               value="{{ old('home_office_days', $user->home_office_days) }}" class="control metric">
+                        <p class="mt-1 text-[11px] text-faint">{{ __('app.settings.home_office_hint') }}</p>
+                        @error('home_office_days') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
                     <div class="tile flex items-center justify-between gap-3 px-4 py-3">
                         <span class="text-xs text-faint">{{ __('app.settings.daily_target') }}</span>
                         <span class="metric text-lg font-bold text-work-text">{{ \App\Support\Duration::human($user->dailyTargetSeconds()) }}</span>

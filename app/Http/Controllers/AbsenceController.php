@@ -25,6 +25,7 @@ class AbsenceController extends Controller
             'absences' => Absence::query()->orderByDesc('starts_on')->get(),
             'types' => AbsenceType::cases(),
             'vacation' => $calendar->vacationSummary($user, $year),
+            'homeOffice' => $calendar->homeOfficeSummary($user, until: $year === Carbon::today()->year ? null : Carbon::create($year, 12, 31)),
             'holidays' => $holidays->forYear($year, $user->holiday_region),
             'year' => $year,
             'region' => Holidays::regions()[$user->holiday_region] ?? $user->holiday_region,

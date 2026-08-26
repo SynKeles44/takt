@@ -14,12 +14,15 @@
             'accent' => 'border-accent/30 bg-accent/10 text-accent-text',
             'danger' => 'border-danger/30 bg-danger/10 text-danger-text',
             'work' => 'border-work/30 bg-work/10 text-work-text',
+            'rest' => 'border-rest/30 bg-rest/10 text-rest-text',
             default => 'border-line bg-raised text-muted',
         };
     @endphp
     <div class="mb-4 flex items-center gap-2.5 rounded-[var(--radius-control)] border px-4 py-3 text-sm font-medium {{ $exemptTone }}">
-        <x-icon name="calendar-days" class="size-4 shrink-0"/>
-        {{ __('app.absence.today', ['label' => $exemption['label']]) }}
+        <x-icon :name="$exemption['absence']?->type->icon() ?? 'calendar-days'" class="size-4 shrink-0"/>
+        {{ ($exemption['blocking'] ?? true)
+            ? __('app.absence.today', ['label' => $exemption['label']])
+            : __('app.absence.today_marker', ['label' => $exemption['label']]) }}
     </div>
 @endif
 

@@ -53,6 +53,7 @@
                             'accent' => 'bg-accent',
                             'danger' => 'bg-danger',
                             'work' => 'bg-work',
+                            'rest' => 'bg-rest',
                             'neutral' => 'bg-muted',
                             default => '',
                         };

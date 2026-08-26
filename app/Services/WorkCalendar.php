@@ -21,7 +21,7 @@ final class WorkCalendar
         $exempt = [];
 
         foreach ($this->holidays->between(Carbon::instance($from->toDateTimeImmutable()), Carbon::instance($to->toDateTimeImmutable()), $user->holiday_region) as $date => $name) {
-            $exempt[$date] = ['label' => $name, 'tone' => 'work', 'absence' => null];
+            $exempt[$date] = ['label' => $name, 'tone' => 'work', 'absence' => null, 'blocking' => true];
         }
 
         $absences = Absence::query()
@@ -35,10 +35,18 @@ final class WorkCalendar
                     continue;
                 }
 
-                $exempt[$day->toDateString()] = [
+                $key = $day->toDateString();
+                $blocking = $absence->type->blocksWork();
+
+                if (! $blocking && ($exempt[$key]['blocking'] ?? false)) {
+                    continue;
+                }
+
+                $exempt[$key] = [
                     'label' => $absence->note ?: $absence->type->label(),
                     'tone' => $absence->type->tone(),
                     'absence' => $absence,
+                    'blocking' => $blocking,
                 ];
             }
         }
@@ -48,10 +56,62 @@ final class WorkCalendar
         return $exempt;
     }
 
-    /** @return list<string> */
+    /** @return list<string> the days that carry no target */
     public function exemptDates(User $user, CarbonInterface $from, CarbonInterface $to): array
     {
-        return array_keys($this->exemptions($user, $from, $to));
+        return array_keys(array_filter(
+            $this->exemptions($user, $from, $to),
+            static fn (array $entry): bool => $entry['blocking'],
+        ));
+    }
+
+    /**
+     * Home office is a marker, not an absence: it shows up on the day and stays out of
+     * every calculation. @return list<string>
+     */
+    public function homeOfficeDates(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $dates = [];
+
+        foreach (Absence::query()->where('type', AbsenceType::HomeOffice)->overlapping($from, $to)->get() as $absence) {
+            for ($day = $absence->starts_on->copy(); $day->lessThanOrEqualTo($absence->ends_on); $day->addDay()) {
+                if ($day->lessThan($from) || $day->greaterThan($to) || $day->isWeekend()) {
+                    continue;
+                }
+
+                $dates[$day->toDateString()] = true;
+            }
+        }
+
+        ksort($dates);
+
+        return array_keys($dates);
+    }
+
+    /**
+     * How the home-office rhythm compares to the one that was agreed: days this year, days
+     * in the chosen window, and the average per week derived from that window.
+     *
+     * @return array{year: int, days_year: int, days_window: int, window: int, per_week: float, target: int, weeks: float}
+     */
+    public function homeOfficeSummary(User $user, ?int $window = null, ?CarbonInterface $until = null): array
+    {
+        $until = Carbon::instance(($until ?? Carbon::today())->toDateTimeImmutable())->endOfDay();
+        $window = max(1, $window ?? $user->home_office_window);
+
+        $inYear = count($this->homeOfficeDates($until->copy()->startOfYear(), $until));
+        $inWindow = count($this->homeOfficeDates($until->copy()->subDays($window - 1)->startOfDay(), $until));
+        $weeks = $window / 7;
+
+        return [
+            'year' => $until->year,
+            'days_year' => $inYear,
+            'days_window' => $inWindow,
+            'window' => $window,
+            'weeks' => round($weeks, 1),
+            'per_week' => round($inWindow / $weeks, 1),
+            'target' => (int) $user->home_office_days,
+        ];
     }
 
     /** @return list<string> */
