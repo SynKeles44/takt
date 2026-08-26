@@ -252,7 +252,7 @@ php artisan takt:assign-owner you@example.com
 | --- | --- |
 | `php artisan takt:backup` | Writes a JSON backup per account under `storage/app/backups/<user>/` and keeps the newest 30. |
 | `php artisan takt:purge-trash` | Removes trashed entries and tasks older than 30 days. |
-| `php artisan takt:history` | Fills demo working time. |
+| `php artisan takt:history` | Fills demo working time — replaces real entries in the range, after writing a safety copy. |
 | `php artisan takt:icons` | Regenerates the notification icon. |
 
 Both maintenance commands are scheduled daily in `routes/console.php`; run
@@ -288,6 +288,12 @@ empty.
 | `--keep` | — | Only clear the generated range instead of everything up to today. |
 | `--seed` | random | Seed for reproducible output. |
 | `--force` | — | Delete entries in the cleared range without asking. |
+
+Whenever the range already holds entries, the command first writes a full JSON safety copy
+to `storage/app/backups/<user>/<email>-before-history-<timestamp>.json` and names the path,
+then asks for confirmation (`--force` skips only the question, never the safety copy). A
+deleted entry also stays in the trash for 30 days, so a regeneration is reversible twice
+over — import the safety copy in Settings, or restore the entries from the trash.
 
 By default the command clears everything from the first generated day up to **today**, so
 the skipped weeks are guaranteed to be empty. With `--keep` it only clears the generated

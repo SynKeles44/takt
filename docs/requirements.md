@@ -736,3 +736,11 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       booked on it is overtime by definition — which is right for real work and wrong for
       generated data: it left the balance permanently in the plus (measured: +22 h from three
       holidays in one generated range).
+
+## R35 A destructive command carries its own net
+
+- [x] `takt:history` replaces real entries in its range. Before deleting anything it writes a
+      full JSON safety copy under `storage/app/backups/<user>/…-before-history-….json`, prints
+      the path, and only then asks. `--force` skips the question, never the copy. Together with
+      the 30-day trash a regeneration is reversible twice over — the copy imports through
+      Settings, the entries restore from the trash.

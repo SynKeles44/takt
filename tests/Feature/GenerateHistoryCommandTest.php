@@ -12,6 +12,7 @@ use App\Services\WorkCalendar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class GenerateHistoryCommandTest extends TestCase
@@ -219,6 +220,52 @@ class GenerateHistoryCommandTest extends TestCase
 
         $this->assertSame(3 * self::DAILY_TARGET + 3_600, $worked);
         $this->assertSame(3_600, app(TimeTracker::class)->balance(28_800)['seconds']);
+    }
+
+    public function test_existing_entries_are_backed_up_before_they_are_replaced(): void
+    {
+        Storage::fake('local');
+
+        $entry = TimeEntry::query()->create([
+            'type' => EntryType::Work,
+            'started_at' => Carbon::parse('2026-08-10 09:00:00'),
+            'ended_at' => Carbon::parse('2026-08-10 17:00:00'),
+            'note' => 'echter Eintrag',
+        ]);
+
+        $this->artisan('takt:history', ['--months' => 2, '--balance' => 0, '--seed' => 4, '--force' => true])
+            ->assertSuccessful();
+
+        $this->assertDatabaseMissing('time_entries', ['id' => $entry->id, 'deleted_at' => null]);
+
+        $files = Storage::disk('local')->files('backups/'.$this->user->id);
+        $copies = array_values(array_filter($files, fn (string $file): bool => str_contains($file, 'before-history')));
+
+        $this->assertCount(1, $copies);
+        $this->assertStringContainsString('echter Eintrag', Storage::disk('local')->get($copies[0]));
+    }
+
+    public function test_a_declined_confirmation_keeps_every_entry(): void
+    {
+        $this->generate(4, balance: 0);
+
+        $before = TimeEntry::query()->count();
+        $from = Carbon::today()->subMonths(2)->startOfWeek();
+        $inRange = TimeEntry::query()->between($from, Carbon::today()->endOfDay())->count();
+
+        $this->artisan('takt:history', ['--months' => 2, '--balance' => 0])
+            ->expectsConfirmation(
+                sprintf(
+                    '%d real entries between %s and %s are replaced by generated ones. Continue?',
+                    $inRange,
+                    $from->toDateString(),
+                    Carbon::today()->toDateString(),
+                ),
+                'no',
+            )
+            ->assertFailed();
+
+        $this->assertSame($before, TimeEntry::query()->count());
     }
 
     public function test_an_invalid_date_option_is_rejected(): void

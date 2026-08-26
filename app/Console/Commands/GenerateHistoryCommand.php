@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Enums\EntryType;
 use App\Models\TimeEntry;
 use App\Models\User;
+use App\Services\Backup;
 use App\Services\TimeTracker;
 use App\Services\WorkCalendar;
 use App\Services\WorkHistoryGenerator;
@@ -14,6 +15,8 @@ use App\Support\Duration;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Random\Engine\Mt19937;
 use Random\Randomizer;
 use Throwable;
@@ -33,7 +36,7 @@ class GenerateHistoryCommand extends Command
 
     protected $description = 'Fill the history with realistic random work days that add up to the weekly target';
 
-    public function handle(TimeTracker $tracker): int
+    public function handle(TimeTracker $tracker, Backup $backup): int
     {
         $user = $this->resolveUser();
 
@@ -71,15 +74,21 @@ class GenerateHistoryCommand extends Command
 
         $existing = TimeEntry::query()->between($from, $clearTo)->count();
 
-        if ($existing > 0 && ! $this->option('force') && ! $this->components->confirm(
-            sprintf(
-                '%d existing entries between %s and %s will be deleted. Continue?',
-                $existing,
-                $from->toDateString(),
-                $clearTo->toDateString(),
-            ),
-        )) {
-            return self::FAILURE;
+        if ($existing > 0) {
+            $safetyCopy = $this->writeSafetyCopy($backup, $user);
+
+            $this->components->warn(sprintf('Safety copy of all entries written to %s.', $safetyCopy));
+
+            if (! $this->option('force') && ! $this->components->confirm(
+                sprintf(
+                    '%d real entries between %s and %s are replaced by generated ones. Continue?',
+                    $existing,
+                    $from->toDateString(),
+                    $clearTo->toDateString(),
+                ),
+            )) {
+                return self::FAILURE;
+            }
         }
 
         $dailyTarget = $user->dailyTargetSeconds();
@@ -118,6 +127,20 @@ class GenerateHistoryCommand extends Command
         $this->newLine();
 
         return self::SUCCESS;
+    }
+
+    private function writeSafetyCopy(Backup $backup, User $user): string
+    {
+        $path = sprintf(
+            'backups/%d/%s-before-history-%s.json',
+            $user->getKey(),
+            Str::slug($user->email),
+            Carbon::now()->format('Y-m-d-His'),
+        );
+
+        Storage::disk('local')->put($path, $backup->json($user));
+
+        return $path;
     }
 
     private function resolveUser(): ?User
