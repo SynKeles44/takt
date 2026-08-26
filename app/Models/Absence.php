@@ -22,10 +22,15 @@ class Absence extends Model
         'ends_on' => 'date',
     ];
 
+    /**
+     * Compared against the ends of the days, not their dates: the column holds a datetime, so
+     * `starts_on <= '2026-08-26'` never matched an absence stored as `2026-08-26 00:00:00` —
+     * which is why a single-day absence was invisible on exactly the day it covered.
+     */
     public function scopeOverlapping(Builder $query, CarbonInterface $from, CarbonInterface $to): Builder
     {
-        return $query->where('starts_on', '<=', $to->toDateString())
-            ->where('ends_on', '>=', $from->toDateString());
+        return $query->where('starts_on', '<=', $to->copy()->endOfDay()->format('Y-m-d H:i:s'))
+            ->where('ends_on', '>=', $from->copy()->startOfDay()->format('Y-m-d H:i:s'));
     }
 
     public function workdays(): int

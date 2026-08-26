@@ -768,3 +768,9 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       days in the chosen window, and the average per week against that agreement.
 - [x] The widget shows this week against the agreement plus the average, over 7, 30 or 365
       days — the choice is stored, so it survives a reload.
+## R39 A single-day absence is visible on its own day
+
+- [x] `starts_on` holds a datetime, so comparing it against a bare date (`<= '2026-08-26'`)
+      never matched an absence stored as `2026-08-26 00:00:00`. Every range query that ended
+      on the covered day came back empty — which is why the timer never once said
+      "today: vacation". The scope compares against the ends of the days.

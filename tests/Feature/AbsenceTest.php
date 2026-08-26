@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\AbsenceType;
 use App\Enums\EntryType;
 use App\Models\Absence;
 use App\Models\TimeEntry;
@@ -156,5 +157,22 @@ class AbsenceTest extends TestCase
 
         $this->get(route('absences'))->assertOk()->assertDontSee('Fremd');
         $this->delete(route('absences.destroy', $absence))->assertNotFound();
+    }
+
+    public function test_a_single_day_absence_is_found_on_the_day_it_covers(): void
+    {
+        $day = Carbon::parse('2026-09-14');
+
+        Absence::query()->create([
+            'type' => AbsenceType::Vacation,
+            'starts_on' => $day->toDateString(),
+            'ends_on' => $day->toDateString(),
+        ]);
+
+        $this->assertSame(1, Absence::query()->overlapping($day, $day)->count());
+        $this->assertArrayHasKey(
+            $day->toDateString(),
+            app(WorkCalendar::class)->exemptions($this->user, $day, $day),
+        );
     }
 }
