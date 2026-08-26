@@ -106,15 +106,19 @@ final class TimeTracker
 
         $worked = $days->sum(fn (Collection $entries): int => $this->totals($entries)['work']);
 
-        $countedDays = $days->keys()
-            ->reject(fn (string $date): bool => in_array($date, $exemptDates, true))
-            ->count();
+        $exemptDays = $days->filter(fn (Collection $entries, string $date): bool => in_array($date, $exemptDates, true));
 
+        /*
+         * A day without a target contributes its whole booked time as overtime — right for
+         * real work on a holiday, and the single reason a balance can look inexplicable.
+         * It is reported separately so the number can be traced instead of doubted.
+         */
         return [
-            'seconds' => $worked - $countedDays * $dailyTargetSeconds,
+            'seconds' => $worked - ($days->count() - $exemptDays->count()) * $dailyTargetSeconds,
             'worked' => $worked,
-            'days' => $countedDays,
-            'exempt' => $days->keys()->filter(fn (string $date): bool => in_array($date, $exemptDates, true))->count(),
+            'days' => $days->count() - $exemptDays->count(),
+            'exempt' => $exemptDays->count(),
+            'exempt_worked' => $exemptDays->sum(fn (Collection $entries): int => $this->totals($entries)['work']),
         ];
     }
 

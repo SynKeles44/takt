@@ -42,10 +42,16 @@
     <x-stat :label="__('app.stats.balance')"
             :value="Duration::signed($balance['seconds'])"
             :tone="$balance['seconds'] < 0 ? 'danger' : ($balance['seconds'] > 0 ? 'work' : 'neutral')"
-            :hint="__('app.stats.balance_hint', [
-                'hours' => Duration::signedDecimal($balance['seconds']),
-                'days' => $balance['days'],
-            ])">
+            :hint="$balance['exempt_worked'] > 0
+                ? __('app.stats.balance_hint_exempt', [
+                    'hours' => Duration::signedDecimal($balance['seconds']),
+                    'days' => $balance['days'],
+                    'exempt' => Duration::human($balance['exempt_worked']),
+                ])
+                : __('app.stats.balance_hint', [
+                    'hours' => Duration::signedDecimal($balance['seconds']),
+                    'days' => $balance['days'],
+                ])">
         <x-slot:icon><x-icon name="scale" class="size-4"/></x-slot:icon>
     </x-stat>
 </div>

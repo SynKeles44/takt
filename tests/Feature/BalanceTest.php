@@ -126,6 +126,30 @@ class BalanceTest extends TestCase
             ->assertSee('+1,00 h · 1 Buchungstage');
     }
 
+    public function test_time_booked_on_a_day_without_a_target_is_reported_separately(): void
+    {
+        $this->workDay('2026-08-18', '09:00', '17:00');
+        $this->workDay('2026-05-01', '09:00', '16:00');
+
+        $balance = app(TimeTracker::class)->balance(28_800, null, ['2026-05-01']);
+
+        $this->assertSame(1, $balance['days']);
+        $this->assertSame(1, $balance['exempt']);
+        $this->assertSame(25_200, $balance['exempt_worked']);
+        $this->assertSame(25_200, $balance['seconds']);
+    }
+
+    public function test_a_day_off_without_bookings_stays_out_of_the_report(): void
+    {
+        $this->workDay('2026-08-18', '09:00', '17:00');
+
+        $balance = app(TimeTracker::class)->balance(28_800, null, ['2026-05-01']);
+
+        $this->assertSame(0, $balance['exempt']);
+        $this->assertSame(0, $balance['exempt_worked']);
+        $this->assertSame(0, $balance['seconds']);
+    }
+
     public function test_the_dashboard_shows_a_negative_balance(): void
     {
         $this->workDay('2026-08-19', '08:00', '14:00');

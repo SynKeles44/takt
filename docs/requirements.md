@@ -750,3 +750,10 @@ A section for the programmer's day, reachable as its own sidebar entry with four
 - [x] The clock ticks even when the page was loaded while nothing was running. The buttons
       swap regions instead of reloading, so an interval started only on page load left the
       clock frozen at `00:00:00` after a start.
+
+## R37 A balance that can be traced
+
+- [x] Time booked on a day without a target (public holiday, absence) counts as overtime in
+      full — correct for real work, and the one way the balance can look inexplicable. The
+      balance reports that share separately and the stats widget names it ("davon 22h an
+      freien Tagen"), so the number can be traced instead of doubted.

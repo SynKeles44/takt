@@ -45,6 +45,7 @@ return [
         'break_today' => 'Pause heute',
         'balance' => 'Plus/Minus',
         'balance_hint' => ':hours h · :days Buchungstage',
+        'balance_hint_exempt' => ':hours h · :days Buchungstage · davon :exempt an freien Tagen',
         'week' => 'Woche',
         'target' => 'Ziel :hours h',
         'remaining' => 'noch :duration',

@@ -45,6 +45,7 @@ return [
         'break_today' => 'Break today',
         'balance' => 'Balance',
         'balance_hint' => ':hours h · :days booked days',
+        'balance_hint_exempt' => ':hours h · :days booked days · :exempt of it on days off',
         'week' => 'This week',
         'target' => 'Target :hours h',
         'remaining' => ':duration to go',
