@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\Widget;
+use App\Enums\WidgetGroup;
 use App\Models\DashboardWidget;
 use App\Models\User;
 use App\Services\Dashboard;
@@ -116,6 +117,44 @@ class DashboardWidgetTest extends TestCase
             array_map(fn (Widget $widget): string => $widget->value, Widget::defaults()),
             DashboardWidget::query()->inOrder()->pluck('widget')->map(fn (Widget $w): string => $w->value)->all(),
         );
+    }
+
+    public function test_every_gallery_card_shows_its_shape_and_size(): void
+    {
+        $this->arrange([Widget::Timer]);
+
+        $response = $this->get(route('dashboard'))->assertOk();
+
+        foreach (Widget::cases() as $widget) {
+            $ratio = round(
+                (163 * $widget->span() + 20 * ($widget->span() - 1)) / (80 * $widget->rows() + 20 * ($widget->rows() - 1)),
+                3,
+            );
+
+            $response->assertSee('shape shape-'.$widget->shape(), escape: false);
+            $response->assertSee('--frame-ratio: '.$ratio, escape: false);
+            $response->assertSee($widget->span().'×'.$widget->rows(), escape: false);
+        }
+    }
+
+    public function test_the_gallery_can_be_filtered_by_group_and_text(): void
+    {
+        $response = $this->get(route('dashboard'))->assertOk();
+
+        foreach (WidgetGroup::cases() as $group) {
+            $response->assertSee('data-filter="'.$group->value.'"', escape: false);
+        }
+
+        $response->assertSee('data-gallery-search', escape: false)
+            ->assertSee('data-search="'.mb_strtolower(Widget::YearHeatmap->label().' '.Widget::YearHeatmap->description()).'"', escape: false);
+    }
+
+    public function test_the_peek_panel_is_present_for_the_live_preview(): void
+    {
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-gallery-peek', escape: false)
+            ->assertSee('data-peek-stage', escape: false);
     }
 
     public function test_the_drawer_offers_exactly_what_is_not_on_the_board(): void

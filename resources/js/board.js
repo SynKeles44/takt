@@ -142,6 +142,8 @@ export const createBoard = ({ swapRegions, toast }) => {
         editing = value;
         apply();
 
+        if (value) filterGallery(); else hidePeek();
+
         // leaving the edit mode is the save
         if (! value) commit();
     };
@@ -153,7 +155,7 @@ export const createBoard = ({ swapRegions, toast }) => {
         const ghost = source.cloneNode(true);
 
         // the clone must not look like a tile, or it would count as one
-        ghost.classList.remove('widget-slot', 'board-chip');
+        ghost.classList.remove('widget-slot', 'board-chip', 'gallery-card');
         ghost.classList.add('board-ghost');
         ghost.style.width = `${box.width}px`;
         ghost.style.height = `${box.height}px`;
@@ -236,12 +238,19 @@ export const createBoard = ({ swapRegions, toast }) => {
         slot.dataset.fresh = 'pending';
         slot.style.setProperty('--widget-span', chip.dataset.span);
         slot.style.setProperty('--widget-rows', chip.dataset.rows);
-        const label = chip.querySelector('span span')?.textContent?.trim() ?? '';
+
+        const label = chip.dataset.label ?? chip.querySelector('span span')?.textContent?.trim() ?? '';
+        const preview = chip.querySelector('[data-preview-scale]');
+        const seen = preview && ! preview.querySelector('.gallery-skeleton') ? preview.innerHTML : '';
 
         slot.dataset.label = label;
-        slot.innerHTML = `<div class="widget-body"><div class="card grid h-full place-items-center">
-            <span class="text-xs text-faint">${label}</span>
-        </div></div>`;
+
+        // the card the pointer just left becomes the tile: same markup, so nothing flashes
+        slot.innerHTML = seen !== ''
+            ? `<div class="widget-body">${seen}</div>`
+            : `<div class="widget-body"><div class="card grid h-full place-items-center">
+                <span class="text-xs text-faint">${label}</span>
+            </div></div>`;
 
         rearrange(() => {
             grid().insertBefore(slot, before);
@@ -267,31 +276,197 @@ export const createBoard = ({ swapRegions, toast }) => {
                 if (! body) return;
 
                 body.innerHTML = html;
+                body.querySelectorAll('[aria-hidden="true"][tabindex="-1"]').forEach((node) => {
+                    node.removeAttribute('aria-hidden');
+                    node.removeAttribute('tabindex');
+                });
                 apply();
             })
             .catch(() => {});
     };
 
-    /** A removed tile goes straight back into the gallery, so it can come right back. */
+    // MARK: gallery
+
+    /*
+     * The cards show a schematic of the tile — a scaled-down copy of the real widget is
+     * unreadable at gallery width. Pointing at a card opens the peek: the widget itself,
+     * rendered at the width its span gets on the board and scaled into the panel. That keeps
+     * the list scannable and still answers "what will this actually look like".
+     */
+    const BOARD_ROW = 80;
+    const BOARD_GAP = 20;
+
+    const peeked = new Map();
+    let peekTimer = null;
+    let scrolledAt = 0;
+
+    const peek = () => document.querySelector('[data-gallery-peek]');
+
+    const boardWidth = () => {
+        const width = grid()?.getBoundingClientRect().width ?? 0;
+
+        return width > 0 ? width : 1080;
+    };
+
+    const renderSize = (span, rows) => {
+        const columns = (boardWidth() - BOARD_GAP * 5) / 6;
+
+        return {
+            width: Math.max(240, columns * span + BOARD_GAP * (span - 1)),
+            height: rows * BOARD_ROW + BOARD_GAP * (rows - 1),
+        };
+    };
+
+    /*
+     * The frame is sized to what the widget actually renders, not to the height its rows
+     * reserve on the board — a tile that needs less leaves the rest of the frame empty, which
+     * is what made the peek look broken. The board height stays the cap.
+     */
+    const fitStage = (span, rows) => {
+        const panel = peek();
+        const stage = panel?.querySelector('[data-peek-stage]');
+
+        if (! stage) return;
+
+        const size = renderSize(span, rows);
+
+        /*
+         * The room is computed, not measured: the panel is sized to the scaled widget below,
+         * so measuring the panel to scale its own content would chase its own tail.
+         */
+        const available = Math.min(480, window.innerWidth * 0.42) - 28;
+
+        if (available <= 0) return;
+
+        const factor = Math.min(1, available / size.width);
+        const content = stage.scrollHeight || size.height;
+        const width = Math.round(size.width * factor);
+
+        stage.style.setProperty('--peek-width', `${size.width}px`);
+        stage.style.transform = `scale(${factor.toFixed(4)})`;
+
+        // the frame wraps the scaled widget exactly, and the panel wraps the frame
+        stage.parentElement.style.width = `${width}px`;
+        stage.parentElement.style.height = `${Math.round(Math.min(size.height, content) * factor)}px`;
+        panel.style.width = `${width + 28}px`;
+    };
+
+    /** Centred on the card it belongs to, and never past the edge of the window. */
+    const placePeek = (card) => {
+        const panel = peek();
+
+        if (! panel) return;
+
+        const box = card.getBoundingClientRect();
+        const height = panel.offsetHeight;
+        const centred = box.top + box.height / 2 - height / 2;
+
+        panel.style.top = `${Math.round(Math.min(Math.max(12, centred), Math.max(12, window.innerHeight - height - 12)))}px`;
+    };
+
+    const showPeek = (card) => {
+        const panel = peek();
+
+        // a peek that opens while the list is moving under the pointer is noise, not help
+        if (! panel || card.dataset.addWidget === undefined || Date.now() - scrolledAt < 220) return;
+
+        const widget = card.dataset.addWidget;
+        const stage = panel.querySelector('[data-peek-stage]');
+        const span = Number(card.dataset.span) || 2;
+        const rows = Number(card.dataset.rows) || 3;
+
+        panel.querySelector('[data-peek-label]').textContent = card.dataset.label ?? '';
+        panel.dataset.open = '';
+        panel.dataset.widget = widget;
+
+        const cached = peeked.get(widget);
+
+        stage.innerHTML = cached ?? '';
+        fitStage(span, rows);
+        placePeek(card);
+
+        if (cached !== undefined) return;
+
+        const template = root()?.dataset.widgetUrl;
+
+        if (! template) return;
+
+        fetch(template.replace('__widget__', widget), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then((response) => (response.ok ? response.text() : Promise.reject()))
+            .then((html) => {
+                peeked.set(widget, html);
+
+                // the pointer may have moved on while this was in flight
+                if (panel.dataset.open === undefined || panel.dataset.widget !== widget) return;
+
+                stage.innerHTML = html;
+                fitStage(span, rows);
+                placePeek(card);
+            })
+            .catch(() => {});
+    };
+
+    const hidePeek = () => {
+        const panel = peek();
+
+        if (! panel) return;
+
+        delete panel.dataset.open;
+    };
+
+    const cards = () => [...document.querySelectorAll('[data-drawer-list] .gallery-card')];
+
+    const filterGallery = () => {
+        const group = document.querySelector('[data-gallery-filter] .segment-active')?.dataset.filter ?? 'all';
+        const term = (document.querySelector('[data-gallery-search]')?.value ?? '').trim().toLowerCase();
+        let shown = 0;
+
+        cards().forEach((card) => {
+            const matches = (group === 'all' || card.dataset.group === group)
+                && (term === '' || (card.dataset.search ?? '').includes(term));
+
+            card.classList.toggle('is-hidden', ! matches);
+
+            if (matches) shown++;
+        });
+
+        // the group headings only help while nothing is filtered
+        document.querySelectorAll('[data-group-label]').forEach((label) => {
+            label.classList.toggle('hidden', group !== 'all' || term !== '');
+        });
+
+        document.querySelector('[data-drawer-empty]')?.classList.toggle('hidden', shown > 0);
+    };
+
+    /** A removed tile comes back as the full card from the catalogue pool. */
     const returnToGallery = (slot) => {
         const list = document.querySelector('[data-drawer-list]');
+        const pool = document.querySelector('[data-gallery-pool]');
 
-        if (! list) return;
+        if (! list || ! pool) return;
 
-        const chip = document.createElement('button');
+        const source = pool.content.querySelector(`[data-pool-widget="${slot.dataset.widget}"]`);
 
-        chip.type = 'button';
-        chip.className = 'board-chip';
-        chip.dataset.addWidget = slot.dataset.widget;
-        chip.dataset.span = String(size(slot, 'span'));
-        chip.dataset.rows = String(size(slot, 'rows'));
-        chip.innerHTML = `
-            <svg class="size-3.5 shrink-0 text-accent-text" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12"/><path d="M6 12h12"/></svg>
-            <span class="min-w-0"><span class="block truncate text-xs font-semibold text-ink">${slot.dataset.label ?? ''}</span></span>
-        `;
+        if (! source) return;
 
-        list.append(chip);
+        const card = source.cloneNode(true);
+
+        card.dataset.addWidget = slot.dataset.widget;
+        delete card.dataset.poolWidget;
+        card.dataset.span = String(size(slot, 'span'));
+        card.dataset.rows = String(size(slot, 'rows'));
+        card.querySelector('.gallery-size').textContent = `${card.dataset.span}×${card.dataset.rows}`;
+        const span = Number(card.dataset.span);
+        const rows = Math.max(1, Number(card.dataset.rows));
+
+        card.querySelector('.gallery-frame').style.setProperty(
+            '--frame-ratio',
+            ((163 * span + 20 * (span - 1)) / (80 * rows + 20 * (rows - 1))).toFixed(3),
+        );
+
+        list.insertBefore(card, document.querySelector('[data-drawer-empty]'));
+
+        filterGallery();
     };
 
     // MARK: wiring, once
@@ -339,10 +514,68 @@ export const createBoard = ({ swapRegions, toast }) => {
             return;
         }
 
+        const filter = event.target.closest('[data-gallery-filter] .segment');
+
+        if (filter) {
+            document.querySelectorAll('[data-gallery-filter] .segment').forEach((node) => {
+                node.classList.toggle('segment-active', node === filter);
+            });
+
+            filterGallery();
+
+            return;
+        }
+
         const chip = event.target.closest('[data-add-widget]');
 
         if (chip) addWidget(chip);
     });
+
+    document.addEventListener('input', (event) => {
+        if (event.target.matches('[data-gallery-search]')) filterGallery();
+    });
+
+    // pointing at a card opens the peek; a short delay keeps a scroll past it quiet
+    document.addEventListener('pointerover', (event) => {
+        if (! editing || event.pointerType === 'touch') return;
+
+        const card = event.target.closest('[data-drawer-list] .gallery-card');
+
+        clearTimeout(peekTimer);
+
+        if (! card) {
+            if (! event.target.closest('[data-gallery-peek]')) peekTimer = setTimeout(hidePeek, 120);
+
+            return;
+        }
+
+        peekTimer = setTimeout(() => showPeek(card), 90);
+    });
+
+    document.addEventListener('focusin', (event) => {
+        const card = event.target.closest('[data-drawer-list] .gallery-card');
+
+        if (card && editing) showPeek(card);
+    });
+
+    /*
+     * Scrolling closes the peek instead of dragging it along: the list moves under a still
+     * pointer, so every card it passes would fire pointerover and open a panel nobody asked
+     * for. A short pause afterwards keeps those stray events quiet, and the next real pointer
+     * move opens the peek again.
+     */
+    window.addEventListener('scroll', () => {
+        scrolledAt = Date.now();
+
+        clearTimeout(peekTimer);
+        hidePeek();
+    }, { capture: true, passive: true });
+
+    window.addEventListener('wheel', () => {
+        scrolledAt = Date.now();
+    }, { passive: true });
+
+    window.addEventListener('resize', hidePeek);
 
     document.addEventListener('pointerdown', (event) => {
         if (! root()) return;

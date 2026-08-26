@@ -87,25 +87,44 @@
                 </button>
             </div>
 
+            <div class="segmented mt-1" data-gallery-filter>
+                <button type="button" class="segment segment-active" data-filter="all">{{ __('app.widget.filter_all') }}</button>
+                @foreach ($groups as $group)
+                    <button type="button" class="segment" data-filter="{{ $group->value }}">{{ $group->short() }}</button>
+                @endforeach
+            </div>
+
+            <label class="sr-only" for="gallery-search">{{ __('app.widget.search') }}</label>
+            <input id="gallery-search" type="search" class="control text-xs" data-gallery-search
+                   placeholder="{{ __('app.widget.search') }}" autocomplete="off">
+
             <div class="board-drawer-list" data-drawer-list>
-                @forelse ($available as $entry)
-                    <p class="board-drawer-group">{{ $entry['group']->label() }}</p>
+                @foreach ($available as $entry)
+                    <p class="board-drawer-group" data-group-label="{{ $entry['group']->value }}">{{ $entry['group']->label() }}</p>
 
                     @foreach ($entry['widgets'] as $widget)
-                        <button type="button" class="board-chip" data-add-widget="{{ $widget->value }}"
-                                data-span="{{ $widget->span() }}" data-rows="{{ $widget->rows() }}">
-                            <x-icon name="plus" class="size-3.5 shrink-0 text-accent-text"/>
-                            <span class="min-w-0">
-                                <span class="block truncate text-xs font-semibold text-ink">{{ $widget->label() }}</span>
-                                <span class="mt-0.5 block text-[11px] leading-snug text-dim">{{ $widget->description() }}</span>
-                            </span>
-                        </button>
+                        <x-widget-card :widget="$widget"/>
                     @endforeach
-                @empty
-                    <p class="rounded-[var(--radius-control)] border border-dashed border-line px-3 py-6 text-center text-xs text-faint">
-                        {{ __('app.widget.all_in_use') }}
-                    </p>
-                @endforelse
+                @endforeach
+
+                <p class="board-drawer-empty hidden" data-drawer-empty>{{ __('app.widget.all_in_use') }}</p>
+            </div>
+
+            {{-- every catalogue card, so a removed tile comes back as a full card without JS building one --}}
+            <template data-gallery-pool>
+                @foreach ($catalog as $widget)
+                    <x-widget-card :widget="$widget" :pooled="true"/>
+                @endforeach
+            </template>
+        </aside>
+
+        {{-- the peek: the real widget, in the size it will have on the board --}}
+        <aside class="gallery-peek" data-gallery-peek aria-hidden="true">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">{{ __('app.widget.peek') }}</p>
+            <p class="mt-0.5 truncate text-xs font-semibold text-ink" data-peek-label></p>
+
+            <div class="gallery-peek-frame">
+                <div class="gallery-peek-stage" data-peek-stage></div>
             </div>
         </aside>
     </div>

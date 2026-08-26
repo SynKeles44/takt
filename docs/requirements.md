@@ -774,3 +774,20 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       never matched an absence stored as `2026-08-26 00:00:00`. Every range query that ended
       on the covered day came back empty — which is why the timer never once said
       "today: vacation". The scope compares against the ends of the days.
+## R40 The widget gallery shows the shape
+
+- [x] Each gallery card carries the tile's real proportion (span to rows, computed from the
+      board's own column and row size) and a schematic of its content — bars, lines, tiles,
+      fields. A scaled-down copy of the real widget is unreadable at gallery width; a
+      schematic is not.
+- [x] Pointing at a card opens the peek: the real widget, rendered at the width its span gets
+      on the board and scaled into a panel beside the gallery. Fetched once per widget.
+- [x] The peek fits what it shows: the frame takes the height the widget actually renders (the
+      board height is only the cap) and the width of the scaled widget, and the panel wraps
+      the frame — measured 213 px of content in a 280 px frame before, which read as broken.
+- [x] Scrolling closes the peek instead of dragging it along, and a short pause afterwards
+      swallows the pointerover events a moving list fires under a still pointer. Below the
+      panel's breakpoint nothing opens at all — a hidden panel measures zero, and scaling by
+      that mirrored the widget.
+- [x] The gallery filters by group and by text, and a removed tile returns as a full card from
+      a catalogue pool — so no card markup is built twice.

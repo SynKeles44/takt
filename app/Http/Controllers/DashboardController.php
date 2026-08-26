@@ -48,6 +48,8 @@ class DashboardController extends Controller
                 ])
                 ->filter(fn (array $entry): bool => $entry['widgets']->isNotEmpty())
                 ->values(),
+            'groups' => WidgetGroup::cases(),
+            'catalog' => Widget::cases(),
         ]);
     }
 }
