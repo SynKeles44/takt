@@ -744,3 +744,9 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       the path, and only then asks. `--force` skips the question, never the copy. Together with
       the 30-day trash a regeneration is reversible twice over — the copy imports through
       Settings, the entries restore from the trash.
+
+## R36 The live clock keeps ticking
+
+- [x] The clock ticks even when the page was loaded while nothing was running. The buttons
+      swap regions instead of reloading, so an interval started only on page load left the
+      clock frozen at `00:00:00` after a start.

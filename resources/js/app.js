@@ -33,10 +33,13 @@ const tick = () => {
     });
 };
 
-if (document.querySelector('[data-since]')) {
-    tick();
-    setInterval(tick, 1000);
-}
+/*
+ * The interval runs unconditionally: a page loaded while nothing was running has no
+ * [data-since] yet, and the timer arrives later through a region swap without a reload.
+ * A tick that finds no element costs nothing; a missing interval leaves the clock frozen.
+ */
+tick();
+setInterval(tick, 1000);
 
 const dialog = document.querySelector('[data-dialog]');
 const dialogMessage = dialog?.querySelector('[data-dialog-message]');
