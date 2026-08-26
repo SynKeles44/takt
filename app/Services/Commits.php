@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Project;
+use Illuminate\Process\Pool;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Process;
@@ -22,11 +23,147 @@ final class Commits
     {
         $projects ??= Project::query()->inOrder()->get();
 
+        $logs = $this->readMany($projects, $day, $day);
+
         return $projects->map(fn (Project $project): array => [
             'project' => $project,
-            'commits' => $this->read($project, $day, $day),
+            'commits' => $logs[$project->getKey()] ?? [],
             'error' => $this->problem($project),
         ]);
+    }
+
+    /**
+     * One git call per repository, all of them at once: four repositories cost the same
+     * wall clock as one, and the page waits for all of them.
+     *
+     * @param  Collection<int, Project>  $projects
+     * @return array<int, list<array>>
+     */
+    private function readMany(Collection $projects, Carbon $from, Carbon $to): array
+    {
+        $usable = $projects->filter(fn (Project $project): bool => $this->problem($project) === null);
+
+        if ($usable->isEmpty()) {
+            return [];
+        }
+
+        $emails = $this->emailsFor($usable);
+
+        $outputs = $this->parallel($usable
+            ->filter(fn (Project $project): bool => ($emails[$project->getKey()] ?? []) !== [])
+            ->mapWithKeys(fn (Project $project): array => [
+                'p'.$project->getKey() => $this->logArguments($project, $from, $to, $emails[$project->getKey()]),
+            ])
+            ->all());
+
+        $commits = [];
+
+        foreach ($outputs as $key => $output) {
+            $commits[(int) substr((string) $key, 1)] = $this->parse($output);
+        }
+
+        return $commits;
+    }
+
+    /**
+     * @param  Collection<int, Project>  $projects
+     * @return array<int, list<string>>
+     */
+    private function emailsFor(Collection $projects): array
+    {
+        $outputs = $this->parallel($projects->mapWithKeys(fn (Project $project): array => [
+            'p'.$project->getKey() => ['git', '-C', $project->absolutePath(), 'config', 'user.email'],
+        ])->all());
+
+        $account = auth()->user()?->email;
+        $emails = [];
+
+        foreach ($projects as $project) {
+            $found = [];
+            $configured = trim($outputs['p'.$project->getKey()] ?? '');
+
+            if ($configured !== '') {
+                $found[] = $configured;
+            }
+
+            if ($account !== null && ! in_array($account, $found, true)) {
+                $found[] = $account;
+            }
+
+            $emails[$project->getKey()] = $found;
+        }
+
+        return $emails;
+    }
+
+    /**
+     * @param  array<string, list<string>>  $commands
+     * @return array<string, string> the output per key, empty for a failed call
+     */
+    private function parallel(array $commands): array
+    {
+        if ($commands === []) {
+            return [];
+        }
+
+        $results = Process::pool(function (Pool $pool) use ($commands): void {
+            foreach ($commands as $key => $arguments) {
+                $pool->as($key)->timeout(15)->command($arguments);
+            }
+        })->start()->wait();
+
+        $outputs = [];
+
+        foreach (array_keys($commands) as $key) {
+            $result = $results[$key] ?? null;
+            $outputs[$key] = $result !== null && $result->successful() ? $result->output() : '';
+        }
+
+        return $outputs;
+    }
+
+    /** @return list<string> */
+    private function logArguments(Project $project, Carbon $from, Carbon $to, array $emails): array
+    {
+        $arguments = [
+            'git', '-C', $project->absolutePath(), 'log',
+            '--no-merges',
+            '--since='.$from->copy()->startOfDay()->toDateTimeString(),
+            '--until='.$to->copy()->endOfDay()->toDateTimeString(),
+            '--pretty=format:'.self::FORMAT,
+            '--all',
+        ];
+
+        foreach ($emails as $email) {
+            $arguments[] = '--author='.$email;
+        }
+
+        return $arguments;
+    }
+
+    /** @return list<array{sha: string, short: string, author: string, at: Carbon, subject: string}> */
+    private function parse(string $output): array
+    {
+        $commits = [];
+
+        foreach (preg_split('/\R/', trim($output)) ?: [] as $line) {
+            if ($line === '') {
+                continue;
+            }
+
+            [$sha, $short, $author, $email, $at, $subject] = array_pad(explode("\x1f", $line), 6, '');
+
+            $commits[$sha] = [
+                'sha' => $sha,
+                'short' => $short,
+                'author' => $author,
+                'email' => $email,
+                'at' => Carbon::parse($at),
+                'subject' => $subject,
+            ];
+        }
+
+        return collect($commits)->sortByDesc('at')->values()->all();
     }
 
     /**
@@ -44,8 +181,8 @@ final class Commits
             $days->put($day->toDateString(), 0);
         }
 
-        foreach ($projects as $project) {
-            foreach ($this->read($project, $from, $to) as $commit) {
+        foreach ($this->readMany($projects, $from, $to) as $commits) {
+            foreach ($commits as $commit) {
                 $key = $commit['at']->toDateString();
 
                 if ($days->has($key)) {
@@ -73,79 +210,5 @@ final class Commits
         }
 
         return null;
-    }
-
-    /** @return list<array{sha: string, short: string, author: string, at: Carbon, subject: string}> */
-    private function read(Project $project, Carbon $from, Carbon $to): array
-    {
-        if ($this->problem($project) !== null) {
-            return [];
-        }
-
-        $emails = $this->emails($project);
-
-        if ($emails === []) {
-            return [];
-        }
-
-        $arguments = [
-            'git', '-C', $project->absolutePath(), 'log',
-            '--no-merges',
-            '--since='.$from->copy()->startOfDay()->toDateTimeString(),
-            '--until='.$to->copy()->endOfDay()->toDateTimeString(),
-            '--pretty=format:'.self::FORMAT,
-            '--all',
-        ];
-
-        foreach ($emails as $email) {
-            $arguments[] = '--author='.$email;
-        }
-
-        $result = Process::timeout(15)->run($arguments);
-
-        if ($result->failed()) {
-            return [];
-        }
-
-        $commits = [];
-
-        foreach (preg_split('/\R/', trim($result->output())) ?: [] as $line) {
-            if ($line === '') {
-                continue;
-            }
-
-            [$sha, $short, $author, $email, $at, $subject] = array_pad(explode("\x1f", $line), 6, '');
-
-            $commits[$sha] = [
-                'sha' => $sha,
-                'short' => $short,
-                'author' => $author,
-                'email' => $email,
-                'at' => Carbon::parse($at),
-                'subject' => $subject,
-            ];
-        }
-
-        return collect($commits)->sortByDesc('at')->values()->all();
-    }
-
-    /** The identities that count as "mine" for this repository. */
-    private function emails(Project $project): array
-    {
-        $result = Process::timeout(5)->run(['git', '-C', $project->absolutePath(), 'config', 'user.email']);
-
-        $emails = [];
-
-        if ($result->successful() && trim($result->output()) !== '') {
-            $emails[] = trim($result->output());
-        }
-
-        $account = auth()->user()?->email;
-
-        if ($account !== null && ! in_array($account, $emails, true)) {
-            $emails[] = $account;
-        }
-
-        return $emails;
     }
 }

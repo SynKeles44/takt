@@ -6,10 +6,11 @@ namespace App\Services;
 
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Throwable;
 
 /**
  * The two lists that decide whether something is stuck: pull requests waiting for my review,
@@ -74,10 +75,18 @@ final class Reviews
         Cache::forget('reviews.'.$user->getKey());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Every request in one pool: the identity, one call per repository, and the search on
+     * top. Sequentially this took over three seconds — the requests do not depend on each
+     * other, only the sorting afterwards does.
+     *
+     * @return array<string, mixed>
+     */
     private function fetch(User $user): array
     {
-        $login = $this->login($user);
+        $slugs = $this->repositories();
+        $responses = $this->pool($user, $slugs);
+        $login = $this->loginFrom($responses['user'] ?? null);
 
         if ($login === null) {
             return [...$this->rawEmpty(), 'error' => __('app.dev.github_unauthorized')];
@@ -87,16 +96,15 @@ final class Reviews
         $mine = [];
         $incoming = [];
 
-        foreach ($this->repositories() as $slug) {
-            $result = $this->pulls($user, $slug, $login);
+        foreach ($slugs as $slug) {
+            $result = $this->pulls($responses['repo:'.$slug] ?? null, $slug, $login);
             $repositories[$slug] = $result;
 
             $mine = [...$mine, ...$result['mine']];
             $incoming = [...$incoming, ...$result['incoming']];
         }
 
-        // anything outside the registered projects, as far as the token can see it
-        $search = $this->search($user, 'is:open is:pr author:@me archived:false');
+        $search = $this->search($responses['search'] ?? null);
         $known = array_map('strtolower', array_keys($repositories));
 
         foreach ($search['items'] as $pull) {
@@ -115,6 +123,52 @@ final class Reviews
         ];
     }
 
+    /**
+     * @param  list<string>  $slugs
+     * @return array<string, mixed> keyed responses, or a throwable per failed request
+     */
+    private function pool(User $user, array $slugs): array
+    {
+        $token = (string) $user->github_token;
+
+        return Http::pool(function (Pool $pool) use ($slugs, $token): array {
+            $request = fn (string $name) => $pool->as($name)
+                ->withToken($token)
+                ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => '2022-11-28'])
+                ->timeout(10);
+
+            $calls = [$request('user')->get('https://api.github.com/user')];
+
+            foreach ($slugs as $slug) {
+                $calls[] = $request('repo:'.$slug)->get('https://api.github.com/repos/'.$slug.'/pulls', [
+                    'state' => 'open',
+                    'per_page' => 100,
+                    'sort' => 'updated',
+                    'direction' => 'desc',
+                ]);
+            }
+
+            $calls[] = $request('search')->get('https://api.github.com/search/issues', [
+                'q' => 'is:open is:pr author:@me archived:false',
+                'per_page' => 20,
+                'sort' => 'updated',
+            ]);
+
+            return $calls;
+        });
+    }
+
+    private function loginFrom(mixed $response): ?string
+    {
+        if (! $response instanceof Response || ! $response->successful()) {
+            return null;
+        }
+
+        $login = $response->json('login');
+
+        return is_string($login) && $login !== '' ? $login : null;
+    }
+
     /** @return list<string> the repositories of the registered projects */
     private function repositories(): array
     {
@@ -128,32 +182,14 @@ final class Reviews
             ->all();
     }
 
-    private function login(User $user): ?string
-    {
-        try {
-            $response = $this->client($user)->get('https://api.github.com/user');
-        } catch (Throwable) {
-            return null;
-        }
-
-        return $response->successful() ? (string) $response->json('login') : null;
-    }
-
     /**
      * One repository's open pull requests, split into mine and the ones waiting for me.
      *
      * @return array{status: string, message: ?string, mine: list<array>, incoming: list<array>}
      */
-    private function pulls(User $user, string $slug, string $login): array
+    private function pulls(mixed $response, string $slug, string $login): array
     {
-        try {
-            $response = $this->client($user)->get('https://api.github.com/repos/'.$slug.'/pulls', [
-                'state' => 'open',
-                'per_page' => 100,
-                'sort' => 'updated',
-                'direction' => 'desc',
-            ]);
-        } catch (Throwable) {
+        if (! $response instanceof Response) {
             return $this->repoProblem('unreachable', __('app.dev.github_unreachable'));
         }
 
@@ -198,15 +234,9 @@ final class Reviews
     }
 
     /** @return array{items: list<array>, error: ?string} */
-    private function search(User $user, string $query): array
+    private function search(mixed $response): array
     {
-        try {
-            $response = $this->client($user)->get('https://api.github.com/search/issues', [
-                'q' => $query,
-                'per_page' => 20,
-                'sort' => 'updated',
-            ]);
-        } catch (Throwable) {
+        if (! $response instanceof Response) {
             return ['items' => [], 'error' => __('app.dev.github_unreachable')];
         }
 
@@ -239,13 +269,6 @@ final class Reviews
             'updated_at' => Carbon::parse($item['updated_at'] ?? now())->toIso8601String(),
             'created_at' => Carbon::parse($item['created_at'] ?? now())->toIso8601String(),
         ];
-    }
-
-    private function client(User $user)
-    {
-        return Http::withToken($user->github_token)
-            ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => '2022-11-28'])
-            ->timeout(10);
     }
 
     /** @return list<array> */

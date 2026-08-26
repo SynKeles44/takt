@@ -791,3 +791,10 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       that mirrored the widget.
 - [x] The gallery filters by group and by text, and a removed tile returns as a full card from
       a catalogue pool — so no card markup is built twice.
+## R41 The development page waits for nobody
+
+- [x] Every GitHub call goes into one pool: identity, one call per repository, and the search.
+      Sequentially this was 3461 ms for three repositories; pooled it is ~940 ms, and the page
+      itself never waits for it.
+- [x] Commits are read with one `git log` per repository, all at once — 293 ms for four
+      repositories became 127 ms, and the address bar is the same either way.
