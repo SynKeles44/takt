@@ -248,8 +248,7 @@ return [
     ],
 
     'absence' => [
-        'today' => 'Today: :label — no target for today.',
-        'today_marker' => 'Today: :label.',
+        'no_target' => 'No target today.',
         'title' => 'Absences',
         'back' => 'Back to the calendar',
         'new' => 'Add an absence',

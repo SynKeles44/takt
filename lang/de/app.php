@@ -248,8 +248,7 @@ return [
     ],
 
     'absence' => [
-        'today' => 'Heute: :label — kein Soll für heute.',
-        'today_marker' => 'Heute: :label.',
+        'no_target' => 'Heute entsteht kein Soll.',
         'title' => 'Abwesenheiten',
         'back' => 'Zurück zum Kalender',
         'new' => 'Abwesenheit eintragen',

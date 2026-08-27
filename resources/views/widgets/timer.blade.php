@@ -6,40 +6,16 @@
     $btnWork = 'btn btn-work btn-lg';
     $btnBreak = 'btn btn-rest btn-lg';
     $btnGhost = 'btn btn-ghost btn-lg';
+
+    $exemptPill = match ($exemption['tone'] ?? null) {
+        'accent' => 'border-accent/30 bg-accent/10 text-accent-text',
+        'danger' => 'border-danger/30 bg-danger/10 text-danger-text',
+        'work' => 'border-work/30 bg-work/10 text-work-text',
+        'rest' => 'border-rest/30 bg-rest/10 text-rest-text',
+        default => 'border-line bg-raised text-muted',
+    };
+    $blocking = $exemption !== null && ($exemption['blocking'] ?? true);
 @endphp
-
-@if ($exemption)
-    @php
-        $exemptTone = match ($exemption['tone']) {
-            'accent' => 'border-accent/30 bg-accent/10 text-accent-text',
-            'danger' => 'border-danger/30 bg-danger/10 text-danger-text',
-            'work' => 'border-work/30 bg-work/10 text-work-text',
-            'rest' => 'border-rest/30 bg-rest/10 text-rest-text',
-            default => 'border-line bg-raised text-muted',
-        };
-    @endphp
-    <div class="mb-4 flex items-center gap-2.5 rounded-[var(--radius-control)] border px-4 py-3 text-sm font-medium {{ $exemptTone }}">
-        <x-icon :name="$exemption['absence']?->type->icon() ?? 'calendar-days'" class="size-4 shrink-0"/>
-        {{ ($exemption['blocking'] ?? true)
-            ? __('app.absence.today', ['label' => $exemption['label']])
-            : __('app.absence.today_marker', ['label' => $exemption['label']]) }}
-    </div>
-@endif
-
-@if ($hints !== [])
-    <div class="mb-4 space-y-2">
-        @foreach ($hints as $hint)
-            <div @class([
-                    'flex items-start gap-2.5 rounded-[var(--radius-control)] border px-4 py-2.5 text-xs',
-                    'border-danger/30 bg-danger/10 text-danger-text' => $hint['level'] === 'danger',
-                    'border-rest/30 bg-rest/10 text-rest-text' => $hint['level'] !== 'danger',
-                ])>
-                <x-icon name="alert" class="mt-0.5 size-3.5 shrink-0"/>
-                <span>{{ $hint['text'] }}</span>
-            </div>
-        @endforeach
-    </div>
-@endif
 
 <x-card class="relative overflow-hidden">
     <div aria-hidden="true"
@@ -48,11 +24,13 @@
     <div class="relative flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
             @if ($running)
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                     <span class="pulse-ring dot relative flex size-2.5 {{ $isWork ? 'bg-work text-work' : 'bg-rest text-rest' }}"></span>
                     <p class="text-sm font-semibold uppercase tracking-[0.18em] {{ $isWork ? 'text-work-text' : 'text-rest-text' }}">
                         {{ $running->type->label() }}
                     </p>
+
+                    @include('partials.exempt-pill')
                 </div>
 
                 <p class="metric mt-3 text-5xl font-bold tracking-tight text-ink sm:text-6xl"
@@ -67,17 +45,34 @@
                     @endif
                 </p>
             @else
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                     <span class="dot flex size-2.5 bg-dim"></span>
                     <p class="text-sm font-semibold uppercase tracking-[0.18em] text-faint">
                         {{ __('app.timer.idle_title') }}
                     </p>
+
+                    @include('partials.exempt-pill')
                 </div>
 
                 <p class="metric mt-3 text-5xl font-bold tracking-tight text-dim sm:text-6xl">00:00:00</p>
 
                 <p class="mt-2 text-sm text-muted">{{ __('app.timer.idle_hint') }}</p>
             @endif
+
+            @if ($blocking)
+                <p class="mt-1.5 text-xs font-medium text-faint">{{ __('app.absence.no_target') }}</p>
+            @endif
+
+            @foreach ($hints as $hint)
+                <p @class([
+                        'mt-2 flex items-start gap-2 text-xs',
+                        'text-danger-text' => $hint['level'] === 'danger',
+                        'text-rest-text' => $hint['level'] !== 'danger',
+                    ])>
+                    <x-icon name="alert" class="mt-0.5 size-3.5 shrink-0"/>
+                    <span>{{ $hint['text'] }}</span>
+                </p>
+            @endforeach
         </div>
 
         <div class="flex shrink-0 flex-col gap-2.5 sm:flex-row">

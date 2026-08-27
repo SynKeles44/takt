@@ -157,8 +157,9 @@ class HomeOfficeTest extends TestCase
 
         $this->get(route('dashboard.widget', ['widget' => 'timer']))
             ->assertOk()
-            ->assertSee(__('app.absence.today_marker', ['label' => AbsenceType::HomeOffice->label()]))
-            ->assertDontSee(__('app.absence.today', ['label' => AbsenceType::HomeOffice->label()]));
+            ->assertSee(AbsenceType::HomeOffice->label())
+            ->assertSee(__('app.absence.marker'))
+            ->assertDontSee(__('app.absence.no_target'));
     }
 
     public function test_the_settings_store_the_agreed_days(): void

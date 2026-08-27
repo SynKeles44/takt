@@ -764,6 +764,11 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       calculation reads the `blocking` flag of an exemption instead of its mere presence.
 - [x] A home-office entry never displaces a holiday on the same day — the marker loses, the
       day without a target wins.
+- [x] The marker is a pill beside the timer's status line, not a banner above the card. It was
+      a banner, and the timer widget therefore had three root elements — with
+      `.widget-body > * { min-block-size: 100% }` the first one filled the whole tile and
+      pushed the clock out of sight. A widget renders exactly one root element; a day without
+      a target adds one quiet line under the clock instead.
 - [x] Settings hold the agreed days per week; the absence page reports the days this year, the
       days in the chosen window, and the average per week against that agreement.
 - [x] The widget shows this week against the agreement plus the average, over 7, 30 or 365
