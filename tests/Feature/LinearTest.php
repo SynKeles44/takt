@@ -90,6 +90,34 @@ class LinearTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_a_query_without_variables_sends_none_at_all(): void
+    {
+        Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => []]]]])]);
+        $user = $this->login(['linear_token' => 'lin_api_test']);
+
+        app(Linear::class)->mine($user);
+
+        Http::assertSent(function ($request): bool {
+            // an empty PHP array encodes to [], and Linear answers 400: "variables in a POST
+            // body must be an object if provided"
+            return ! array_key_exists('variables', $request->data());
+        });
+    }
+
+    public function test_a_graphql_error_is_read_even_when_the_status_is_400(): void
+    {
+        Http::fake(['api.linear.app/graphql' => Http::response([
+            'errors' => [['message' => '`variables` in a POST body must be an object if provided.']],
+        ], 400)]);
+
+        $user = $this->login(['linear_token' => 'lin_api_test']);
+
+        $this->assertStringContainsString(
+            'must be an object',
+            (string) app(Linear::class)->mine($user)['error'],
+        );
+    }
+
     public function test_a_rejected_key_is_reported_instead_of_thrown(): void
     {
         Http::fake(['api.linear.app/graphql' => Http::response(['errors' => []], 401)]);

@@ -183,6 +183,11 @@
         <script type="application/json" data-due-watch>@json($dueWatch)</script>
     @endif
 
+    @isset($shellState)
+        {{-- the app shell reads this for its menu bar item, whatever the notification setting --}}
+        <script type="application/json" data-shell-state>@json($shellState)</script>
+    @endisset
+
     @if (! empty($workWatch ?? []))
         <script type="application/json" data-work-watch
                 data-label-target="{{ __('app.notify.target_title') }}"

@@ -363,6 +363,34 @@ if (dueWatchNode && 'Notification' in window) {
     setInterval(check, 60_000);
 }
 
+/*
+ * The surface the app shell talks to. The menu bar item needs the timer state and the two
+ * actions — and it gets them through the page, not through a new endpoint: the forms the
+ * command palette already carries bring their own CSRF token and their own live handling, so
+ * the shell never has to authenticate on its own.
+ */
+window.takt = {
+    state() {
+        const node = document.querySelector('[data-shell-state]');
+
+        if (! node) return { signedIn: false };
+
+        try {
+            return { signedIn: true, ...JSON.parse(node.textContent || '{}') };
+        } catch {
+            return { signedIn: true };
+        }
+    },
+
+    start(type) {
+        document.querySelector(`#palette-${type === 'break' ? 'break' : 'work'}`)?.requestSubmit?.();
+    },
+
+    stop() {
+        document.querySelector('#palette-stop')?.requestSubmit?.();
+    },
+};
+
 const workWatchNode = document.querySelector('[data-work-watch]');
 
 if (workWatchNode && 'Notification' in window) {

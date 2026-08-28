@@ -50,14 +50,26 @@ class AppServiceProvider extends ServiceProvider
 
             $user = Auth::user();
 
-            if (! $user->notify_worktime) {
-                return;
-            }
-
             $tracker = app(TimeTracker::class);
             $today = Carbon::today();
             $entries = TimeEntry::query()->onDay($today)->get();
             $running = $tracker->running();
+
+            $work = (int) $entries->where('type', EntryType::Work)
+                ->sum(fn (TimeEntry $entry): int => $entry->durationInSeconds());
+
+            // the app shell reads this to fill its menu bar item — always present, because the
+            // menu bar exists whether or not the notifications are switched on
+            $view->with('shellState', [
+                'running' => $running?->type->value,
+                'since' => $running?->started_at->toIso8601String(),
+                'work' => $work,
+                'target' => $user->dailyTargetSeconds(),
+            ]);
+
+            if (! $user->notify_worktime) {
+                return;
+            }
 
             $view->with('workWatch', [
                 'day' => $today->toDateString(),

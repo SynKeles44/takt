@@ -1,6 +1,7 @@
+import Carbon.HIToolbox
 import Cocoa
-import WebKit
 import UserNotifications
+import WebKit
 
 // Configuration is read from the bundle, so `takt:app` can change it without recompiling.
 struct Config {
@@ -17,6 +18,10 @@ struct Config {
 
 /// Starts the local server unless something already serves the port, and stops
 /// only what it started itself.
+extension Notification.Name {
+    static let taktToggleTimer = Notification.Name("takt.toggleTimer")
+}
+
 final class Server {
     private var process: Process?
 
@@ -107,6 +112,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     private let server = Server()
     private var window: NSWindow!
     private var webView: WKWebView!
+    private var statusItem: NSStatusItem?
+    private var stateTimer: Timer?
+    private var hotKey: EventHotKeyRef?
 
     // MARK: lifecycle
 
@@ -130,13 +138,180 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             }
         }
 
+        buildStatusItem()
+        registerHotKey()
+
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    /*
+     * The window may close; the app keeps running so the menu bar item stays. That is the point
+     * of having one: starting the timer without opening anything.
+     */
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     func applicationWillTerminate(_ notification: Notification) {
+        stateTimer?.invalidate()
         server.stopIfOwned()
+    }
+
+    // MARK: menu bar
+
+    private func buildStatusItem() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+
+        item.button?.image = NSImage(systemSymbolName: "timer", accessibilityDescription: "Takt")
+        item.button?.imagePosition = .imageLeading
+        item.menu = statusMenu(state: nil)
+
+        statusItem = item
+
+        stateTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            self?.refreshStatusItem()
+        }
+
+        refreshStatusItem()
+    }
+
+    /** Reads the state out of the page — no second endpoint, no token, no second source. */
+    private func refreshStatusItem() {
+        webView?.evaluateJavaScript("JSON.stringify(window.takt?.state?.() ?? {})") { [weak self] value, _ in
+            guard let self else { return }
+
+            let state = Self.decode(value as? String)
+
+            self.statusItem?.button?.title = Self.title(for: state)
+            self.statusItem?.menu = self.statusMenu(state: state)
+        }
+    }
+
+    private static func decode(_ json: String?) -> [String: Any] {
+        guard let data = json?.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+
+        return object
+    }
+
+    private static func title(for state: [String: Any]) -> String {
+        guard state["signedIn"] as? Bool == true else { return "" }
+
+        let running = state["running"] as? String
+        let worked = state["work"] as? Int ?? 0
+
+        guard let running else {
+            return worked > 0 ? " " + clock(worked) : ""
+        }
+
+        let since = ISO8601DateFormatter().date(from: state["since"] as? String ?? "")
+        let live = worked + Int(since.map { -$0.timeIntervalSinceNow } ?? 0)
+
+        return (running == "break" ? " ☕ " : " ") + clock(live)
+    }
+
+    private static func clock(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 3600, (seconds % 3600) / 60)
+    }
+
+    private func statusMenu(state: [String: Any]?) -> NSMenu {
+        let menu = NSMenu()
+        let running = state?["running"] as? String
+        let signedIn = state?["signedIn"] as? Bool == true
+
+        if signedIn, let running {
+            menu.addItem(withTitle: running == "break" ? "Pause läuft" : "Arbeit läuft", action: nil, keyEquivalent: "")
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(withTitle: running == "break" ? "Zurück zur Arbeit" : "Pause starten",
+                         action: running == "break" ? #selector(startWork) : #selector(startBreak), keyEquivalent: "")
+            menu.addItem(withTitle: "Stoppen", action: #selector(stopTimer), keyEquivalent: "")
+        } else if signedIn {
+            menu.addItem(withTitle: "Kein Timer aktiv", action: nil, keyEquivalent: "")
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(withTitle: "Arbeit starten", action: #selector(startWork), keyEquivalent: "")
+            menu.addItem(withTitle: "Pause starten", action: #selector(startBreak), keyEquivalent: "")
+        } else {
+            menu.addItem(withTitle: "Nicht angemeldet", action: nil, keyEquivalent: "")
+        }
+
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(withTitle: "Takt öffnen", action: #selector(showWindow), keyEquivalent: "")
+        menu.addItem(withTitle: "Beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+
+        menu.items.forEach { $0.target = $0.action == #selector(NSApplication.terminate(_:)) ? nil : self }
+
+        return menu
+    }
+
+    @objc private func startWork() { act("window.takt?.start?.('work')") }
+    @objc private func startBreak() { act("window.takt?.start?.('break')") }
+    @objc private func stopTimer() { act("window.takt?.stop?.()") }
+
+    @objc private func showWindow() {
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func act(_ script: String) {
+        webView?.evaluateJavaScript(script) { [weak self] _, _ in
+            // the page needs a moment to post and swap before the state is worth reading again
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self?.refreshStatusItem() }
+        }
+    }
+
+    // MARK: the global shortcut
+
+    /*
+     * Carbon's hot key needs no permission at all, unlike a global event monitor, which would
+     * ask for accessibility access just to start a timer.
+     */
+    private func registerHotKey() {
+        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+
+        InstallEventHandler(GetApplicationEventTarget(), { _, event, _ -> OSStatus in
+            var pressed = EventHotKeyID()
+
+            GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
+                              nil, MemoryLayout<EventHotKeyID>.size, nil, &pressed)
+
+            if pressed.id == 1 {
+                NotificationCenter.default.post(name: .taktToggleTimer, object: nil)
+            }
+
+            return noErr
+        }, 1, &eventType, nil, nil)
+
+        var reference: EventHotKeyRef?
+        let identifier = EventHotKeyID(signature: OSType(0x54414B54), id: 1)
+
+        // ⌥⌘T — T for Takt, and no standard binding takes it
+        RegisterEventHotKey(UInt32(kVK_ANSI_T), UInt32(optionKey | cmdKey), identifier,
+                            GetApplicationEventTarget(), 0, &reference)
+
+        hotKey = reference
+
+        NotificationCenter.default.addObserver(forName: .taktToggleTimer, object: nil, queue: .main) { [weak self] _ in
+            self?.toggleTimer()
+        }
+    }
+
+    /** One key for both directions: running stops, idle starts work. */
+    private func toggleTimer() {
+        webView?.evaluateJavaScript("JSON.stringify(window.takt?.state?.() ?? {})") { [weak self] value, _ in
+            let state = Self.decode(value as? String)
+
+            guard state["signedIn"] as? Bool == true else {
+                self?.showWindow()
+
+                return
+            }
+
+            if state["running"] is String {
+                self?.stopTimer()
+            } else {
+                self?.startWork()
+            }
+        }
     }
 
     // MARK: window

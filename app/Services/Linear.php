@@ -170,7 +170,12 @@ final class Linear
                 // Linear takes the personal key raw — no "Bearer" in front of it
                 'Authorization' => (string) $user->linear_token,
                 'Content-Type' => 'application/json',
-            ])->timeout(10)->post(self::ENDPOINT, ['query' => $query, 'variables' => $variables]);
+                // an empty PHP array encodes to [], and Linear rejects that: variables must be
+                // an object, so a query without variables sends none at all
+            ])->timeout(10)->post(self::ENDPOINT, array_filter(
+                ['query' => $query, 'variables' => $variables],
+                static fn (mixed $value): bool => $value !== [],
+            ));
         } catch (Throwable) {
             return ['data' => [], 'error' => __('app.linear.unreachable')];
         }
@@ -179,16 +184,21 @@ final class Linear
             return ['data' => [], 'error' => __('app.linear.unauthorized')];
         }
 
-        if ($response->failed()) {
-            return ['data' => [], 'error' => __('app.linear.failed', ['status' => $response->status()])];
-        }
-
+        /*
+         * GraphQL puts the reason in the body, also on a 400 — reading the status first turned
+         * "Cannot query field X" into a bare "answers with 400", which says nothing about what
+         * to fix.
+         */
         $errors = $response->json('errors');
 
         if (is_array($errors) && $errors !== []) {
             return ['data' => [], 'error' => __('app.linear.rejected', [
                 'message' => (string) ($errors[0]['message'] ?? ''),
             ])];
+        }
+
+        if ($response->failed()) {
+            return ['data' => [], 'error' => __('app.linear.failed', ['status' => $response->status()])];
         }
 
         return ['data' => $response->json('data') ?? [], 'error' => null];

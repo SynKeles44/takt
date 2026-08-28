@@ -528,10 +528,17 @@ Requirement ids refer to `requirements.md`.
 
 ## Phase 57 — The menu bar and the global key (R52)
 
-- [ ] `NSStatusItem` in `desktop/main.swift`: state, start, stop, today's total, open window.
-- [ ] A small HTTP surface the shell talks to for those actions, authenticated by a token the
-      bundle already knows.
-- [ ] `RegisterEventHotKey` for start/stop; the combination is a setting the shell reads.
+- [x] `NSStatusItem` in `desktop/main.swift`: live time, start work, start break, stop, open
+      window — polled every five seconds.
+- [x] No second HTTP surface and no token: the shell reads `window.takt.state()` out of the page
+      and acts through the palette forms, which bring their own CSRF token and live handling.
+      The planned token endpoint would have been a second, unauthenticated way in.
+- [x] `RegisterEventHotKey` (⌥⌘T) toggles — running stops, idle starts work. Carbon needs no
+      permission, unlike a global event monitor, which would ask for accessibility access just
+      to start a timer.
+- [x] The window may close without quitting the app, or the menu bar item would vanish with it.
+- [ ] The shortcut is fixed at ⌥⌘T rather than a setting — deliberately deferred, it needs a
+      recorder control in the settings to be worth anything.
 
 ## Phase 58 — The Mac was away (R47)
 
