@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\ActivityTrailController;
 use App\Http\Controllers\AwayGapController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CalendarEventController;
 use App\Http\Controllers\CommandController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardLayoutController;
@@ -140,6 +142,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/todo/{todo}/anhaenge/{attachment}', [TodoAttachmentController::class, 'show'])->scopeBindings()->name('attachments.show');
     Route::delete('/todo/{todo}/anhaenge/{attachment}', [TodoAttachmentController::class, 'destroy'])->scopeBindings()->name('attachments.destroy');
 
+    Route::post('/termine', CalendarEventController::class)->name('calendar.events');
+    Route::post('/aktivitaet', [ActivityTrailController::class, 'store'])->name('trail.store');
+    Route::put('/einstellungen/aktivitaet', [ActivityTrailController::class, 'update'])->name('trail.update');
     Route::post('/abwesend', [AwayGapController::class, 'store'])->name('away.store');
     Route::put('/abwesend/{gap}', [AwayGapController::class, 'update'])->name('away.update');
 

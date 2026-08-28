@@ -15,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'weekly_hours', 'working_days', 'theme', 'design_style', 'locale', 'notify_worktime', 'github_token', 'linear_token', 'slack_token', 'slack_channel', 'ticket_url_template', 'pr_url_template', 'instance_url_template', 'holiday_region', 'vacation_days', 'home_office_days', 'home_office_window'])]
+#[Fillable(['name', 'email', 'password', 'weekly_hours', 'working_days', 'theme', 'design_style', 'locale', 'notify_worktime', 'github_token', 'linear_token', 'slack_token', 'slack_channel', 'ticket_url_template', 'pr_url_template', 'instance_url_template', 'holiday_region', 'vacation_days', 'home_office_days', 'home_office_window', 'activity_trail', 'activity_retention_days'])]
 #[Hidden(['password', 'remember_token', 'github_token', 'linear_token', 'slack_token'])]
 class User extends Authenticatable
 {
@@ -33,6 +33,8 @@ class User extends Authenticatable
         'vacation_days' => 30,
         'home_office_days' => 0,
         'home_office_window' => 30,
+        'activity_trail' => false,
+        'activity_retention_days' => 30,
     ];
 
     protected function casts(): array
@@ -51,7 +53,14 @@ class User extends Authenticatable
             'vacation_days' => 'float',
             'home_office_days' => 'integer',
             'home_office_window' => 'integer',
+            'activity_trail' => 'boolean',
+            'activity_retention_days' => 'integer',
         ];
+    }
+
+    public function activitySpans(): HasMany
+    {
+        return $this->hasMany(ActivitySpan::class);
     }
 
     public function projects(): HasMany

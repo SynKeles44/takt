@@ -390,6 +390,42 @@ window.takt = {
         document.querySelector('#palette-stop')?.requestSubmit?.();
     },
 
+    /** The shell hands over what it observed; the server drops it when the trail is off. */
+    reportActivity(spans) {
+        const url = document.querySelector('[data-shell-state]')?.dataset.trailUrl;
+
+        if (! url || ! Array.isArray(spans) || spans.length === 0) return Promise.resolve();
+
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ spans }),
+        }).catch(() => {});
+    },
+
+    /** The shell hands over the Mac's calendar for a day; the page keeps it for the widget. */
+    reportCalendar(day, events) {
+        const url = document.querySelector('[data-shell-state]')?.dataset.calendarUrl;
+
+        if (! url) return Promise.resolve();
+
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ day, events }),
+        }).catch(() => {});
+    },
+
     /*
      * The shell reports a lock or sleep once the Mac is back. It travels through the page so the
      * session and the CSRF token are the ones the user already has — the shell holds no

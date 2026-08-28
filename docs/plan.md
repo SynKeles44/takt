@@ -552,8 +552,22 @@ Requirement ids refer to `requirements.md`.
 
 ## Phase 59 — Reading the calendar (R48)
 
-- [ ] EventKit in the shell, permission asked once, events handed to Takt for the current day.
-- [ ] Events appear as booking proposals in the day and as context in the history.
+- [x] EventKit in the shell, permission asked once (the usage strings live in the generated
+      Info.plist), all-day events skipped, and the day re-read on every wake.
+- [x] Events land in a per-day cache as strings and appear in a widget with a one-click booking.
+      A refusal simply means the widget stays empty and says so.
+- [ ] Not in the history yet — the widget covers the day, the history needs its own pass.
+
+## Phase 61 — The activity trail (R45)
+
+- [x] The shell watches `didActivateApplication` (no permission needed) and flushes spans every
+      two minutes and on quit. The window title is only read when accessibility access is
+      already granted — Takt never nags for it and works without it.
+- [x] Spans under a minute are dropped as noise; the trail is off by default and records nothing
+      while off. Switching it off deletes what was recorded.
+- [x] Retention in days is a setting, pruned on every change.
+- [x] Widget: share per application as bars, plus proposals for stretches over 15 minutes that
+      no booking covers yet — bookable on one click, never booked on its own.
 
 ## Phase 60 — Takt on the phone (R53)
 
@@ -565,10 +579,3 @@ Requirement ids refer to `requirements.md`.
       plain HTTP inside your own network, login still mandatory.
 - [ ] No QR code: it needs either a new dependency or a hand-written encoder, and this project
       carries exactly two dependencies on purpose. Address plus copy button instead.
-
-## Phase 61 — The activity trail (R45)
-
-- [ ] The shell records the front application (and the window title where the accessibility
-      permission was granted) and posts spans to Takt.
-- [ ] Storage with a retention setting, a pause switch, exclusion from every export.
-- [ ] Proposals in the day view: a span becomes a booking on one click, never on its own.

@@ -358,6 +358,46 @@
                     @method('PUT')
 
                     <div class="rounded-[var(--radius-control)] border border-line bg-raised p-3.5">
+                        <form method="POST" action="{{ route('trail.update') }}" class="space-y-3" data-live>
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="activity_trail" value="{{ $user->activity_trail ? 0 : 1 }}">
+
+                            <span class="flex items-center justify-between gap-3">
+                                <span class="label mb-0">{{ __('app.trail.title') }}</span>
+                                <button type="submit" @class(['btn text-xs', 'btn-work' => ! $user->activity_trail, 'btn-ghost' => $user->activity_trail])>
+                                    {{ $user->activity_trail ? __('app.form.off') : __('app.form.on') }}
+                                </button>
+                            </span>
+
+                            <p class="text-[11px] leading-relaxed text-dim">{{ __('app.trail.hint') }}</p>
+                            <p class="text-[11px] leading-relaxed text-faint">{{ __('app.trail.needs_permission') }}</p>
+
+                            @if ($user->activity_trail)
+                                <p class="text-[11px] leading-relaxed text-faint">{{ __('app.trail.off_note') }}</p>
+                            @endif
+                        </form>
+
+                        @if ($user->activity_trail)
+                            <form method="POST" action="{{ route('trail.update') }}" class="mt-3 border-t border-line pt-3" data-live>
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="activity_trail" value="1">
+
+                                <label for="activity_retention_days" class="label">{{ __('app.trail.retention') }}</label>
+                                <span class="flex items-center gap-2">
+                                    <input id="activity_retention_days" type="number" name="activity_retention_days" min="1" max="365"
+                                           value="{{ $user->activity_retention_days }}" class="control metric text-xs">
+                                    <button type="submit" class="btn btn-ghost shrink-0 text-xs">
+                                        <x-icon name="check" class="size-3.5"/>
+                                    </button>
+                                </span>
+                                @error('activity_retention_days') <p class="field-error">{{ $message }}</p> @enderror
+                            </form>
+                        @endif
+                    </div>
+
+                    <div class="rounded-[var(--radius-control)] border border-line bg-raised p-3.5">
                         <form method="POST" action="{{ route('settings.network') }}" data-live>
                             @csrf
                             @method('PUT')

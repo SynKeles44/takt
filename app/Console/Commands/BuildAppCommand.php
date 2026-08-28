@@ -165,6 +165,8 @@ class BuildAppCommand extends Command
             <key>TaktHost</key><string>{$host}</string>
             <key>TaktRoot</key><string>{$root}</string>
             <key>TaktPhp</key><string>{$php}</string>
+            <key>NSCalendarsUsageDescription</key><string>Takt zeigt Deine Termine als Buchungsvorschläge — sie bleiben auf diesem Rechner.</string>
+            <key>NSCalendarsFullAccessUsageDescription</key><string>Takt zeigt Deine Termine als Buchungsvorschläge — sie bleiben auf diesem Rechner.</string>
             <key>NSAppTransportSecurity</key>
             <dict>
                 <key>NSAllowsLocalNetworking</key><true/>

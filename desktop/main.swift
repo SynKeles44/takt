@@ -1,5 +1,6 @@
 import Carbon.HIToolbox
 import Cocoa
+import EventKit
 import UserNotifications
 import WebKit
 
@@ -126,6 +127,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     private var stateTimer: Timer?
     private var hotKey: EventHotKeyRef?
     private var awaySince: Date?
+    private let calendarStore = EKEventStore()
+    private var trailApp: (name: String, title: String?, since: Date)?
+    private var trailSpans: [[String: String]] = []
+    private var trailTimer: Timer?
 
     // MARK: lifecycle
 
@@ -152,6 +157,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         buildStatusItem()
         registerHotKey()
         watchForAbsence()
+        readCalendar()
+        watchActivity()
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
@@ -163,6 +170,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     func applicationWillTerminate(_ notification: Notification) {
+        flushTrail()
+        trailTimer?.invalidate()
         stateTimer?.invalidate()
         server.stopIfOwned()
     }
@@ -271,6 +280,143 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
     }
 
+    // MARK: the activity trail
+
+    /*
+     * Which application is in front, and for how long. NSWorkspace says which one without any
+     * permission; the window title needs accessibility access, so it is asked for only if it
+     * was already granted — the trail works without it, with the application name alone.
+     */
+    private func watchActivity() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+
+            self?.switchTrail(to: app?.localizedName ?? "unbekannt", pid: app?.processIdentifier)
+        }
+
+        trailTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { [weak self] _ in
+            self?.flushTrail()
+        }
+    }
+
+    private func switchTrail(to name: String, pid: pid_t?) {
+        closeTrailSpan()
+
+        trailApp = (name: name, title: windowTitle(of: pid), since: Date())
+    }
+
+    private func closeTrailSpan() {
+        guard let current = trailApp else { return }
+
+        let formatter = ISO8601DateFormatter()
+
+        trailSpans.append([
+            "app": current.name,
+            "title": current.title ?? "",
+            "starts_at": formatter.string(from: current.since),
+            "ends_at": formatter.string(from: Date()),
+        ])
+
+        trailApp = nil
+    }
+
+    /** Only asks when the permission is already there — Takt never nags for it. */
+    private func windowTitle(of pid: pid_t?) -> String? {
+        guard let pid, AXIsProcessTrusted() else { return nil }
+
+        let element = AXUIElementCreateApplication(pid)
+        var window: CFTypeRef?
+
+        guard AXUIElementCopyAttributeValue(element, kAXFocusedWindowAttribute as CFString, &window) == .success,
+              let focused = window else { return nil }
+
+        var title: CFTypeRef?
+
+        guard AXUIElementCopyAttributeValue(focused as! AXUIElement, kAXTitleAttribute as CFString, &title) == .success else {
+            return nil
+        }
+
+        return title as? String
+    }
+
+    private func flushTrail() {
+        closeTrailSpan()
+
+        guard !trailSpans.isEmpty,
+              let payload = try? JSONSerialization.data(withJSONObject: trailSpans),
+              let json = String(data: payload, encoding: .utf8) else {
+            // keep what could not be encoded out of the way rather than retrying it forever
+            trailSpans = []
+
+            return
+        }
+
+        trailSpans = []
+
+        webView?.evaluateJavaScript("window.takt?.reportActivity?.(\(json))")
+
+        // the trail continues with whatever is in front right now
+        let front = NSWorkspace.shared.frontmostApplication
+
+        trailApp = (name: front?.localizedName ?? "unbekannt",
+                    title: windowTitle(of: front?.processIdentifier),
+                    since: Date())
+    }
+
+    // MARK: the calendar
+
+    /*
+     * The Mac's own calendars, handed to the page as proposals — Takt books nothing on its own.
+     * macOS asks for permission once; a refusal simply means the widget stays empty and says so.
+     */
+    private func readCalendar() {
+        let handler: (Bool, Error?) -> Void = { [weak self] granted, _ in
+            guard granted else { return }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self?.postTodaysEvents() }
+        }
+
+        if #available(macOS 14.0, *) {
+            calendarStore.requestFullAccessToEvents(completion: handler)
+        } else {
+            calendarStore.requestAccess(to: .event, completion: handler)
+        }
+    }
+
+    private func postTodaysEvents() {
+        let start = Calendar.current.startOfDay(for: Date())
+
+        guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return }
+
+        let predicate = calendarStore.predicateForEvents(withStart: start, end: end, calendars: nil)
+        let formatter = ISO8601DateFormatter()
+
+        let events: [[String: String]] = calendarStore.events(matching: predicate)
+            .filter { !$0.isAllDay }
+            .compactMap { event in
+                guard let from = event.startDate, let to = event.endDate else { return nil }
+
+                return [
+                    "title": event.title ?? "",
+                    "starts_at": formatter.string(from: from),
+                    "ends_at": formatter.string(from: to),
+                    "calendar": event.calendar?.title ?? "",
+                ]
+            }
+
+        guard let payload = try? JSONSerialization.data(withJSONObject: events),
+              let json = String(data: payload, encoding: .utf8) else { return }
+
+        let day = DateFormatter()
+        day.dateFormat = "yyyy-MM-dd"
+
+        webView?.evaluateJavaScript(
+            "window.takt?.reportCalendar?.('\(day.string(from: start))', \(json))"
+        )
+    }
+
     // MARK: the Mac going away
 
     /*
@@ -297,6 +443,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.reportAway()
+            self?.postTodaysEvents()
         }
     }
 

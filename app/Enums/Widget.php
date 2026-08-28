@@ -22,6 +22,8 @@ enum Widget: string
     case YearHeatmap = 'year_heatmap';
     case Absences = 'absences';
     case HomeOffice = 'home_office';
+    case Meetings = 'meetings';
+    case Activity = 'activity';
 
     // tasks
     case Todos = 'todos';
@@ -53,7 +55,7 @@ enum Widget: string
         return match ($this) {
             self::Timer, self::Stats, self::WeekChart, self::Entries, self::Booking,
             self::Note, self::MonthSummary, self::WeekBalance, self::YearHeatmap, self::Absences,
-            self::HomeOffice => WidgetGroup::Time,
+            self::HomeOffice, self::Meetings, self::Activity => WidgetGroup::Time,
             self::Todos, self::TodoTags, self::TodoProgress => WidgetGroup::Tasks,
             default => WidgetGroup::Development,
         };
@@ -69,6 +71,7 @@ enum Widget: string
     {
         return match ($this) {
             self::Timer, self::Stats, self::YearHeatmap => 6,
+            self::Activity => 4,
             self::WeekChart, self::Todos, self::Entries, self::CommitsToday,
             self::ProjectLauncher, self::ReviewQueue, self::MyPullRequests => 4,
             default => 2,
@@ -99,6 +102,7 @@ enum Widget: string
             self::Stats, self::MonthSummary, self::HomeOffice, self::TodoProgress => 'metrics',
             self::WeekChart, self::WeekBalance => 'chart',
             self::YearHeatmap => 'heatmap',
+            self::Meetings, self::Activity => 'list',
             self::Entries, self::Absences, self::Todos, self::CommitsToday, self::CommitsWeek,
             self::ReviewQueue, self::MyPullRequests, self::Snippets => 'list',
             self::Booking, self::TestPost => 'form',

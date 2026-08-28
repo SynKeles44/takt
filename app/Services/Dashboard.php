@@ -105,6 +105,15 @@ final class Dashboard
             ],
             Widget::Absences => ['absences' => $this->absences($user)],
             Widget::HomeOffice => $this->homeOffice($user),
+            Widget::Activity => [
+                'apps' => app(ActivityTrail::class)->forDay($user, $this->today()),
+                'proposals' => app(ActivityTrail::class)->proposals($user, $this->today(), $this->tracker),
+                'enabled' => app(ActivityTrail::class)->enabled($user),
+            ],
+            Widget::Meetings => [
+                'events' => app(CalendarEvents::class)->forDay($user, $this->today()),
+                'today' => $this->today(),
+            ],
             Widget::Todos => ['todos' => $this->todos()],
             Widget::TodoTags => ['tags' => $this->todoTags()],
             Widget::TodoProgress => $this->todoProgress(),

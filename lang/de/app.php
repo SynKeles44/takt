@@ -263,6 +263,21 @@ return [
         'keep_done' => 'Bleibt so.',
     ],
 
+    'trail' => [
+        'title' => "Tätigkeitsspur",
+        'hint' => "Takt merkt sich lokal, welche App vorne war — nur auf diesem Rechner, in keinem Export, und Buchungen entstehen ausschließlich per Klick.",
+        'retention' => "Aufbewahrung in Tagen",
+        'on_done' => "Tätigkeitsspur eingeschaltet — Takt neu starten.",
+        'off_done' => "Tätigkeitsspur ausgeschaltet und Aufzeichnung gelöscht.",
+        'off_note' => "Beim Ausschalten wird die bisherige Aufzeichnung gelöscht.",
+        'proposals' => "Vorschläge",
+        'book' => "Als Arbeitszeit buchen",
+        'empty' => "Nichts aufgezeichnet — Spur aus oder noch keine Daten.",
+        'widget_label' => "Tätigkeiten heute",
+        'widget_description' => "Welche App wie lange vorne war, samt Buchungsvorschlägen.",
+        'needs_permission' => "Fenstertitel brauchen die Bedienungshilfen-Freigabe; ohne sie bleibt nur der App-Name.",
+    ],
+
     'network' => [
         'title' => 'Im Netzwerk erreichbar',
         'hint' => 'Takt antwortet dann auch auf anderen Geräten in Deinem WLAN — die Anmeldung bleibt Pflicht. Es ist unverschlüsseltes HTTP in Deinem Netz, also nichts für fremde Netzwerke.',
@@ -662,6 +677,13 @@ return [
         'week_balance' => ['label' => 'Wochenverlauf', 'description' => 'Die letzten sechs Wochen gegen Dein Wochenziel.'],
         'year_heatmap' => ['label' => 'Jahres-Heatmap', 'description' => 'Jeder Tag des Jahres als Kachel.'],
         'absences' => ['label' => 'Kommende freie Tage', 'description' => 'Feiertage und Abwesenheiten der nächsten 60 Tage.', 'empty' => 'Nichts in Sicht.'],
+        'activity' => ['label' => "Tätigkeiten heute", 'description' => "Welche App wie lange vorne war, samt Buchungsvorschlägen."],
+        'meetings' => [
+            'label' => 'Termine heute',
+            'description' => 'Termine aus Deinem Mac-Kalender, mit einem Klick buchbar.',
+            'empty' => 'Keine Termine — oder der Kalenderzugriff fehlt.',
+            'book' => 'Als Arbeitszeit buchen',
+        ],
         'home_office' => [
             'label' => 'Home-Office',
             'description' => 'Home-Office-Tage dieser Woche und der Schnitt pro Woche.',
