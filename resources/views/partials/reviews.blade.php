@@ -79,7 +79,8 @@
                     {{ __('app.dev.reviews_empty') }}
                 </p>
             @else
-                {{-- grouped per project, so it is clear which repository is waiting --}}
+                {{-- one column: two of them halve the width, and a conventional-commit title
+                     does not survive that --}}
                 <div class="mt-4 space-y-2">
                     @foreach ($projects as $project)
                         @php

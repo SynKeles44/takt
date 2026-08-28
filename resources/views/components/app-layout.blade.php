@@ -1,4 +1,4 @@
-@props(['title' => null])
+@props(['title' => null, 'wide' => false])
 
 @php
     $user = auth()->user();
@@ -126,7 +126,12 @@
 
         </aside>
 
-        <div class="nav-main mx-auto w-full max-w-5xl px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pt-10 xl:max-w-6xl">
+        <div @class([
+            'nav-main mx-auto w-full px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pt-10',
+            'max-w-5xl xl:max-w-6xl' => ! $wide,
+            // the development page carries two dense columns; on 5xl the right one is a sliver
+            'max-w-6xl xl:max-w-[92rem]' => $wide,
+        ])>
             @if ($title)
                 <h1 class="mb-5 text-xl font-bold tracking-tight text-ink">{{ $title }}</h1>
             @endif

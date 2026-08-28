@@ -15,7 +15,10 @@
                 @endif
 
                 <span class="min-w-0 flex-1">
-                    <a href="{{ $pull['url'] }}" target="_blank" class="block truncate text-sm text-ink hover:text-accent-text">
+                    {{-- two lines: a conventional-commit title does not survive one --}}
+                    <a href="{{ $pull['url'] }}" target="_blank"
+                       class="line-clamp-2 text-sm leading-snug text-ink hover:text-accent-text"
+                       title="{{ $pull['title'] }}">
                         {{ $pull['title'] }}
                     </a>
                     <span class="block truncate text-[11px] text-dim">

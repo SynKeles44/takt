@@ -1,6 +1,6 @@
 @use('App\Support\Duration')
 
-<x-app-layout :title="__('app.nav.dev')">
+<x-app-layout :title="__('app.nav.dev')" :wide="true">
     <div data-region="dev-head">
     <x-card class="rise">
         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -32,7 +32,9 @@
     </x-card>
     </div>
 
-    <div class="stack-grid mt-5 grid lg:grid-cols-[1.25fr_1fr]">
+    <div class="stack-grid mt-5 grid lg:grid-cols-[1fr_1.6fr]">
+        {{-- left: the short lists, right: the pull requests, which need the room --}}
+        <div class="stack">
         <x-card class="rise" data-region="dev-commits">
             <h2 class="heading">{{ __('app.dev.commits') }}</h2>
 
@@ -83,36 +85,6 @@
                 </div>
             @endif
         </x-card>
-
-        <div class="stack">
-            {{--
-                The reviews come from GitHub and cost over a second when nothing is cached, so
-                the page renders what the cache has and fetches the rest once it stands.
-            --}}
-            <div data-reviews-slot data-reviews-url="{{ route('dev.reviews.sections') }}">
-                @if ($reviews !== null)
-                    @include('partials.reviews', [
-                        'reviews' => $reviews,
-                        'reviewsConfigured' => $reviewsConfigured,
-                        'projects' => $projects,
-                        'byProject' => $byProject,
-                        'unassigned' => $unassigned,
-                    ])
-                @else
-                    <x-card>
-                        <div class="flex items-center justify-between gap-3">
-                            <h2 class="heading">{{ __('app.dev.reviews') }}</h2>
-                            <span class="pill text-[10px]">{{ __('app.dev.reviews_loading') }}</span>
-                        </div>
-
-                        <div class="mt-4 space-y-1.5">
-                            @foreach (range(1, 3) as $ignored)
-                                <div class="row h-11 animate-pulse px-3 py-2"></div>
-                            @endforeach
-                        </div>
-                    </x-card>
-                @endif
-            </div>
 
             <x-card class="rise">
                 <div class="flex items-center justify-between gap-3">
@@ -178,6 +150,36 @@
                                     <span class="pill shrink-0 text-[10px]">{{ $snippet->label }}</span>
                                 @endif
                             </button>
+                        @endforeach
+                    </div>
+                </x-card>
+            @endif
+        </div>
+
+        {{--
+            The reviews come from GitHub and cost over a second when nothing is cached, so
+            the page renders what the cache has and fetches the rest once it stands.
+        --}}
+        <div data-reviews-slot data-reviews-url="{{ route('dev.reviews.sections') }}">
+            @if ($reviews !== null)
+                @include('partials.reviews', [
+                    'reviews' => $reviews,
+                    'reviewsConfigured' => $reviewsConfigured,
+                    'projects' => $projects,
+                    'byProject' => $byProject,
+                    'unassigned' => $unassigned,
+                    'clipboard' => $clipboard,
+                ])
+            @else
+                <x-card>
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="heading">{{ __('app.dev.reviews') }}</h2>
+                        <span class="pill text-[10px]">{{ __('app.dev.reviews_loading') }}</span>
+                    </div>
+
+                    <div class="mt-4 space-y-1.5">
+                        @foreach (range(1, 3) as $ignored)
+                            <div class="row h-11 animate-pulse px-3 py-2"></div>
                         @endforeach
                     </div>
                 </x-card>

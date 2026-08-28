@@ -1,4 +1,4 @@
-<x-app-layout :title="__('app.docker.title')">
+<x-app-layout :title="__('app.docker.title')" :wide="true">
     <x-card class="rise">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>

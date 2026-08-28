@@ -819,3 +819,16 @@ A section for the programmer's day, reachable as its own sidebar entry with four
 - [x] The server renders the same shape into `data-copy` for the full set, and the browser
       narrows it to the ticked boxes at the moment of the click. Nothing ticked says so
       instead of putting an empty string on the clipboard.
+## R43 The development area keeps one width
+
+- [x] Two dense columns need room, so the area opts into a wider container than the rest of
+      the app (`max-w-6xl`, `92rem` from xl) instead of the shared `max-w-5xl` — and **every**
+      page of the area does, not just the overview. One page opting in alone makes the tab bar
+      and every card jump on a tab change.
+- [x] The short lists (commits, projects, snippets) share the narrow column, the pull requests
+      get the wide one. Before this the commit list held the wider half while being the
+      shortest card on the page.
+- [x] Pull request titles wrap over two lines instead of being cut off; the full title stays
+      in the tooltip. Their groups stay in one column — two of them halve the width, and a
+      conventional-commit title does not survive that. Measured: the same title needed four
+      lines at half width and fits in two at full width.
