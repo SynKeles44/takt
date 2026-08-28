@@ -8,6 +8,7 @@ return [
     'tagline_short' => 'Time & tasks',
 
     'nav' => [
+        'tickets' => 'Tickets',
         'dev' => 'Development',
         'account' => 'My account',
         'expand' => 'Expand the sidebar',
@@ -247,6 +248,38 @@ return [
         'daylight' => ['label' => 'Daylight', 'description' => 'Bright and clear'],
         'onyx' => ['label' => 'Onyx', 'description' => 'Black, monochrome'],
         'sage' => ['label' => 'Sage', 'description' => 'Dark green with mint'],
+    ],
+
+    'linear' => [
+        'title' => 'Linear',
+        'unreachable' => 'Linear cannot be reached.',
+        'unauthorized' => 'Linear rejects the key — check it in the settings.',
+        'failed' => 'Linear answers with :status.',
+        'rejected' => 'Linear rejected the query: :message',
+        'token' => 'Linear key',
+        'token_hint' => 'Personal API key from Linear (Settings → Security & access). Without it the tickets come from git alone.',
+        'unknown' => 'Not found in Linear',
+    ],
+
+    'tickets' => [
+        'refreshed' => 'Tickets reloaded.',
+        'no_token' => 'No Linear key stored — the list comes from git alone.',
+        'only_git' => 'Git only',
+        'open' => 'Open',
+        'all' => 'All',
+        'refresh' => 'Reload',
+        'title' => 'Tickets',
+        'intro' => 'Collected from branches, commits and pull requests.',
+        'empty' => 'No ticket numbers found in the last :days days.',
+        'window' => 'Last :days days',
+        'search' => 'Search ticket or title',
+        'commits' => '{0} no commits|{1} 1 commit|[2,*] :count commits',
+        'pulls' => '{0} no PR|{1} 1 PR|[2,*] :count PRs',
+        'branches' => '{0} no branch|{1} 1 branch|[2,*] :count branches',
+        'estimate' => 'Estimated',
+        'estimate_hint' => 'The time is an estimate: a day\'s working time is split evenly across the tickets committed to that day. Git does not record which branch was checked out when.',
+        'last_activity' => 'Last',
+        'shown' => ':shown of :total',
     ],
 
     'absence' => [

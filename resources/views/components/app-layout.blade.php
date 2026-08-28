@@ -11,6 +11,7 @@
         ['route' => 'calendar', 'label' => __('app.nav.calendar'), 'icon' => 'calendar-days'],
         ['route' => 'insights', 'label' => __('app.nav.insights'), 'icon' => 'chart'],
         ['route' => 'todos.index', 'label' => __('app.nav.todos'), 'icon' => 'list-check', 'match' => ['todos.*', 'tags.*', 'steps.*', 'attachments.*']],
+        ['route' => 'tickets', 'label' => __('app.nav.tickets'), 'icon' => 'tag'],
         ['route' => 'dev', 'label' => __('app.nav.dev'), 'icon' => 'terminal', 'match' => ['dev', 'dev.*', 'projects', 'projects.*', 'snippets', 'snippets.*', 'releases', 'docker', 'docker.*', 'commands', 'commands.*']],
     ];
 @endphp

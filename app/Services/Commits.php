@@ -140,6 +140,16 @@ final class Commits
     }
 
     /**
+     * The commits of a range, grouped per project — the same read as forDay, over more days.
+     *
+     * @return array<int, list<array>>
+     */
+    public function forRange(Carbon $from, Carbon $to, ?Collection $projects = null): array
+    {
+        return $this->readMany($projects ?? Project::query()->inOrder()->get(), $from, $to);
+    }
+
+    /**
      * Commits per day over a range — one git call per repository, not one per day.
      *
      * @return Collection<string, int> keyed by Y-m-d

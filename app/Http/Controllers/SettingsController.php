@@ -99,6 +99,7 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'github_token' => ['nullable', 'string', 'max:255'],
+            'linear_token' => ['nullable', 'string', 'max:255'],
             'slack_token' => ['nullable', 'string', 'max:255'],
             'slack_channel' => ['nullable', 'string', 'max:120'],
             'ticket_url_template' => ['nullable', 'string', 'max:255'],
@@ -110,6 +111,7 @@ class SettingsController extends Controller
 
         // an empty token field keeps the stored one, "-" clears it
         $token = trim((string) ($data['github_token'] ?? ''));
+        $linear = trim((string) ($data['linear_token'] ?? ''));
         $slack = trim((string) ($data['slack_token'] ?? ''));
 
         $user->update([
@@ -117,6 +119,11 @@ class SettingsController extends Controller
                 $token === '' => $user->github_token,
                 $token === '-' => null,
                 default => $token,
+            },
+            'linear_token' => match (true) {
+                $linear === '' => $user->linear_token,
+                $linear === '-' => null,
+                default => $linear,
             },
             'slack_token' => match (true) {
                 $slack === '' => $user->slack_token,

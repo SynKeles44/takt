@@ -358,6 +358,14 @@
                     @method('PUT')
 
                     <div>
+                        <label for="linear_token" class="label">{{ __('app.linear.token') }}</label>
+                        <input id="linear_token" type="password" name="linear_token" class="control metric text-xs"
+                               autocomplete="off" placeholder="{{ $user->linear_token ? __('app.settings.token_set') : 'lin_api_…' }}">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.linear.token_hint') }}</p>
+                        @error('linear_token') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
                         <span class="flex items-center justify-between gap-2">
                             <label for="github_token" class="label">{{ __('app.settings.github_token') }}</label>
 

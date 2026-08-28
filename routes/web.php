@@ -24,6 +24,8 @@ use App\Http\Controllers\SnippetController;
 use App\Http\Controllers\StepTemplateController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TimeEntryController;
+use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketRefreshController;
 use App\Http\Controllers\TimerController;
 use App\Http\Controllers\TodoAttachmentController;
 use App\Http\Controllers\TodoController;
@@ -59,6 +61,9 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/kalender/abwesenheiten/{absence}', [AbsenceController::class, 'destroy'])->name('absences.destroy');
 
     Route::post('/notizen', [DayNoteController::class, 'store'])->name('notes.store');
+
+    Route::get('/tickets', TicketController::class)->name('tickets');
+    Route::post('/tickets/neu-laden', TicketRefreshController::class)->name('tickets.refresh');
 
     Route::get('/entwicklung', [DeveloperController::class, 'index'])->name('dev');
     Route::post('/entwicklung/reviews', [DeveloperController::class, 'refreshReviews'])->name('dev.reviews');

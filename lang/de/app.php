@@ -8,6 +8,7 @@ return [
     'tagline_short' => 'Zeit & Aufgaben',
 
     'nav' => [
+        'tickets' => 'Tickets',
         'dev' => 'Entwicklung',
         'account' => 'Mein Konto',
         'expand' => 'Seitenleiste ausklappen',
@@ -247,6 +248,38 @@ return [
         'daylight' => ['label' => 'Tageslicht', 'description' => 'Hell und klar'],
         'onyx' => ['label' => 'Onyx', 'description' => 'Schwarz, monochrom'],
         'sage' => ['label' => 'Salbei', 'description' => 'Dunkelgrün mit Mint'],
+    ],
+
+    'linear' => [
+        'title' => 'Linear',
+        'unreachable' => 'Linear ist nicht erreichbar.',
+        'unauthorized' => 'Linear lehnt den Schlüssel ab — in den Einstellungen prüfen.',
+        'failed' => 'Linear antwortet mit :status.',
+        'rejected' => 'Linear lehnt die Abfrage ab: :message',
+        'token' => 'Linear-Schlüssel',
+        'token_hint' => 'Persönlicher API-Schlüssel aus Linear (Einstellungen → Security & access). Ohne ihn kommen die Tickets nur aus Git.',
+        'unknown' => 'In Linear nicht gefunden',
+    ],
+
+    'tickets' => [
+        'refreshed' => 'Tickets neu geladen.',
+        'no_token' => 'Kein Linear-Schlüssel hinterlegt — die Liste kommt nur aus Git.',
+        'only_git' => 'Nur in Git',
+        'open' => 'Offen',
+        'all' => 'Alle',
+        'refresh' => 'Neu laden',
+        'title' => 'Tickets',
+        'intro' => 'Aus Branches, Commits und Pull Requests zusammengetragen.',
+        'empty' => 'Keine Ticket-Nummern in den letzten :days Tagen gefunden.',
+        'window' => 'Letzte :days Tage',
+        'search' => 'Ticket oder Titel suchen',
+        'commits' => '{0} keine Commits|{1} 1 Commit|[2,*] :count Commits',
+        'pulls' => '{0} kein PR|{1} 1 PR|[2,*] :count PRs',
+        'branches' => '{0} kein Branch|{1} 1 Branch|[2,*] :count Branches',
+        'estimate' => 'Geschätzt',
+        'estimate_hint' => 'Die Zeit ist geschätzt: die Arbeitszeit eines Tages wird gleichmäßig auf die Tickets verteilt, zu denen an diesem Tag committet wurde. Git speichert nicht, welcher Branch wann ausgecheckt war.',
+        'last_activity' => 'Zuletzt',
+        'shown' => ':shown von :total',
     ],
 
     'absence' => [

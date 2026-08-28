@@ -15,8 +15,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'weekly_hours', 'working_days', 'theme', 'design_style', 'locale', 'notify_worktime', 'github_token', 'slack_token', 'slack_channel', 'ticket_url_template', 'pr_url_template', 'instance_url_template', 'holiday_region', 'vacation_days', 'home_office_days', 'home_office_window'])]
-#[Hidden(['password', 'remember_token', 'github_token', 'slack_token'])]
+#[Fillable(['name', 'email', 'password', 'weekly_hours', 'working_days', 'theme', 'design_style', 'locale', 'notify_worktime', 'github_token', 'linear_token', 'slack_token', 'slack_channel', 'ticket_url_template', 'pr_url_template', 'instance_url_template', 'holiday_region', 'vacation_days', 'home_office_days', 'home_office_window'])]
+#[Hidden(['password', 'remember_token', 'github_token', 'linear_token', 'slack_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -44,6 +44,7 @@ class User extends Authenticatable
             'working_days' => 'integer',
             'notify_worktime' => 'boolean',
             'dashboard_arranged' => 'boolean',
+            'linear_token' => 'encrypted',
             'slack_token' => 'encrypted',
             'theme' => Theme::class,
             'design_style' => DesignStyle::class,

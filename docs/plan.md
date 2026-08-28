@@ -503,19 +503,28 @@ Requirement ids refer to `requirements.md`.
 - [x] Tests per source: every group the palette can return is asserted once, plus that nothing
       is sent to GitHub.
 
-## Phase 55 — Tickets from git (R44, first half)
+## Phase 55 — Tickets, with Linear as the source (R44)
 
-- [ ] `Tickets` service: scan branch names, commit subjects and pull request titles for
-      `[A-Z]+-\d+`, group by id, and derive booked time from the branch a working copy was on.
-- [ ] Area with a list and a ticket page: commits, pull requests, time, and the projects it
-      touched. Works without Linear.
+- [x] `Tickets` service: `[A-Z][A-Z0-9]+-\d+` out of branch names, commit subjects and pull
+      request titles, grouped per id — the enrichment.
+- [x] Linear is the source, not a lookup: `viewer { assignedIssues }` carries the list, git adds
+      projects, commits, pull requests and branches. An id that only exists in git is listed as
+      git-only rather than dropped.
+- [x] Booked time is an estimate and says so: a day's working time split evenly across the
+      tickets committed that day. Git records no branch history, so anything more precise would
+      be a guess dressed as a measurement.
+- [x] Area with search, open/all filter, window (30/90/180 days) and a reload button.
 
-## Phase 56 — Linear behind the tickets (R44, second half)
+## Phase 56 — Linear (R44)
 
-- [ ] `Linear` service: one pooled GraphQL call for the ids on screen (`issues(filter: …)`),
-      cached like the reviews, honest per-id status when a key is missing or a request fails.
-- [ ] Settings: personal API key, encrypted, with the same never-render-back handling as the
-      GitHub token.
+- [x] `Linear` service: one request per purpose through a single `post()` helper, `Authorization`
+      without "Bearer", errors mapped to honest German text, cached ten minutes as strings.
+- [x] `mine()` deliberately without a server-side filter — the open/closed split happens locally,
+      so a wrong guess about the filter syntax cannot break the whole list. The by-id query does
+      use the documented `in` comparators; **not yet verified against a real key**.
+- [x] Settings: personal API key, encrypted, never rendered back, `-` clears it.
+- [x] Bug found by its own test: a failed request must not remember ids as "unknown", or they
+      would never be asked for again until the cache expires.
 
 ## Phase 57 — The menu bar and the global key (R52)
 
