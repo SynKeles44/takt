@@ -302,6 +302,65 @@ final class Reviews
         ));
     }
 
+    /**
+     * The clipboard shape the pull-request lists offer: one heading per group, its pull
+     * requests below it as plain URLs, and a blank line between groups. A group without pull
+     * requests is left out — an empty heading is noise in a paste.
+     *
+     * With $withTitles every pull request becomes two lines — its title, then its link — and
+     * those pairs are separated by a blank line, so a paste stays readable:
+     *
+     *     Project:
+     *     fix(times): …
+     *     https://…/pull/1
+     *
+     *     feat(import): …
+     *     https://…/pull/2
+     *
+     * @param  array<string, list<array>>  $groups  heading => pull requests
+     */
+    public function clipboardText(array $groups, bool $withTitles = false): string
+    {
+        $blocks = [];
+
+        foreach ($groups as $heading => $pulls) {
+            if ($pulls === []) {
+                continue;
+            }
+
+            $entries = array_map(
+                static fn (array $pull): string => $withTitles
+                    ? $pull['title']."\n".$pull['url']
+                    : (string) $pull['url'],
+                $pulls,
+            );
+
+            $blocks[] = $heading.":\n".implode($withTitles ? "\n\n" : "\n", $entries);
+        }
+
+        return implode("\n\n", $blocks);
+    }
+
+    /**
+     * Pull requests of repositories that are not registered as projects, grouped by their own
+     * repository rather than lumped under one heading.
+     *
+     * @param  list<array>  $pulls
+     * @return array<string, list<array>>
+     */
+    public function byRepository(array $pulls): array
+    {
+        $groups = [];
+
+        foreach ($pulls as $pull) {
+            $groups[(string) $pull['repository']][] = $pull;
+        }
+
+        ksort($groups);
+
+        return $groups;
+    }
+
     /** @return array<string, mixed> */
     private function empty(): array
     {

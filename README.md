@@ -38,6 +38,12 @@ file — no cloud, no external services.
   four tiles (work, target, balance, completed) and the same distribution list; switching
   the period changes the numbers, not the layout. The year adds a day-by-day heatmap, the
   month adds a print-ready timesheet with signature lines and a CSV export.
+- **Copying pull requests** — every pull request offers its link on a button, and a checkbox
+  decides whether it belongs in a collected copy (all ticked by default). One button per
+  project copies its ticked pull requests under a `PROJECT NAME:` heading, one button copies
+  every project with a blank line between them. Projects with nothing ticked are left out. A
+  switch in the header adds the titles; it is off by default, and with it every pull request
+  takes two lines — title, then link — with a blank line between them.
 - **Posting to Slack** — the test post can go straight into the testing channel, under your own
   name and avatar. That needs a user token (`xoxp-`) with `chat:write`, which you store once in
   the settings together with the channel; the token is kept encrypted and never rendered back

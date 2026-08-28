@@ -809,6 +809,33 @@ document.addEventListener('keydown', (event) => {
     document.querySelectorAll('[data-menu]').forEach((menu) => menu.classList.add('hidden'));
 });
 
+/*
+ * The text of a group of pull requests, built from the ticked boxes: one heading per group,
+ * its links below it, a blank line between groups, and a group nobody ticked left out. The
+ * server renders the same shape into data-copy for the full set — this narrows it to the
+ * selection at the moment of the click.
+ */
+const withTitles = () => document.querySelector('[data-copy-titles]')?.checked === true;
+
+// with titles a pull request takes two lines, and the pairs are spaced apart
+const pullLine = (url, title) => (withTitles() && title ? `${title}\n${url}` : url);
+
+const selectionText = (root) => {
+    const groups = root.matches('[data-pull-group]') ? [root] : [...root.querySelectorAll('[data-pull-group]')];
+    const separator = withTitles() ? '\n\n' : '\n';
+
+    return groups
+        .map((group) => {
+            const picked = [...group.querySelectorAll('[data-pull-pick]')]
+                .filter((box) => box.checked)
+                .map((box) => pullLine(box.value, box.dataset.title));
+
+            return picked.length === 0 ? null : `${group.dataset.copyHeading ?? ''}:\n${picked.join(separator)}`;
+        })
+        .filter(Boolean)
+        .join('\n\n');
+};
+
 // anything carrying data-copy puts its content on the clipboard, delegated so it
 // keeps working inside regions that were swapped in place
 document.addEventListener('click', (event) => {
@@ -820,7 +847,23 @@ document.addEventListener('click', (event) => {
 
     event.preventDefault();
 
-    const text = trigger.dataset.copy ?? '';
+    const scope = trigger.dataset.copyScope;
+    let text = trigger.dataset.copy ?? '';
+
+    if (scope === 'pull') {
+        text = pullLine(text, trigger.dataset.copyTitle);
+    } else if (scope) {
+        const root = scope === 'group' ? trigger.closest('[data-pull-group]') : trigger.closest('.surface');
+
+        text = selectionText(root ?? document);
+
+        if (text === '') {
+            toast(trigger.dataset.copyEmpty || '');
+
+            return;
+        }
+    }
+
     const done = () => {
         toast(trigger.dataset.copyLabel || 'Kopiert.');
 

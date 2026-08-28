@@ -803,3 +803,19 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       itself never waits for it.
 - [x] Commits are read with one `git log` per repository, all at once — 293 ms for four
       repositories became 127 ms, and the address bar is the same either way.
+
+## R42 Pull requests are copied, in the shape a paste needs
+
+- [x] Every pull request carries a copy button for its link, and a checkbox that decides
+      whether it belongs in a collected copy. All boxes start ticked, so untick what should
+      stay out.
+- [x] One button per project copies that project's ticked pull requests under a
+      `PROJECT NAME:` heading; one button copies every project, a blank line between them.
+      A project with nothing ticked is left out — an empty heading is noise in a paste.
+- [x] A switch in the header adds the titles, off by default, and it applies to all three copy
+      paths — single link, project, everything. With titles a pull request takes two lines
+      (title, then link) and the pairs are separated by a blank line; title and link on one
+      line was unreadable in a paste.
+- [x] The server renders the same shape into `data-copy` for the full set, and the browser
+      narrows it to the ticked boxes at the moment of the click. Nothing ticked says so
+      instead of putting an empty string on the clipboard.

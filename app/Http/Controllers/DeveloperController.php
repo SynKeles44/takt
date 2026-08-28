@@ -49,7 +49,8 @@ class DeveloperController extends Controller
             'byProject' => $cachedReviews === null ? collect() : $projects->mapWithKeys(fn (Project $project): array => [
                 $project->getKey() => $reviews->mineFor($cachedReviews, $project->slug()),
             ]),
-            'unassigned' => $cachedReviews === null ? [] : $this->unassigned($cachedReviews, $projects),
+            'unassigned' => $unassigned = ($cachedReviews === null ? [] : $this->unassigned($cachedReviews, $projects)),
+            'clipboard' => $this->clipboard($reviews, $cachedReviews, $projects, $unassigned),
             'snippets' => Snippet::query()->inOrder()->limit(8)->get(),
         ]);
     }
@@ -67,6 +68,8 @@ class DeveloperController extends Controller
         $projects = Project::query()->inOrder()->get();
         $data = $reviews->forUser($request->user());
 
+        $unassigned = $this->unassigned($data, $projects);
+
         return view('partials.reviews', [
             'reviews' => $data,
             'reviewsConfigured' => $reviews->configured($request->user()),
@@ -74,8 +77,43 @@ class DeveloperController extends Controller
             'byProject' => $projects->mapWithKeys(fn (Project $project): array => [
                 $project->getKey() => $reviews->mineFor($data, $project->slug()),
             ]),
-            'unassigned' => $this->unassigned($data, $projects),
+            'unassigned' => $unassigned,
+            'clipboard' => $this->clipboard($reviews, $data, $projects, $unassigned),
         ]);
+    }
+
+    /**
+     * The ready-made clipboard texts the lists offer: one per project, one for the
+     * unregistered repositories, and one across everything.
+     *
+     * @param  array{mine: list<array>}|null  $data
+     * @param  Collection<int, Project>  $projects
+     * @param  list<array>  $unassigned
+     * @return array{all: string, projects: array<int, string>, unassigned: string}
+     */
+    private function clipboard(Reviews $reviews, ?array $data, $projects, array $unassigned): array
+    {
+        if ($data === null) {
+            return ['all' => '', 'projects' => [], 'unassigned' => ''];
+        }
+
+        $groups = [];
+        $perProject = [];
+
+        foreach ($projects as $project) {
+            $pulls = $reviews->mineFor($data, $project->slug());
+
+            $groups[$project->name] = $pulls;
+            $perProject[$project->getKey()] = $reviews->clipboardText([$project->name => $pulls]);
+        }
+
+        $others = $reviews->byRepository($unassigned);
+
+        return [
+            'all' => $reviews->clipboardText([...$groups, ...$others]),
+            'projects' => $perProject,
+            'unassigned' => $reviews->clipboardText($others),
+        ];
     }
 
     /**
