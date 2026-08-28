@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Project;
-use Illuminate\Process\Pool;
+use App\Support\Parallel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Process;
 
 /**
  * Reads the day's own commits straight out of the local repositories — no service,
@@ -49,7 +48,7 @@ final class Commits
 
         $emails = $this->emailsFor($usable);
 
-        $outputs = $this->parallel($usable
+        $outputs = Parallel::run($usable
             ->filter(fn (Project $project): bool => ($emails[$project->getKey()] ?? []) !== [])
             ->mapWithKeys(fn (Project $project): array => [
                 'p'.$project->getKey() => $this->logArguments($project, $from, $to, $emails[$project->getKey()]),
@@ -71,7 +70,7 @@ final class Commits
      */
     private function emailsFor(Collection $projects): array
     {
-        $outputs = $this->parallel($projects->mapWithKeys(fn (Project $project): array => [
+        $outputs = Parallel::run($projects->mapWithKeys(fn (Project $project): array => [
             'p'.$project->getKey() => ['git', '-C', $project->absolutePath(), 'config', 'user.email'],
         ])->all());
 
@@ -94,32 +93,6 @@ final class Commits
         }
 
         return $emails;
-    }
-
-    /**
-     * @param  array<string, list<string>>  $commands
-     * @return array<string, string> the output per key, empty for a failed call
-     */
-    private function parallel(array $commands): array
-    {
-        if ($commands === []) {
-            return [];
-        }
-
-        $results = Process::pool(function (Pool $pool) use ($commands): void {
-            foreach ($commands as $key => $arguments) {
-                $pool->as($key)->timeout(15)->command($arguments);
-            }
-        })->start()->wait();
-
-        $outputs = [];
-
-        foreach (array_keys($commands) as $key) {
-            $result = $results[$key] ?? null;
-            $outputs[$key] = $result !== null && $result->successful() ? $result->output() : '';
-        }
-
-        return $outputs;
     }
 
     /** @return list<string> */

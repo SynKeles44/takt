@@ -8,6 +8,6 @@
     </div>
 
     <div class="mt-5">
-        <x-booking-form :open-todos="$openTodos"/>
+        <x-booking-form :open-todos="$openTodos" :pattern="$pattern"/>
     </div>
 </x-card>

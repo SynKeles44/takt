@@ -484,3 +484,66 @@ Requirement ids refer to `requirements.md`.
       and Whit Monday with `--balance 0` and asserts the balance is exactly zero.
 - [x] The "current week" / "current month" buttons stay in place and go inactive, in the
       history, the calendar and the dashboard's week chart.
+
+## Phase 54 — Four small ones, no app rebuild (R49, R50, R46, R51)
+
+- [x] `Reviews::waitStats()` — median, oldest and stuck count for both lists, out of the data
+      the fetch already returns. "How fast do I review" was dropped: it needs one request per
+      pull request and the rate limit is real.
+- [x] "Book like last time": `TimeTracker::lastPattern()` reads the last booked day (earliest
+      start, latest end, first break, note) and a `data-fill` button writes it into the form.
+      The date is deliberately not copied.
+- [x] `Releases` service — `git for-each-ref` per project, in parallel, with `-refname` as the
+      tie-breaker because two tags in the same second are otherwise unordered. Cached for five
+      minutes as ISO strings, never Carbon.
+- [x] `Parallel::run()` extracted from `Commits` instead of copied into `Releases`.
+- [x] Search: projects, absences, tags, checklist templates, make targets, releases and pull
+      requests joined the palette. Releases and pull requests answer from their caches — the
+      palette must not start a git or GitHub round trip per keystroke.
+- [x] Tests per source: every group the palette can return is asserted once, plus that nothing
+      is sent to GitHub.
+
+## Phase 55 — Tickets from git (R44, first half)
+
+- [ ] `Tickets` service: scan branch names, commit subjects and pull request titles for
+      `[A-Z]+-\d+`, group by id, and derive booked time from the branch a working copy was on.
+- [ ] Area with a list and a ticket page: commits, pull requests, time, and the projects it
+      touched. Works without Linear.
+
+## Phase 56 — Linear behind the tickets (R44, second half)
+
+- [ ] `Linear` service: one pooled GraphQL call for the ids on screen (`issues(filter: …)`),
+      cached like the reviews, honest per-id status when a key is missing or a request fails.
+- [ ] Settings: personal API key, encrypted, with the same never-render-back handling as the
+      GitHub token.
+
+## Phase 57 — The menu bar and the global key (R52)
+
+- [ ] `NSStatusItem` in `desktop/main.swift`: state, start, stop, today's total, open window.
+- [ ] A small HTTP surface the shell talks to for those actions, authenticated by a token the
+      bundle already knows.
+- [ ] `RegisterEventHotKey` for start/stop; the combination is a setting the shell reads.
+
+## Phase 58 — The Mac was away (R47)
+
+- [ ] The shell subscribes to lock/sleep/wake and posts the gap to Takt.
+- [ ] A running timer that spans a gap is surfaced on the next view with three answers.
+
+## Phase 59 — Reading the calendar (R48)
+
+- [ ] EventKit in the shell, permission asked once, events handed to Takt for the current day.
+- [ ] Events appear as booking proposals in the day and as context in the history.
+
+## Phase 60 — Takt on the phone (R53)
+
+- [ ] Setting: bind to the local network. The shell reads it and starts `artisan serve`
+      accordingly; the WebView's navigation allowlist learns the LAN host.
+- [ ] Settings show the reachable address and a QR code; the switch states that this is plain
+      HTTP inside your network.
+
+## Phase 61 — The activity trail (R45)
+
+- [ ] The shell records the front application (and the window title where the accessibility
+      permission was granted) and posts spans to Takt.
+- [ ] Storage with a retention setting, a pause switch, exclusion from every export.
+- [ ] Proposals in the day view: a span becomes a booking on one click, never on its own.

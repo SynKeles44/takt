@@ -17,6 +17,7 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\MonthController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SnippetController;
@@ -84,6 +85,8 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/entwicklung/projekte/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     Route::post('/entwicklung/projekte/{project}/start', [ProjectController::class, 'start'])->name('projects.start');
     Route::post('/entwicklung/projekte/{project}/stop', [ProjectController::class, 'stop'])->name('projects.stop');
+
+    Route::get('/entwicklung/releases', ReleaseController::class)->name('releases');
 
     Route::get('/entwicklung/bausteine', [SnippetController::class, 'index'])->name('snippets');
     Route::post('/entwicklung/bausteine', [SnippetController::class, 'store'])->name('snippets.store');

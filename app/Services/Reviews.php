@@ -30,6 +30,9 @@ final class Reviews
     /** Ten minutes: a fetch costs over a second, and the refresh button is right there. */
     public const int CACHE_SECONDS = 600;
 
+    /** A week open is where a pull request stops being "in flight" and starts being stuck. */
+    public const int STALE_DAYS = 7;
+
     public function configured(User $user): bool
     {
         return filled($user->github_token);
@@ -300,6 +303,50 @@ final class Reviews
             $reviews['mine'],
             fn (array $pull): bool => strcasecmp($pull['repository'], $repository) === 0,
         ));
+    }
+
+    /**
+     * How long the open pull requests have been waiting. Both lists are measured from the day
+     * they were opened, because that is the number the data actually carries: how fast I
+     * review would need one request per pull request, and the rate limit is real.
+     *
+     * @param  array{mine: list<array>, incoming: list<array>}  $reviews
+     * @return array<string, array{count: int, median: ?int, oldest: ?int, stale: int}>
+     */
+    public function waitStats(array $reviews): array
+    {
+        return [
+            'mine' => $this->waiting($reviews['mine']),
+            'incoming' => $this->waiting($reviews['incoming']),
+        ];
+    }
+
+    /**
+     * @param  list<array>  $pulls
+     * @return array{count: int, median: ?int, oldest: ?int, stale: int}
+     */
+    private function waiting(array $pulls): array
+    {
+        $now = Carbon::now();
+
+        $days = array_map(
+            static fn (array $pull): int => (int) $pull['created_at']->diffInDays($now),
+            $pulls,
+        );
+
+        sort($days);
+        $count = count($days);
+
+        return [
+            'count' => $count,
+            'median' => $count === 0 ? null : (int) round(
+                $count % 2 === 1
+                    ? $days[intdiv($count, 2)]
+                    : ($days[$count / 2 - 1] + $days[$count / 2]) / 2,
+            ),
+            'oldest' => $count === 0 ? null : $days[$count - 1],
+            'stale' => count(array_filter($days, static fn (int $day): bool => $day >= self::STALE_DAYS)),
+        ];
     }
 
     /**

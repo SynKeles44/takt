@@ -51,6 +51,7 @@ class DeveloperController extends Controller
             ]),
             'unassigned' => $unassigned = ($cachedReviews === null ? [] : $this->unassigned($cachedReviews, $projects)),
             'clipboard' => $this->clipboard($reviews, $cachedReviews, $projects, $unassigned),
+            'waits' => $cachedReviews === null ? null : $reviews->waitStats($cachedReviews),
             'snippets' => Snippet::query()->inOrder()->limit(8)->get(),
         ]);
     }
@@ -79,6 +80,7 @@ class DeveloperController extends Controller
             ]),
             'unassigned' => $unassigned,
             'clipboard' => $this->clipboard($reviews, $data, $projects, $unassigned),
+            'waits' => $reviews->waitStats($data),
         ]);
     }
 

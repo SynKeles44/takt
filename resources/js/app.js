@@ -836,6 +836,43 @@ const selectionText = (root) => {
         .join('\n\n');
 };
 
+/*
+ * A button carrying data-fill writes its values into the fields of its own form, by name.
+ * That is "book like last time": the server knows the shape of the last booked day, the page
+ * only has to put it in the fields — and the values stay editable before anything is sent.
+ */
+document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-fill]');
+
+    if (! trigger) {
+        return;
+    }
+
+    event.preventDefault();
+
+    let values = {};
+
+    try {
+        values = JSON.parse(trigger.dataset.fill);
+    } catch {
+        return;
+    }
+
+    const form = trigger.closest('form');
+
+    Object.entries(values).forEach(([name, value]) => {
+        // the date belongs to the day being booked, not to the day it was copied from
+        if (name === 'date') return;
+
+        const field = form?.elements.namedItem(name);
+
+        if (field) field.value = value;
+    });
+
+    form?.querySelector('[name="work_starts_at"]')?.focus();
+    toast(trigger.dataset.fillLabel || '');
+});
+
 // anything carrying data-copy puts its content on the clipboard, delegated so it
 // keeps working inside regions that were swapped in place
 document.addEventListener('click', (event) => {

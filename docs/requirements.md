@@ -832,3 +832,77 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       in the tooltip. Their groups stay in one column — two of them halve the width, and a
       conventional-commit title does not survive that. Measured: the same title needed four
       lines at half width and fits in two at full width.
+
+## R44 Tickets, with Linear behind them
+
+- [ ] Ticket ids in the form `COR-6839` already sit in branch names, commit subjects and pull
+      request titles. Takt collects them per ticket: commits, pull requests, and the time
+      booked while the working copy was on that branch.
+- [ ] Linear fills in what git cannot know — title, state, assignee, cycle, url — through its
+      GraphQL API (`https://api.linear.app/graphql`, header `Authorization: <key>`, no
+      "Bearer"). The key is stored like the GitHub token: encrypted, never rendered back.
+- [ ] Rate limits are real, so the answer is cached like the reviews are, and a ticket is never
+      polled on its own.
+- [ ] Without a key the area still works from git alone; the Linear columns stay empty instead
+      of the page breaking.
+
+## R45 The activity trail
+
+- [ ] Which application was in front, and for how long, recorded locally by the app shell —
+      nothing leaves the machine. The window title needs the accessibility permission; without
+      it the trail keeps the application name only and says so.
+- [ ] The trail proposes bookings ("14:10–15:05 PhpStorm — book on Galawork-Web?") and never
+      books on its own.
+- [ ] Recording can be paused, the retention is a setting, and the trail is excluded from every
+      export that leaves the machine.
+
+## R46 Releases
+
+- [ ] A small area inside development: what was shipped when, read from the git tags of the
+      registered projects, with the commits since the previous tag and room for one note.
+
+## R47 The Mac was away
+
+- [ ] The shell reports lock, sleep and wake to Takt. A timer that ran through such a gap is
+      surfaced afterwards with three answers: book a break, shorten the time, leave it.
+- [ ] Detection uses the notifications macOS already sends (`com.apple.screenIsLocked`,
+      workspace sleep/wake) — no extra permission.
+
+## R48 Reading the calendar, not only writing it
+
+- [ ] The ICS export exists; the other direction does not. Events become booking proposals and
+      context in the history.
+- [ ] Source: EventKit through the shell (asks once, sees the Mac's calendars) — decided
+      against an ICS subscription because the app is native anyway and a subscription would
+      lag behind.
+
+## R49 How long a pull request waits
+
+- [ ] Per project and overall: median wait of my open pull requests, the oldest one, and how
+      fast I review myself. Built from the data the review fetch already returns.
+
+## R50 Book like last time
+
+- [ ] One button copies start, end, breaks and note of the last comparable day. The fastest
+      entry there is when the rhythm is stable.
+
+## R51 Search across everything
+
+- [ ] The palette searches tasks, day notes, booking notes and snippets. Missing: projects,
+      absences, commits, pull requests, make targets, tags, checklist templates, releases.
+- [ ] SQLite FTS5 for what is in the database; the git- and GitHub-backed sources answer from
+      the caches that already exist.
+
+## R52 The menu bar, and a key that works everywhere
+
+- [ ] The shell carries an `NSStatusItem`: current state, start, stop, today's total — without
+      opening the window.
+- [ ] A global shortcut starts and stops the timer from any application. Registered through
+      Carbon's `RegisterEventHotKey`, which needs no permission; the combination is a setting.
+
+## R53 Takt on the phone, inside your own network
+
+- [ ] Opt-in: the shell binds the server to the local network instead of `127.0.0.1`, the
+      settings show a QR code, and the login stays mandatory.
+- [ ] Stated plainly in the settings: this is plain HTTP inside your network. Off by default,
+      and the switch says what it does.

@@ -88,7 +88,10 @@ final class Dashboard
             ],
             Widget::WeekChart => $this->weekChart($user, $week),
             Widget::Entries => ['entries' => $this->todayEntries()],
-            Widget::Booking => ['openTodos' => Todo::query()->open()->orderBy('title')->get(['id', 'title'])],
+            Widget::Booking => [
+                'openTodos' => Todo::query()->open()->orderBy('title')->get(['id', 'title']),
+                'pattern' => $this->tracker->lastPattern($this->today()),
+            ],
             Widget::Note => [
                 'today' => $this->today(),
                 'dayNote' => DayNote::query()->whereDate('day', $this->today()->toDateString())->first(),

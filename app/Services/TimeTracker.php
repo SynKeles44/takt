@@ -55,6 +55,52 @@ final class TimeTracker
         });
     }
 
+    /**
+     * The shape of the last day that was actually booked: earliest start, latest end, the
+     * first break, and the note if there was one. That is what "book like last time" fills in
+     * — a stable rhythm is the common case, and retyping it is the friction.
+     *
+     * @return array<string, string>|null
+     */
+    public function lastPattern(?CarbonInterface $exclude = null): ?array
+    {
+        $skip = $exclude?->toDateString();
+
+        $day = TimeEntry::query()
+            ->ofType(EntryType::Work)
+            ->completed()
+            ->when($skip !== null, fn ($query) => $query->whereDate('started_at', '!=', $skip))
+            ->orderByDesc('started_at')
+            ->value('started_at');
+
+        if ($day === null) {
+            return null;
+        }
+
+        $entries = TimeEntry::query()
+            ->onDay(Carbon::parse($day))
+            ->completed()
+            ->orderBy('started_at')
+            ->get();
+
+        $work = $entries->where('type', EntryType::Work);
+
+        if ($work->isEmpty()) {
+            return null;
+        }
+
+        $break = $entries->firstWhere('type', EntryType::Break);
+
+        return array_filter([
+            'date' => Carbon::parse($day)->toDateString(),
+            'work_starts_at' => $work->min('started_at')->format('H:i'),
+            'work_ends_at' => $work->max('ended_at')->format('H:i'),
+            'break_starts_at' => $break?->started_at->format('H:i'),
+            'break_ends_at' => $break?->ended_at?->format('H:i'),
+            'note' => $work->first()->note,
+        ], static fn (?string $value): bool => $value !== null && $value !== '');
+    }
+
     public function totalsForDay(CarbonInterface $day): array
     {
         return $this->totals(

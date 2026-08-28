@@ -42,6 +42,24 @@
                 </div>
             @endif
 
+            @if (($waits['incoming']['count'] ?? 0) > 0 || ($waits['mine']['count'] ?? 0) > 0)
+                <div class="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 sm:grid-cols-4">
+                    @foreach ([
+                        ['label' => __('app.dev.wait_mine_median'), 'value' => $waits['mine']['median'] ?? null, 'tone' => 'text-ink'],
+                        ['label' => __('app.dev.wait_mine_oldest'), 'value' => $waits['mine']['oldest'] ?? null, 'tone' => ($waits['mine']['oldest'] ?? 0) >= \App\Services\Reviews::STALE_DAYS ? 'text-danger-text' : 'text-ink'],
+                        ['label' => __('app.dev.wait_mine_stale'), 'value' => $waits['mine']['count'] ?? 0 ? ($waits['mine']['stale'] ?? 0) : null, 'tone' => ($waits['mine']['stale'] ?? 0) > 0 ? 'text-danger-text' : 'text-work-text'],
+                        ['label' => __('app.dev.wait_incoming_oldest'), 'value' => $waits['incoming']['oldest'] ?? null, 'tone' => ($waits['incoming']['oldest'] ?? 0) >= \App\Services\Reviews::STALE_DAYS ? 'text-danger-text' : 'text-ink'],
+                    ] as $tile)
+                        <div class="tile px-3 py-2 text-center">
+                            <p class="text-[10px] leading-snug text-faint">{{ $tile['label'] }}</p>
+                            <p class="metric mt-0.5 text-base font-bold {{ $tile['tone'] }}">{{ $tile['value'] ?? '–' }}</p>
+                        </div>
+                    @endforeach
+                </div>
+
+                <p class="mt-2 text-[11px] text-faint">{{ __('app.dev.wait_hint', ['days' => \App\Services\Reviews::STALE_DAYS]) }}</p>
+            @endif
+
             @if ($reviews['fetched_at'])
                 <p class="mt-3 text-[11px] text-dim">{{ __('app.dev.fetched', ['time' => $reviews['fetched_at']->format('H:i')]) }}</p>
             @endif

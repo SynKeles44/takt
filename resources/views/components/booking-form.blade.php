@@ -1,3 +1,5 @@
+@props(['openTodos' => null, 'pattern' => null])
+
 @php
     $field = 'control metric';
     $label = 'label';
@@ -9,6 +11,14 @@
 
 <form method="POST" action="{{ route('entries.store') }}" class="space-y-4" data-live>
     @csrf
+
+    @if ($pattern !== null)
+        <button type="button" class="btn btn-ghost w-full text-xs" data-fill='@json($pattern)'
+                data-fill-label="{{ __('app.form.filled_from', ['date' => \Illuminate\Support\Carbon::parse($pattern['date'])->isoFormat('dd, D. MMM')]) }}">
+            <x-icon name="repeat" class="size-3.5"/>
+            {{ __('app.form.like_last_time') }}
+        </button>
+    @endif
 
     <div>
         <label for="date" class="{{ $label }}">{{ __('app.form.date') }}</label>
