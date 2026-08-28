@@ -14,6 +14,16 @@ struct Config {
     /// What the window shows. The server binds to the loopback; the name resolves there.
     static var url: URL { URL(string: "http://\(host)\(port == 80 ? "" : ":\(port)")")! }
     static var loopback: URL { URL(string: "http://127.0.0.1:\(port)")! }
+
+    /*
+     * Takt answers on the local network only when the file exists — the settings write it,
+     * because the shell has to know before the server starts and does not read the database.
+     */
+    static var networkAccess: Bool {
+        root.isEmpty ? false : FileManager.default.fileExists(atPath: root + "/storage/app/network-access")
+    }
+
+    static var bind: String { networkAccess ? "0.0.0.0" : "127.0.0.1" }
 }
 
 /// Starts the local server unless something already serves the port, and stops
@@ -48,7 +58,7 @@ final class Server {
 
         let task = Process()
         task.executableURL = URL(fileURLWithPath: Config.php)
-        task.arguments = ["artisan", "serve", "--host=127.0.0.1", "--port=\(Config.port)"]
+        task.arguments = ["artisan", "serve", "--host=\(Config.bind)", "--port=\(Config.port)"]
         task.currentDirectoryURL = URL(fileURLWithPath: Config.root)
 
         let log = URL(fileURLWithPath: Config.root).appendingPathComponent("storage/logs/serve.log")
@@ -115,6 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     private var statusItem: NSStatusItem?
     private var stateTimer: Timer?
     private var hotKey: EventHotKeyRef?
+    private var awaySince: Date?
 
     // MARK: lifecycle
 
@@ -140,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         buildStatusItem()
         registerHotKey()
+        watchForAbsence()
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
@@ -256,6 +268,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         webView?.evaluateJavaScript(script) { [weak self] _, _ in
             // the page needs a moment to post and swap before the state is worth reading again
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self?.refreshStatusItem() }
+        }
+    }
+
+    // MARK: the Mac going away
+
+    /*
+     * Locking the screen and going to sleep both mean nobody is at the keyboard. macOS sends
+     * these notifications on its own, so this needs no permission — and the page decides
+     * whether the stretch is worth mentioning, because only it knows if a timer was running.
+     */
+    private func watchForAbsence() {
+        let lock = DistributedNotificationCenter.default()
+
+        lock.addObserver(forName: .init("com.apple.screenIsLocked"), object: nil, queue: .main) { [weak self] _ in
+            self?.markAway()
+        }
+
+        lock.addObserver(forName: .init("com.apple.screenIsUnlocked"), object: nil, queue: .main) { [weak self] _ in
+            self?.reportAway()
+        }
+
+        let workspace = NSWorkspace.shared.notificationCenter
+
+        workspace.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.markAway()
+        }
+
+        workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.reportAway()
+        }
+    }
+
+    /** Sleep and lock often both fire; the earlier moment is the honest start of the absence. */
+    private func markAway() {
+        if awaySince == nil { awaySince = Date() }
+    }
+
+    private func reportAway() {
+        guard let from = awaySince else { return }
+
+        awaySince = nil
+
+        let formatter = ISO8601DateFormatter()
+        let payload = "'\(formatter.string(from: from))', '\(formatter.string(from: Date()))'"
+
+        webView?.evaluateJavaScript(
+            "window.takt?.reportAway?.(\(payload), window.takt.state().awayUrl)"
+        ) { [weak self] _, _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { self?.refreshStatusItem() }
         }
     }
 
@@ -402,7 +463,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
 
         // anything that is not the app itself belongs in the browser
-        if url.host == "127.0.0.1" || url.host == "localhost" || url.host == Config.host || url.scheme == "about" || url.scheme == "blob" {
+        // with network access on, the LAN address is ours as well
+        let ours = ["127.0.0.1", "localhost", Config.host]
+
+        if let host = url.host, ours.contains(host) || (Config.networkAccess && host.hasPrefix("192.168.")) || url.scheme == "about" || url.scheme == "blob" {
             decisionHandler(.allow)
 
             return

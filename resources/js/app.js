@@ -376,9 +376,9 @@ window.takt = {
         if (! node) return { signedIn: false };
 
         try {
-            return { signedIn: true, ...JSON.parse(node.textContent || '{}') };
+            return { signedIn: true, awayUrl: node.dataset.awayUrl, ...JSON.parse(node.textContent || '{}') };
         } catch {
-            return { signedIn: true };
+            return { signedIn: true, awayUrl: node.dataset.awayUrl };
         }
     },
 
@@ -388,6 +388,32 @@ window.takt = {
 
     stop() {
         document.querySelector('#palette-stop')?.requestSubmit?.();
+    },
+
+    /*
+     * The shell reports a lock or sleep once the Mac is back. It travels through the page so the
+     * session and the CSRF token are the ones the user already has — the shell holds no
+     * credentials of its own.
+     */
+    reportAway(from, to, url) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ from, to }),
+        })
+            .then((response) => response.json())
+            .then((answer) => {
+                // a recorded gap only shows up on the next render, so pull the page back in
+                if (answer?.recorded) window.location.reload();
+
+                return answer;
+            })
+            .catch(() => ({ recorded: false }));
     },
 };
 

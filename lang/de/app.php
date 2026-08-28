@@ -63,6 +63,8 @@ return [
     ],
 
     'form' => [
+        'on' => 'Einschalten',
+        'off' => 'Ausschalten',
         'like_last_time' => 'Wie letztes Mal',
         'filled_from' => 'Übernommen von :date.',
         'reset' => 'Zurücksetzen',
@@ -248,6 +250,29 @@ return [
         'daylight' => ['label' => 'Tageslicht', 'description' => 'Hell und klar'],
         'onyx' => ['label' => 'Onyx', 'description' => 'Schwarz, monochrom'],
         'sage' => ['label' => 'Salbei', 'description' => 'Dunkelgrün mit Mint'],
+    ],
+
+    'away' => [
+        'title' => 'Der Mac war weg',
+        'body' => 'Von :from bis :to war der Mac gesperrt oder im Ruhezustand — :duration, in der der Timer weiterlief.',
+        'break' => 'Als Pause buchen',
+        'shorten' => 'Zeit kürzen',
+        'keep' => 'So lassen',
+        'break_done' => 'Als Pause gebucht.',
+        'shorten_done' => 'Zeit gekürzt.',
+        'keep_done' => 'Bleibt so.',
+    ],
+
+    'network' => [
+        'title' => 'Im Netzwerk erreichbar',
+        'hint' => 'Takt antwortet dann auch auf anderen Geräten in Deinem WLAN — die Anmeldung bleibt Pflicht. Es ist unverschlüsseltes HTTP in Deinem Netz, also nichts für fremde Netzwerke.',
+        'address' => 'Adresse',
+        'no_ip' => 'Keine Netzwerkadresse gefunden.',
+        'needs_restart' => 'Greift, sobald Takt neu gestartet wird.',
+        'on_done' => 'Netzwerkzugriff eingeschaltet — Takt neu starten.',
+        'off_done' => 'Netzwerkzugriff ausgeschaltet — Takt neu starten.',
+        'copy' => 'Adresse kopieren',
+        'copied' => 'Adresse kopiert.',
     ],
 
     'linear' => [

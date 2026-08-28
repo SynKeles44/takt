@@ -21,6 +21,36 @@
     <div aria-hidden="true"
          class="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full blur-3xl {{ $running === null ? 'bg-accent/10' : ($isWork ? 'bg-work/15' : 'bg-rest/15') }}"></div>
 
+@if (($gap ?? null) !== null)
+    <div class="relative mb-4 rounded-[var(--radius-control)] border border-rest/30 bg-rest/10 px-4 py-3">
+        <p class="flex items-center gap-2 text-sm font-semibold text-rest-text">
+            <x-icon name="alert" class="size-4 shrink-0"/>
+            {{ __('app.away.title') }}
+        </p>
+
+        <p class="mt-1 text-xs leading-relaxed text-muted">
+            {{ __('app.away.body', [
+                'from' => $gap->started_at->format('H:i'),
+                'to' => $gap->ended_at->format('H:i'),
+                'duration' => \App\Support\Duration::human($gap->seconds()),
+            ]) }}
+        </p>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+            @foreach (['break', 'shorten', 'keep'] as $answer)
+                <form method="POST" action="{{ route('away.update', $gap) }}" data-live>
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="answer" value="{{ $answer }}">
+                    <button type="submit" @class(['btn text-xs', 'btn-primary' => $answer === 'break', 'btn-ghost' => $answer !== 'break'])>
+                        {{ __('app.away.'.$answer) }}
+                    </button>
+                </form>
+            @endforeach
+        </div>
+    </div>
+@endif
+
     <div class="relative flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
             @if ($running)

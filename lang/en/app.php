@@ -63,6 +63,8 @@ return [
     ],
 
     'form' => [
+        'on' => 'Turn on',
+        'off' => 'Turn off',
         'like_last_time' => 'Like last time',
         'filled_from' => 'Taken from :date.',
         'reset' => 'Reset',
@@ -248,6 +250,29 @@ return [
         'daylight' => ['label' => 'Daylight', 'description' => 'Bright and clear'],
         'onyx' => ['label' => 'Onyx', 'description' => 'Black, monochrome'],
         'sage' => ['label' => 'Sage', 'description' => 'Dark green with mint'],
+    ],
+
+    'away' => [
+        'title' => 'The Mac was away',
+        'body' => 'From :from to :to the Mac was locked or asleep — :duration in which the timer kept running.',
+        'break' => 'Book as a break',
+        'shorten' => 'Shorten the time',
+        'keep' => 'Leave it',
+        'break_done' => 'Booked as a break.',
+        'shorten_done' => 'Time shortened.',
+        'keep_done' => 'Left as it was.',
+    ],
+
+    'network' => [
+        'title' => 'Reachable on the network',
+        'hint' => 'Takt then answers on other devices in your WLAN — the login stays mandatory. This is plain HTTP inside your network, so not for networks you do not own.',
+        'address' => 'Address',
+        'no_ip' => 'No network address found.',
+        'needs_restart' => 'Takes effect once Takt is restarted.',
+        'on_done' => 'Network access on — restart Takt.',
+        'off_done' => 'Network access off — restart Takt.',
+        'copy' => 'Copy the address',
+        'copied' => 'Address copied.',
     ],
 
     'linear' => [

@@ -542,8 +542,13 @@ Requirement ids refer to `requirements.md`.
 
 ## Phase 58 — The Mac was away (R47)
 
-- [ ] The shell subscribes to lock/sleep/wake and posts the gap to Takt.
-- [ ] A running timer that spans a gap is surfaced on the next view with three answers.
+- [x] The shell subscribes to lock, sleep and wake — notifications macOS sends on its own, so no
+      permission is needed — and reports the stretch through the page, which owns the session
+      and the CSRF token.
+- [x] `AwayTime` records a gap only when work was actually running and it lasted at least five
+      minutes; sleep and lock reporting the same absence stay one gap.
+- [x] Three answers in the timer widget: book it as a break (splitting the work around it),
+      shorten the time, or leave it. Nothing is corrected without an answer.
 
 ## Phase 59 — Reading the calendar (R48)
 
@@ -552,10 +557,14 @@ Requirement ids refer to `requirements.md`.
 
 ## Phase 60 — Takt on the phone (R53)
 
-- [ ] Setting: bind to the local network. The shell reads it and starts `artisan serve`
-      accordingly; the WebView's navigation allowlist learns the LAN host.
-- [ ] Settings show the reachable address and a QR code; the switch states that this is plain
-      HTTP inside your network.
+- [x] The switch is a file (`storage/app/network-access`), not a database setting: the shell has
+      to know before it starts the server and does not speak to the database.
+- [x] The shell binds to `0.0.0.0` when it exists, and the WebView's allowlist learns the LAN
+      address. Off by default, and switching says a restart is needed.
+- [x] Settings show the reachable address with a copy button and state plainly that this is
+      plain HTTP inside your own network, login still mandatory.
+- [ ] No QR code: it needs either a new dependency or a hand-written encoder, and this project
+      carries exactly two dependencies on purpose. Address plus copy button instead.
 
 ## Phase 61 — The activity trail (R45)
 

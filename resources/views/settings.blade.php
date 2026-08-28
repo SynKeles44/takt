@@ -357,6 +357,39 @@
                     @csrf
                     @method('PUT')
 
+                    <div class="rounded-[var(--radius-control)] border border-line bg-raised p-3.5">
+                        <form method="POST" action="{{ route('settings.network') }}" data-live>
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="enabled" value="{{ $networkEnabled ? 0 : 1 }}">
+
+                            <span class="flex items-center justify-between gap-3">
+                                <span class="label mb-0">{{ __('app.network.title') }}</span>
+                                <button type="submit" @class(['btn text-xs', 'btn-work' => ! $networkEnabled, 'btn-ghost' => $networkEnabled])>
+                                    {{ $networkEnabled ? __('app.form.off') : __('app.form.on') }}
+                                </button>
+                            </span>
+                        </form>
+
+                        <p class="mt-2 text-[11px] leading-relaxed text-dim">{{ __('app.network.hint') }}</p>
+
+                        @if ($networkEnabled)
+                            <div class="mt-3 flex items-center gap-2">
+                                @if ($networkAddress !== null)
+                                    <span class="metric min-w-0 flex-1 truncate text-xs text-ink">{{ $networkAddress }}</span>
+                                    <button type="button" class="icon-action shrink-0" data-copy="{{ $networkAddress }}"
+                                            data-copy-label="{{ __('app.network.copied') }}" title="{{ __('app.network.copy') }}">
+                                        <x-icon name="clipboard" class="size-3.5"/>
+                                    </button>
+                                @else
+                                    <span class="text-xs text-faint">{{ __('app.network.no_ip') }}</span>
+                                @endif
+                            </div>
+
+                            <p class="mt-1.5 text-[11px] text-faint">{{ __('app.network.needs_restart') }}</p>
+                        @endif
+                    </div>
+
                     <div>
                         <label for="linear_token" class="label">{{ __('app.linear.token') }}</label>
                         <input id="linear_token" type="password" name="linear_token" class="control metric text-xs"

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\AwayGapController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CommandController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\DockerController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\MonthController;
+use App\Http\Controllers\NetworkAccessController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\SearchController;
@@ -138,6 +140,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/todo/{todo}/anhaenge/{attachment}', [TodoAttachmentController::class, 'show'])->scopeBindings()->name('attachments.show');
     Route::delete('/todo/{todo}/anhaenge/{attachment}', [TodoAttachmentController::class, 'destroy'])->scopeBindings()->name('attachments.destroy');
 
+    Route::post('/abwesend', [AwayGapController::class, 'store'])->name('away.store');
+    Route::put('/abwesend/{gap}', [AwayGapController::class, 'update'])->name('away.update');
+
     Route::post('/timer/start', [TimerController::class, 'start'])->name('timer.start');
     Route::post('/timer/stop', [TimerController::class, 'stop'])->name('timer.stop');
 
@@ -164,6 +169,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/einstellungen/arbeitszeit', [SettingsController::class, 'updateWorkTime'])->name('settings.worktime');
     Route::put('/einstellungen/benachrichtigungen', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
     Route::put('/einstellungen/entwicklung', [SettingsController::class, 'updateDeveloper'])->name('settings.developer');
+    Route::put('/einstellungen/netzwerk', NetworkAccessController::class)->name('settings.network');
     Route::put('/einstellungen/passwort', [SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::put('/einstellungen/design', [SettingsController::class, 'updateTheme'])->name('settings.theme');
     Route::put('/einstellungen/kalender-token', [SettingsController::class, 'regenerateIcalToken'])->name('settings.ical');

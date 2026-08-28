@@ -74,6 +74,7 @@ final class Dashboard
         return match ($widget) {
             Widget::Timer => [
                 'running' => $this->running(),
+                'gap' => app(AwayTime::class)->pending(),
                 'exemption' => $this->calendar->exemptions($user, $this->today(), $this->today())[$this->today()->toDateString()] ?? null,
                 'hints' => $this->compliance->check($this->todayEntries(), $this->previousEntry()),
             ],

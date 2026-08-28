@@ -12,6 +12,7 @@ use App\Http\Requests\Settings\ProfileRequest;
 use App\Http\Requests\Settings\ThemeRequest;
 use App\Http\Requests\Settings\WorkTimeRequest;
 use App\Services\Holidays;
+use App\Services\NetworkAccess;
 use App\Services\Reviews;
 use App\Support\Duration;
 use Illuminate\Http\RedirectResponse;
@@ -39,9 +40,13 @@ class SettingsController extends Controller
             ? Theme::from($request->string('farbe')->toString())
             : $user->theme;
 
+        $network = app(NetworkAccess::class);
+
         return view('settings', [
             'user' => $user,
             'regions' => Holidays::regions(),
+            'networkEnabled' => $network->enabled(),
+            'networkAddress' => $network->address((int) parse_url((string) config('app.url'), PHP_URL_PORT) ?: 8000),
             ...$this->carousel('style', DesignStyle::cases(), $previewedStyle),
             ...$this->carousel('theme', Theme::cases(), $previewedTheme),
         ]);
