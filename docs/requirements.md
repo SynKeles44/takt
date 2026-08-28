@@ -906,3 +906,29 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       settings show a QR code, and the login stays mandatory.
 - [ ] Stated plainly in the settings: this is plain HTTP inside your network. Off by default,
       and the switch says what it does.
+
+## R54 Scrolling costs nothing it does not have to
+
+- [x] The ambient gradient sits on a fixed layer of its own instead of on the body with
+      `background-attachment: fixed`, which repainted the entire viewport on every scroll frame.
+- [x] The blur of the widget toolbar applies in edit mode only: left on unconditionally it gave
+      every tile a composited layer — measured 22 of them re-blurring the background while
+      scrolling, for a bar nobody can see. Active backdrop filters went from 27 to 5.
+- [x] The timer's glow is a radial gradient, not a 64 px blur over 270 px — same look, no filter.
+- [x] Cards carry `contain: paint`, tiles `content-visibility: auto`, so a widget out of view is
+      neither laid out nor painted.
+- [x] Smooth scrolling for anchor jumps, suppressed under `prefers-reduced-motion`, and no
+      rubber band inside the app window.
+
+## R55 A hung daemon never takes a page down
+
+- [x] `docker ps` runs with an eight-second cap and its timeout is caught: the page says docker
+      is not answering instead of returning a 500. Found by the every-page test while Docker was
+      actually hanging on this machine.
+
+## R56 The board is part of the backup
+
+- [x] The arranged dashboard travels in the JSON backup and is restored — but only when the
+      board is still the untouched default, because a half-merged layout is no layout.
+- [x] Learned the hard way: a preview script overwrote the real board while rendering a test
+      page, and nothing had it saved.

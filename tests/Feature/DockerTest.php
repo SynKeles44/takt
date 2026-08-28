@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Services\Docker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Process\Exceptions\ProcessTimedOutException;
+use Illuminate\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
 use Tests\TestCase;
 
@@ -155,5 +157,20 @@ bbb444555666\x1fphpstorm_helpers\x1fphpstorm/helpers\x1fexited\x1fExited (0) 5 d
 
         $this->get(route('docker'))->assertRedirect(route('login'));
         $this->postJson(route('docker.act'), ['id' => 'abc', 'action' => 'stop'])->assertUnauthorized();
+    }
+
+    public function test_a_hung_daemon_does_not_take_the_page_down(): void
+    {
+        Process::fake([
+            '*docker*' => fn () => throw new ProcessTimedOutException(
+                new \Symfony\Component\Process\Exception\ProcessTimedOutException(
+                    \Symfony\Component\Process\Process::fromShellCommandline('docker ps'),
+                    \Symfony\Component\Process\Exception\ProcessTimedOutException::TYPE_GENERAL,
+                ),
+                new ProcessResult(\Symfony\Component\Process\Process::fromShellCommandline('docker ps')),
+            ),
+        ]);
+
+        $this->get(route('docker'))->assertOk()->assertSee(__('app.docker.unreachable'));
     }
 }

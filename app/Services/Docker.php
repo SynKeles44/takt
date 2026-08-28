@@ -9,6 +9,7 @@ use App\Support\ShellEnvironment;
 use App\Support\TerminalText;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Process;
+use Throwable;
 
 /**
  * The containers on this machine, grouped the way compose groups them.
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Process;
  */
 final class Docker
 {
+    /** Eight seconds: long enough for a healthy daemon, short enough to not stall the page. */
+    private const int LIST_TIMEOUT = 8;
+
     public const int LOG_LINES = 300;
 
     /** A real 0x1f between the fields — a literal "\x1f" would just be printed. */
@@ -36,7 +40,7 @@ final class Docker
             return $this->problem(__('app.docker.missing'));
         }
 
-        $result = $this->docker(['ps', '-a', '--no-trunc', '--format', self::FORMAT], 20);
+        $result = $this->docker(['ps', '-a', '--no-trunc', '--format', self::FORMAT], self::LIST_TIMEOUT);
 
         if ($result === null) {
             return $this->problem(__('app.docker.unreachable'));
@@ -120,6 +124,10 @@ final class Docker
         return ['ok' => $result->successful(), 'error' => null, 'output' => trim($output)];
     }
 
+    /**
+     * A hung docker daemon must not take a page down with it: the timeout throws, and a page
+     * that says "docker is not answering" is worth more than a 500.
+     */
     private function docker(array $arguments, int $timeout)
     {
         $binary = ShellEnvironment::binary('docker');
@@ -128,9 +136,13 @@ final class Docker
             return null;
         }
 
-        return Process::timeout($timeout)
-            ->env(ShellEnvironment::variables())
-            ->run([$binary, ...$arguments]);
+        try {
+            return Process::timeout($timeout)
+                ->env(ShellEnvironment::variables())
+                ->run([$binary, ...$arguments]);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /** @return Collection<int, array<string, mixed>> */

@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\EntryType;
+use App\Enums\Widget;
 use App\Models\Absence;
+use App\Models\DashboardWidget;
 use App\Models\DayNote;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use App\Models\User;
+use App\Services\Backup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -177,5 +180,51 @@ class BackupTest extends TestCase
         $this->assertCount(1, Storage::disk('local')->allFiles('backups'));
 
         $this->artisan('takt:backup', ['--user' => 'nobody@example.test'])->assertFailed();
+    }
+
+    public function test_the_board_travels_with_the_backup(): void
+    {
+        $user = $this->login();
+
+        DashboardWidget::query()->create(['widget' => Widget::YearHeatmap, 'span' => 6, 'rows' => 3, 'position' => 0]);
+        DashboardWidget::query()->create(['widget' => Widget::Snippets, 'span' => 2, 'rows' => 4, 'position' => 1]);
+
+        $payload = app(Backup::class)->export($user);
+
+        $this->assertSame(
+            [['widget' => 'year_heatmap', 'span' => 6, 'rows' => 3, 'position' => 0],
+                ['widget' => 'snippets', 'span' => 2, 'rows' => 4, 'position' => 1]],
+            $payload['dashboard'],
+        );
+    }
+
+    public function test_an_untouched_board_is_restored_from_a_backup(): void
+    {
+        $user = $this->login();
+
+        $payload = ['dashboard' => [
+            ['widget' => 'year_heatmap', 'span' => 6, 'rows' => 3, 'position' => 0],
+            ['widget' => 'nicht_existent', 'span' => 2, 'rows' => 2, 'position' => 1],
+        ]];
+
+        $report = app(Backup::class)->import($user, $payload);
+
+        $this->assertSame(['imported' => 1, 'skipped' => 1], $report['dashboard']);
+        $this->assertSame(['year_heatmap'], DashboardWidget::query()->pluck('widget')->map(fn (Widget $w): string => $w->value)->all());
+        $this->assertTrue($user->fresh()->dashboard_arranged);
+    }
+
+    public function test_a_board_the_user_arranged_is_never_overwritten(): void
+    {
+        $user = $this->login();
+        $user->forceFill(['dashboard_arranged' => true])->save();
+        DashboardWidget::query()->create(['widget' => Widget::Timer, 'span' => 6, 'rows' => 2, 'position' => 0]);
+
+        $report = app(Backup::class)->import($user, ['dashboard' => [
+            ['widget' => 'year_heatmap', 'span' => 6, 'rows' => 3, 'position' => 0],
+        ]]);
+
+        $this->assertSame(1, $report['dashboard']['skipped']);
+        $this->assertSame(['timer'], DashboardWidget::query()->pluck('widget')->map(fn (Widget $w): string => $w->value)->all());
     }
 }

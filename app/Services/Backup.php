@@ -8,7 +8,9 @@ use App\Enums\AbsenceType;
 use App\Enums\EntryType;
 use App\Enums\Recurrence;
 use App\Enums\TagColor;
+use App\Enums\Widget;
 use App\Models\Absence;
+use App\Models\DashboardWidget;
 use App\Models\DayNote;
 use App\Models\Tag;
 use App\Models\TimeEntry;
@@ -67,6 +69,15 @@ final class Backup
                     'day' => $note->day->toDateString(),
                     'body' => $note->body,
                 ])->all(),
+            // the arranged board is work too: rebuilding it by hand is exactly the loss a
+            // backup is supposed to prevent
+            'dashboard' => DashboardWidget::query()->inOrder()->get()
+                ->map(fn (DashboardWidget $widget): array => [
+                    'widget' => $widget->widget->value,
+                    'span' => $widget->span,
+                    'rows' => $widget->rows,
+                    'position' => $widget->position,
+                ])->all(),
         ];
     }
 
@@ -89,6 +100,7 @@ final class Backup
             'todos' => ['imported' => 0, 'skipped' => 0],
             'absences' => ['imported' => 0, 'skipped' => 0],
             'day_notes' => ['imported' => 0, 'skipped' => 0],
+            'dashboard' => ['imported' => 0, 'skipped' => 0],
         ];
 
         DB::transaction(function () use ($user, $payload, &$report): void {
@@ -245,6 +257,40 @@ final class Backup
                 DayNote::query()->create(['day' => $day->toDateString(), 'body' => $body]);
 
                 $report['day_notes']['imported']++;
+            }
+
+            /*
+             * The board is the one thing the import may replace rather than skip: a half-merged
+             * layout is no layout. It is only touched when the backup carries one, and only when
+             * the board is still the untouched default.
+             */
+            $board = $this->rows($payload, 'dashboard');
+
+            if ($board !== [] && ! $user->dashboard_arranged) {
+                DashboardWidget::query()->delete();
+
+                foreach ($board as $position => $row) {
+                    $widget = Widget::tryFrom((string) ($row['widget'] ?? ''));
+
+                    if ($widget === null) {
+                        $report['dashboard']['skipped']++;
+
+                        continue;
+                    }
+
+                    DashboardWidget::query()->create([
+                        'widget' => $widget,
+                        'span' => (int) ($row['span'] ?? $widget->span()),
+                        'rows' => (int) ($row['rows'] ?? $widget->rows()),
+                        'position' => (int) ($row['position'] ?? $position),
+                    ]);
+
+                    $report['dashboard']['imported']++;
+                }
+
+                $user->forceFill(['dashboard_arranged' => true])->save();
+            } elseif ($board !== []) {
+                $report['dashboard']['skipped'] = count($board);
             }
         });
 

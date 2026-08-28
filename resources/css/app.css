@@ -1185,13 +1185,28 @@ body {
 
 html {
     color-scheme: var(--scheme);
+    background-color: var(--color-canvas);
+    scroll-behavior: smooth;
 }
 
 body {
-    background-color: var(--color-canvas);
-    background-image: var(--ambient);
-    background-attachment: fixed;
+    background-color: transparent;
 }
+
+/*
+ * The ambient gradient sits on its own fixed layer instead of on the body with
+ * background-attachment: fixed — that repainted the whole viewport on every scroll frame, which
+ * is the most expensive thing a page can do while scrolling.
+ */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: var(--ambient);
+    pointer-events: none;
+}
+
 
 .brand-gradient {
     background-image: var(--brand-gradient);
@@ -1286,6 +1301,34 @@ body {
  * states how many of each it takes. Tiles keep their shape and their content scrolls
  * inside, so no widget can punch a hole into the layout; `dense` closes any gap left.
  */
+/*
+ * Two containment hints, both about scrolling: a card cannot affect anything outside itself, so
+ * a repaint stays inside it — and a tile out of view is neither laid out nor painted until it
+ * comes close, which is what makes a board of twenty widgets scroll like a short page.
+ */
+.timer-glow {
+    position: absolute;
+    inset-block-start: -7rem;
+    inset-inline-end: -6rem;
+    inline-size: 18rem;
+    block-size: 18rem;
+    pointer-events: none;
+    background: radial-gradient(closest-side,
+        color-mix(in oklab, var(--glow) 22%, transparent),
+        color-mix(in oklab, var(--glow) 8%, transparent) 55%,
+        transparent 75%);
+}
+
+.surface,
+.surface-plain {
+    contain: paint;
+}
+
+.widget-slot {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 12rem;
+}
+
 .dashboard-grid {
     display: grid;
     gap: 1.25rem;
@@ -1449,10 +1492,18 @@ body {
     border-radius: var(--radius-pill);
     border: 1px solid var(--color-line-strong);
     background-color: color-mix(in oklab, var(--color-popover) 88%, transparent);
-    backdrop-filter: blur(10px);
     box-shadow: 0 8px 20px -10px var(--shadow-color);
     transform: scale(0.85);
     opacity: 0;
+}
+
+/*
+ * The blur belongs to the edit mode, not to the page. Left on unconditionally it gave every
+ * tile its own composited layer — 22 of them re-blurring the background on every scroll frame,
+ * for a bar nobody can see.
+ */
+[data-board='editing'] .widget-tools > .widget-bar {
+    backdrop-filter: blur(10px);
 }
 
 [data-board='editing'] .widget-tools > .widget-bar {
@@ -2137,6 +2188,10 @@ details[open] > summary svg:first-of-type {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
     *,
     *::before,
     *::after {
@@ -2195,4 +2250,10 @@ input[type='time'] {
         overflow-y: auto;
         overscroll-behavior: contain;
     }
+}
+
+/* inside the app window a rubber band reads as a web page, not as an app */
+:root[data-shell='native'],
+:root[data-shell='native'] body {
+    overscroll-behavior: none;
 }

@@ -18,8 +18,9 @@
 @endphp
 
 <x-card class="relative overflow-hidden">
-    <div aria-hidden="true"
-         class="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full blur-3xl {{ $running === null ? 'bg-accent/10' : ($isWork ? 'bg-work/15' : 'bg-rest/15') }}"></div>
+    {{-- a radial gradient, not a blurred circle: the filter cost a composited layer per repaint --}}
+    <div aria-hidden="true" class="timer-glow"
+         style="--glow: {{ $running === null ? 'var(--color-accent)' : ($isWork ? 'var(--color-work)' : 'var(--color-rest)') }}"></div>
 
 @if (($gap ?? null) !== null)
     <div class="relative mb-4 rounded-[var(--radius-control)] border border-rest/30 bg-rest/10 px-4 py-3">
