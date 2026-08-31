@@ -926,6 +926,20 @@ const selectionText = (root) => {
         .join('\n\n');
 };
 
+/* The home-office period: the range fields fold out, the day windows submit straight away. */
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-period-toggle]');
+
+    if (! toggle) {
+        return;
+    }
+
+    const fields = toggle.closest('[data-period]')?.querySelector('[data-period-fields]');
+
+    fields?.classList.toggle('hidden');
+    fields?.querySelector('input[name="from"]')?.focus();
+});
+
 /*
  * A button carrying data-fill writes its values into the fields of its own form, by name.
  * That is "book like last time": the server knows the shape of the last booked day, the page

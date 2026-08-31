@@ -22,7 +22,10 @@ class TicketTest extends TestCase
         parent::setUp();
 
         $this->login(['github_token' => 'ghp_test', 'email' => 'dev@example.test']);
-        Carbon::setTestNow('2026-08-28 18:00:00');
+
+        // the test repositories carry real git commits, which are stamped with the real clock —
+        // freezing time in the past puts them outside every window this test asks for
+        Carbon::setTestNow(Carbon::now());
     }
 
     /** A repository with two commits on two tickets and a ticket branch. */

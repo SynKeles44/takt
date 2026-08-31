@@ -95,19 +95,84 @@ class HomeOfficeTest extends TestCase
         );
     }
 
-    public function test_the_summary_reports_year_window_and_average(): void
+    public function test_the_summary_reports_year_period_and_average(): void
     {
         $this->homeOffice('2026-03-02', '2026-03-06');
         $this->homeOffice('2026-08-24', '2026-08-25');
 
-        $this->user->forceFill(['home_office_days' => 2])->save();
+        $this->user->forceFill(['home_office_days' => 2, 'home_office_window' => 30])->save();
 
-        $summary = app(WorkCalendar::class)->homeOfficeSummary($this->user, 14);
+        $summary = app(WorkCalendar::class)->homeOfficeSummary($this->user);
 
         $this->assertSame(7, $summary['days_year']);
         $this->assertSame(2, $summary['days_window']);
-        $this->assertSame(1.0, $summary['per_week']);
+        $this->assertSame(30, $summary['window']);
+        $this->assertFalse($summary['custom']);
+        $this->assertSame(0.5, $summary['per_week']);
         $this->assertSame(2, $summary['target']);
+    }
+
+    public function test_a_chosen_range_wins_over_the_day_window(): void
+    {
+        $this->homeOffice('2026-03-02', '2026-03-06');
+        $this->homeOffice('2026-08-24', '2026-08-25');
+
+        $this->user->forceFill([
+            'home_office_window' => 7,
+            'home_office_from' => '2026-03-01',
+            'home_office_to' => '2026-03-31',
+        ])->save();
+
+        $summary = app(WorkCalendar::class)->homeOfficeSummary($this->user->fresh());
+
+        $this->assertTrue($summary['custom']);
+        $this->assertNull($summary['window']);
+        $this->assertSame(5, $summary['days_window']);
+        $this->assertSame(31, $summary['days']);
+        // five days over 31 days is a bit above one per week
+        $this->assertSame(1.1, $summary['per_week']);
+    }
+
+    public function test_a_reversed_range_falls_back_to_the_window(): void
+    {
+        $this->user->forceFill([
+            'home_office_window' => 7,
+            'home_office_from' => '2026-08-31',
+            'home_office_to' => '2026-08-01',
+        ])->save();
+
+        $summary = app(WorkCalendar::class)->homeOfficeSummary($this->user->fresh());
+
+        $this->assertFalse($summary['custom']);
+        $this->assertSame(7, $summary['window']);
+    }
+
+    public function test_choosing_a_range_and_then_a_window_clears_the_range(): void
+    {
+        $this->post(route('home-office.range'), ['from' => '2026-01-01', 'to' => '2026-03-31'])->assertRedirect();
+
+        $user = $this->user->fresh();
+        $this->assertSame('2026-01-01', $user->home_office_from->toDateString());
+        $this->assertTrue(app(WorkCalendar::class)->homeOfficeSummary($user)['custom']);
+
+        $this->post(route('home-office.range'), ['window' => 7])->assertRedirect();
+
+        $user = $this->user->fresh();
+        $this->assertNull($user->home_office_from);
+        $this->assertNull($user->home_office_to);
+        $this->assertSame(7, $user->home_office_window);
+    }
+
+    public function test_a_range_that_ends_before_it_starts_is_rejected(): void
+    {
+        $this->post(route('home-office.range'), ['from' => '2026-03-31', 'to' => '2026-03-01'])
+            ->assertSessionHasErrors('to');
+    }
+
+    public function test_a_range_needs_both_ends(): void
+    {
+        $this->post(route('home-office.range'), ['from' => '2026-03-01'])->assertSessionHasErrors('to');
+        $this->post(route('home-office.range'), [])->assertSessionHasErrors('window');
     }
 
     public function test_the_absence_page_shows_the_home_office_card(): void
@@ -120,23 +185,34 @@ class HomeOfficeTest extends TestCase
             ->assertSee(__('app.absence.home_office_hint'));
     }
 
-    public function test_the_widget_renders_and_remembers_the_window(): void
+    public function test_the_widget_offers_every_period_and_remembers_the_choice(): void
     {
         $this->homeOffice('2026-08-24', '2026-08-25');
 
         $this->get(route('dashboard.widget', ['widget' => Widget::HomeOffice->value]))
             ->assertOk()
             ->assertSee(__('app.widget.home_office.label'))
-            ->assertSee(__('app.widget.home_office.window_30'));
+            ->assertSee(__('app.widget.home_office.window_7'))
+            ->assertSee(__('app.widget.home_office.window_30'))
+            ->assertSee(__('app.widget.home_office.window_365'))
+            ->assertSee(__('app.absence.home_office_custom'));
 
-        $this->post(route('dashboard.home-office'), ['window' => 7])->assertRedirect();
+        $this->post(route('home-office.range'), ['window' => 7])->assertRedirect();
 
         $this->assertSame(7, $this->user->fresh()->home_office_window);
     }
 
+    public function test_the_absence_page_offers_the_same_choice(): void
+    {
+        $this->get(route('absences'))
+            ->assertOk()
+            ->assertSee(__('app.absence.home_office_custom'))
+            ->assertSee('data-period-fields', escape: false);
+    }
+
     public function test_an_unknown_window_is_rejected(): void
     {
-        $this->post(route('dashboard.home-office'), ['window' => 99])->assertSessionHasErrors('window');
+        $this->post(route('home-office.range'), ['window' => 99])->assertSessionHasErrors('window');
     }
 
     public function test_the_absence_form_offers_home_office_as_a_type(): void

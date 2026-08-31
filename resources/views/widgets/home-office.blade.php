@@ -29,17 +29,20 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('dashboard.home-office') }}" class="mt-3 segmented" data-live>
-        @csrf
-        @foreach ($windows as $option)
-            <button type="submit" name="window" value="{{ $option }}"
-                    @class(['segment', 'segment-active' => $option === $window])>
-                {{ __('app.widget.home_office.window_'.$option) }}
-            </button>
-        @endforeach
-    </form>
+    <x-home-office-period :summary="$summary" :windows="$windows"/>
 
     <p class="mt-3 text-[11px] leading-snug text-faint">
-        {{ __('app.widget.home_office.footer', ['days' => $summary['days_window'], 'window' => $summary['window'], 'year' => $summary['days_year']]) }}
+        {{ $summary['custom']
+            ? __('app.widget.home_office.footer_range', [
+                'days' => $summary['days_window'],
+                'from' => $summary['from']->isoFormat('D. MMM'),
+                'to' => $summary['to']->isoFormat('D. MMM YYYY'),
+                'year' => $summary['days_year'],
+            ])
+            : __('app.widget.home_office.footer', [
+                'days' => $summary['days_window'],
+                'window' => $summary['window'],
+                'year' => $summary['days_year'],
+            ]) }}
     </p>
 </x-card>

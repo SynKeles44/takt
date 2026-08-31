@@ -54,16 +54,6 @@ class DashboardLayoutController extends Controller
         return response()->view($widget->view(), $dashboard->data($widget, $user));
     }
 
-    /** The averaging window of the home-office widget — a preference, so it is remembered. */
-    public function homeOfficeWindow(Request $request): RedirectResponse
-    {
-        $data = $request->validate(['window' => ['required', 'integer', Rule::in([7, 30, 365])]]);
-
-        $request->user()->forceFill(['home_office_window' => (int) $data['window']])->save();
-
-        return back();
-    }
-
     public function reset(Request $request, Dashboard $dashboard): RedirectResponse
     {
         $dashboard->reset($request->user());

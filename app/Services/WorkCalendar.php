@@ -88,28 +88,71 @@ final class WorkCalendar
         return array_keys($dates);
     }
 
-    /**
-     * How the home-office rhythm compares to the one that was agreed: days this year, days
-     * in the chosen window, and the average per week derived from that window.
-     *
-     * @return array{year: int, days_year: int, days_window: int, window: int, per_week: float, target: int, weeks: float}
-     */
-    public function homeOfficeSummary(User $user, ?int $window = null, ?CarbonInterface $until = null): array
-    {
-        $until = Carbon::instance(($until ?? Carbon::today())->toDateTimeImmutable())->endOfDay();
-        $window = max(1, $window ?? $user->home_office_window);
+    /** The day windows the statistic offers besides a range of one's own. */
+    public const array HOME_OFFICE_WINDOWS = [7, 30, 365];
 
-        $inYear = count($this->homeOfficeDates($until->copy()->startOfYear(), $until));
-        $inWindow = count($this->homeOfficeDates($until->copy()->subDays($window - 1)->startOfDay(), $until));
-        $weeks = $window / 7;
+    /**
+     * The period the home-office statistic reads. A range the user picked wins over the day
+     * window — that is the whole rule, and it is here rather than in a view so both places that
+     * show the statistic answer the same way.
+     *
+     * @return array{from: Carbon, to: Carbon, window: ?int, custom: bool}
+     */
+    public function homeOfficePeriod(User $user, ?CarbonInterface $until = null): array
+    {
+        $today = Carbon::instance(($until ?? Carbon::today())->toDateTimeImmutable())->startOfDay();
+
+        if ($user->home_office_from !== null && $user->home_office_to !== null) {
+            $from = Carbon::parse($user->home_office_from)->startOfDay();
+            $to = Carbon::parse($user->home_office_to)->endOfDay();
+
+            if ($from->lessThanOrEqualTo($to)) {
+                return ['from' => $from, 'to' => $to, 'window' => null, 'custom' => true];
+            }
+        }
+
+        $window = in_array((int) $user->home_office_window, self::HOME_OFFICE_WINDOWS, true)
+            ? (int) $user->home_office_window
+            : 30;
 
         return [
-            'year' => $until->year,
-            'days_year' => $inYear,
-            'days_window' => $inWindow,
+            'from' => $today->copy()->subDays($window - 1),
+            'to' => $today->copy()->endOfDay(),
             'window' => $window,
+            'custom' => false,
+        ];
+    }
+
+    /**
+     * How the home-office rhythm compares to the one that was agreed: days in the period, days
+     * in the calendar year, and the average per week derived from the period's length.
+     *
+     * @return array{year: int, days_year: int, days_window: int, window: ?int, custom: bool,
+     *     from: Carbon, to: Carbon, days: int, per_week: float, target: int, weeks: float}
+     */
+    public function homeOfficeSummary(User $user, ?CarbonInterface $until = null): array
+    {
+        $period = $this->homeOfficePeriod($user, $until);
+        $to = $period['to'];
+
+        $inYear = count($this->homeOfficeDates($to->copy()->startOfYear(), $to));
+        $inPeriod = count($this->homeOfficeDates($period['from'], $to));
+
+        // the average is per week of the period, so a range of any length stays comparable
+        $days = max(1, (int) $period['from']->copy()->startOfDay()->diffInDays($to->copy()->endOfDay()) + 1);
+        $weeks = $days / 7;
+
+        return [
+            'year' => $to->year,
+            'days_year' => $inYear,
+            'days_window' => $inPeriod,
+            'window' => $period['window'],
+            'custom' => $period['custom'],
+            'from' => $period['from'],
+            'to' => $to,
+            'days' => $days,
             'weeks' => round($weeks, 1),
-            'per_week' => round($inWindow / $weeks, 1),
+            'per_week' => round($inPeriod / $weeks, 1),
             'target' => (int) $user->home_office_days,
         ];
     }

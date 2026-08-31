@@ -244,17 +244,13 @@ final class Dashboard
     /** @return array<string, mixed> */
     private function homeOffice(User $user): array
     {
-        $windows = [7, 30, 365];
-        $window = in_array($user->home_office_window, $windows, true) ? $user->home_office_window : 30;
-
         return [
-            'summary' => $this->calendar->homeOfficeSummary($user, $window),
+            'summary' => $this->calendar->homeOfficeSummary($user),
             'thisWeek' => count($this->calendar->homeOfficeDates(
                 $this->weekStart(),
                 $this->weekStart()->copy()->addDays(6),
             )),
-            'windows' => $windows,
-            'window' => $window,
+            'windows' => WorkCalendar::HOME_OFFICE_WINDOWS,
         ];
     }
 

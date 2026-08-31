@@ -123,7 +123,9 @@
                 <div class="mt-4 grid grid-cols-3 gap-2">
                     @foreach ([
                         ['label' => __('app.absence.home_office_year', ['year' => $homeOffice['year']]), 'value' => $homeOffice['days_year'], 'tone' => 'text-ink'],
-                        ['label' => __('app.absence.home_office_window', ['days' => $homeOffice['window']]), 'value' => $homeOffice['days_window'], 'tone' => 'text-rest-text'],
+                        ['label' => $homeOffice['custom']
+                            ? __('app.absence.home_office_range', ['from' => $homeOffice['from']->isoFormat('D.MM.'), 'to' => $homeOffice['to']->isoFormat('D.MM.')])
+                            : __('app.absence.home_office_window', ['days' => $homeOffice['window']]), 'value' => $homeOffice['days_window'], 'tone' => 'text-rest-text'],
                         ['label' => __('app.absence.home_office_per_week'), 'value' => $homeOffice['per_week'], 'tone' => $homeOffice['target'] > 0 && $homeOffice['per_week'] + 0.05 < $homeOffice['target'] ? 'text-danger-text' : 'text-work-text'],
                     ] as $tile)
                         <div class="tile px-3 py-2.5 text-center">
@@ -132,6 +134,8 @@
                         </div>
                     @endforeach
                 </div>
+
+                <x-home-office-period :summary="$homeOffice" :windows="$homeOfficeWindows"/>
 
                 <p class="mt-3 text-xs text-faint">
                     {{ $homeOffice['target'] > 0

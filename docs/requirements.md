@@ -932,3 +932,23 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       board is still the untouched default, because a half-merged layout is no layout.
 - [x] Learned the hard way: a preview script overwrote the real board while rendering a test
       page, and nothing had it saved.
+
+## R57 The home-office statistic reads a period of its choosing
+
+- [x] Three day windows (7, 30, 365) and a range of one's own, chosen in the element itself —
+      both in the widget and on the absence page, through one shared component and one endpoint,
+      so the choice reads and behaves the same in either place.
+- [x] A chosen range wins over the day window; picking a window clears the range. A reversed
+      range falls back to the window instead of showing nothing.
+- [x] The average is per week **of the period**, so a range of any length stays comparable, and
+      the footer names the period it read.
+- [x] `WorkCalendar::homeOfficePeriod()` decides which period applies — in the service, not in a
+      view, because two places show the same statistic.
+
+## R58 A switch looks like the switches around it
+
+- [x] The activity trail and the network access are checkboxes that save themselves, with a line
+      of explanation — the same shape the work-time notification already used. They were framed
+      boxes with a coloured button that outshouted Speichern.
+- [x] They sit after the fields they do not belong to, separated by a line: fields have a save
+      button, these save on change.

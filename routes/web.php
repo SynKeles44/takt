@@ -17,6 +17,7 @@ use App\Http\Controllers\DayNoteController;
 use App\Http\Controllers\DeveloperController;
 use App\Http\Controllers\DockerController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\HomeOfficeRangeController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\MonthController;
 use App\Http\Controllers\NetworkAccessController;
@@ -55,7 +56,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/dashboard/anordnung', [DashboardLayoutController::class, 'arrange'])->name('dashboard.arrange');
     Route::get('/dashboard/widget/{widget}', [DashboardLayoutController::class, 'preview'])->name('dashboard.widget');
     Route::post('/dashboard/anordnung/zuruecksetzen', [DashboardLayoutController::class, 'reset'])->name('dashboard.reset');
-    Route::post('/dashboard/home-office', [DashboardLayoutController::class, 'homeOfficeWindow'])->name('dashboard.home-office');
+    Route::post('/home-office/zeitraum', HomeOfficeRangeController::class)->name('home-office.range');
     Route::get('/verlauf', HistoryController::class)->name('history');
 
     Route::get('/kalender', [CalendarController::class, 'index'])->name('calendar');
