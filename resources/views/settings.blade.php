@@ -357,79 +357,6 @@
                     @csrf
                     @method('PUT')
 
-                    <div class="rounded-[var(--radius-control)] border border-line bg-raised p-3.5">
-                        <form method="POST" action="{{ route('trail.update') }}" class="space-y-3" data-live>
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="activity_trail" value="{{ $user->activity_trail ? 0 : 1 }}">
-
-                            <span class="flex items-center justify-between gap-3">
-                                <span class="label mb-0">{{ __('app.trail.title') }}</span>
-                                <button type="submit" @class(['btn text-xs', 'btn-work' => ! $user->activity_trail, 'btn-ghost' => $user->activity_trail])>
-                                    {{ $user->activity_trail ? __('app.form.off') : __('app.form.on') }}
-                                </button>
-                            </span>
-
-                            <p class="text-[11px] leading-relaxed text-dim">{{ __('app.trail.hint') }}</p>
-                            <p class="text-[11px] leading-relaxed text-faint">{{ __('app.trail.needs_permission') }}</p>
-
-                            @if ($user->activity_trail)
-                                <p class="text-[11px] leading-relaxed text-faint">{{ __('app.trail.off_note') }}</p>
-                            @endif
-                        </form>
-
-                        @if ($user->activity_trail)
-                            <form method="POST" action="{{ route('trail.update') }}" class="mt-3 border-t border-line pt-3" data-live>
-                                @csrf
-                                @method('PUT')
-                                <input type="hidden" name="activity_trail" value="1">
-
-                                <label for="activity_retention_days" class="label">{{ __('app.trail.retention') }}</label>
-                                <span class="flex items-center gap-2">
-                                    <input id="activity_retention_days" type="number" name="activity_retention_days" min="1" max="365"
-                                           value="{{ $user->activity_retention_days }}" class="control metric text-xs">
-                                    <button type="submit" class="btn btn-ghost shrink-0 text-xs">
-                                        <x-icon name="check" class="size-3.5"/>
-                                    </button>
-                                </span>
-                                @error('activity_retention_days') <p class="field-error">{{ $message }}</p> @enderror
-                            </form>
-                        @endif
-                    </div>
-
-                    <div class="rounded-[var(--radius-control)] border border-line bg-raised p-3.5">
-                        <form method="POST" action="{{ route('settings.network') }}" data-live>
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="enabled" value="{{ $networkEnabled ? 0 : 1 }}">
-
-                            <span class="flex items-center justify-between gap-3">
-                                <span class="label mb-0">{{ __('app.network.title') }}</span>
-                                <button type="submit" @class(['btn text-xs', 'btn-work' => ! $networkEnabled, 'btn-ghost' => $networkEnabled])>
-                                    {{ $networkEnabled ? __('app.form.off') : __('app.form.on') }}
-                                </button>
-                            </span>
-                        </form>
-
-                        <p class="mt-2 text-[11px] leading-relaxed text-dim">{{ __('app.network.hint') }}</p>
-
-                        @if ($networkEnabled)
-                            <div class="mt-3 flex items-center gap-2">
-                                @if ($networkAddress !== null)
-                                    <span class="metric min-w-0 flex-1 truncate text-xs text-ink">{{ $networkAddress }}</span>
-                                    <button type="button" class="icon-action shrink-0" data-copy="{{ $networkAddress }}"
-                                            data-copy-label="{{ __('app.network.copied') }}" title="{{ __('app.network.copy') }}">
-                                        <x-icon name="clipboard" class="size-3.5"/>
-                                    </button>
-                                @else
-                                    <span class="text-xs text-faint">{{ __('app.network.no_ip') }}</span>
-                                @endif
-                            </div>
-
-                            <p class="mt-1.5 text-[11px] text-faint">{{ __('app.network.needs_restart') }}</p>
-                        @endif
-                    </div>
-
                     <div>
                         <label for="linear_token" class="label">{{ __('app.linear.token') }}</label>
                         <input id="linear_token" type="password" name="linear_token" class="control metric text-xs"
@@ -515,6 +442,81 @@
                         <x-icon name="check" class="size-4"/>
                         {{ __('app.settings.save') }}
                     </button>
+                </form>
+
+                {{--
+                    Two switches in the same shape the notification setting already uses: a
+                    checkbox that saves itself, a line of explanation, no coloured button
+                    competing with Speichern. The hidden zero makes unchecking send a value.
+                --}}
+                <form method="POST" action="{{ route('trail.update') }}" class="mt-4 border-t border-line pt-4" data-live>
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="activity_trail" value="0">
+
+                    <label class="flex cursor-pointer items-start gap-2.5">
+                        <input type="checkbox" name="activity_trail" value="1" data-autosave
+                               @checked($user->activity_trail)
+                               class="mt-0.5 size-4 shrink-0 rounded-[4px] border-line-strong bg-raised text-accent">
+                        <span>
+                            <span class="block text-xs font-semibold text-ink">{{ __('app.trail.title') }}</span>
+                            <span class="block text-[11px] leading-relaxed text-faint">{{ __('app.trail.hint') }}</span>
+                            @if ($user->activity_trail)
+                                <span class="mt-1 block text-[11px] leading-relaxed text-dim">{{ __('app.trail.needs_permission') }}</span>
+                            @endif
+                        </span>
+                    </label>
+                </form>
+
+                @if ($user->activity_trail)
+                    <form method="POST" action="{{ route('trail.update') }}" class="flex items-end gap-2" data-live>
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="activity_trail" value="1">
+
+                        <label class="min-w-0 flex-1">
+                            <span class="label">{{ __('app.trail.retention') }}</span>
+                            <input type="number" name="activity_retention_days" min="1" max="365"
+                                   value="{{ $user->activity_retention_days }}" class="control metric text-xs">
+                        </label>
+
+                        <button type="submit" class="btn btn-ghost shrink-0 text-xs">
+                            <x-icon name="check" class="size-3.5"/>
+                        </button>
+                    </form>
+                    @error('activity_retention_days') <p class="field-error">{{ $message }}</p> @enderror
+                @endif
+
+                <form method="POST" action="{{ route('settings.network') }}" class="border-t border-line pt-3" data-live>
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="enabled" value="0">
+
+                    <label class="flex cursor-pointer items-start gap-2.5">
+                        <input type="checkbox" name="enabled" value="1" data-autosave
+                               @checked($networkEnabled)
+                               class="mt-0.5 size-4 shrink-0 rounded-[4px] border-line-strong bg-raised text-accent">
+                        <span>
+                            <span class="block text-xs font-semibold text-ink">{{ __('app.network.title') }}</span>
+                            <span class="block text-[11px] leading-relaxed text-faint">{{ __('app.network.hint') }}</span>
+                        </span>
+                    </label>
+
+                    @if ($networkEnabled)
+                        <span class="mt-2 flex items-center gap-2 pl-6.5">
+                            @if ($networkAddress !== null)
+                                <span class="metric min-w-0 flex-1 truncate text-xs text-ink">{{ $networkAddress }}</span>
+                                <button type="button" class="icon-action shrink-0" data-copy="{{ $networkAddress }}"
+                                        data-copy-label="{{ __('app.network.copied') }}" title="{{ __('app.network.copy') }}">
+                                    <x-icon name="clipboard" class="size-3.5"/>
+                                </button>
+                            @else
+                                <span class="text-xs text-faint">{{ __('app.network.no_ip') }}</span>
+                            @endif
+                        </span>
+
+                        <span class="mt-1 block pl-6.5 text-[11px] text-faint">{{ __('app.network.needs_restart') }}</span>
+                    @endif
                 </form>
             </x-card>
         </div>
