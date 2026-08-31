@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\ActivityTrailController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\ActivityTrailController;
 use App\Http\Controllers\AwayGapController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CalendarController;
@@ -28,9 +28,9 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SnippetController;
 use App\Http\Controllers\StepTemplateController;
 use App\Http\Controllers\TagController;
-use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketRefreshController;
+use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\TimerController;
 use App\Http\Controllers\TodoAttachmentController;
 use App\Http\Controllers\TodoController;

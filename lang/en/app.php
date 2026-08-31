@@ -264,18 +264,18 @@ return [
     ],
 
     'trail' => [
-        'title' => "Activity trail",
-        'hint' => "Takt remembers locally which application was in front — on this machine only, in no export, and bookings happen by click alone.",
-        'retention' => "Keep for days",
-        'on_done' => "Activity trail on — restart Takt.",
-        'off_done' => "Activity trail off and the recording deleted.",
-        'off_note' => "Switching it off deletes what was recorded.",
-        'proposals' => "Proposals",
-        'book' => "Book as working time",
-        'empty' => "Nothing recorded — trail off or no data yet.",
+        'title' => 'Activity trail',
+        'hint' => 'Takt remembers locally which application was in front — on this machine only, in no export, and bookings happen by click alone.',
+        'retention' => 'Keep for days',
+        'on_done' => 'Activity trail on — restart Takt.',
+        'off_done' => 'Activity trail off and the recording deleted.',
+        'off_note' => 'Switching it off deletes what was recorded.',
+        'proposals' => 'Proposals',
+        'book' => 'Book as working time',
+        'empty' => 'Nothing recorded — trail off or no data yet.',
         'widget_label' => "Today's activity",
-        'widget_description' => "Which application was in front for how long, with booking proposals.",
-        'needs_permission' => "Window titles need the accessibility permission; without it only the application name is kept.",
+        'widget_description' => 'Which application was in front for how long, with booking proposals.',
+        'needs_permission' => 'Window titles need the accessibility permission; without it only the application name is kept.',
     ],
 
     'network' => [
@@ -680,7 +680,7 @@ return [
         'week_balance' => ['label' => 'Week trend', 'description' => 'The last six weeks against your weekly target.'],
         'year_heatmap' => ['label' => 'Year heatmap', 'description' => 'Every day of the year as a tile.'],
         'absences' => ['label' => 'Upcoming days off', 'description' => 'Holidays and absences in the next 60 days.', 'empty' => 'Nothing ahead.'],
-        'activity' => ['label' => "Today's activity", 'description' => "Which application was in front for how long, with booking proposals."],
+        'activity' => ['label' => "Today's activity", 'description' => 'Which application was in front for how long, with booking proposals.'],
         'meetings' => [
             'label' => "Today's meetings",
             'description' => "Events from your Mac's calendars, bookable with one click.",
