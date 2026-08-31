@@ -952,3 +952,15 @@ A section for the programmer's day, reachable as its own sidebar entry with four
       boxes with a coloured button that outshouted Speichern.
 - [x] They sit after the fields they do not belong to, separated by a line: fields have a save
       button, these save on change.
+
+## R59 The ticket area is ticket management, not a commit list
+
+- [x] A row is a ticket — a Linear issue or a local one. Git enriches a ticket and never becomes
+      a row; ids only the code knows are a footnote with link / adopt / hide, and hiding sticks.
+- [x] The board's columns are mine, Linear's state rides along as a pill, and a disagreement
+      between the two is shown rather than resolved.
+- [x] Time on a ticket is measured, not split — the timer runs for a ticket. Where nothing was
+      booked the even split stays, marked as the estimate it is.
+- [x] Linear owns title, state, priority, comments; Takt owns column, notes, estimate, ignore
+      flags. Neither writes into the other's half.
+- [x] A local ticket can become a Linear issue and keeps everything local it had.

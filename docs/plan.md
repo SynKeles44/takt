@@ -579,3 +579,37 @@ Requirement ids refer to `requirements.md`.
       plain HTTP inside your own network, login still mandatory.
 - [ ] No QR code: it needs either a new dependency or a hand-written encoder, and this project
       carries exactly two dependencies on purpose. Address plus copy button instead.
+
+## Phase 62 — The ticket area becomes ticket management (R59)
+
+Concept: [`docs/concepts/tickets-board.md`](concepts/tickets-board.md). Measured before the
+change, on the real account over 90 days: 55 Linear issues, 156 ids only git knew, 211 rows
+rendered. The area read as a commit viewer because by row count it was one.
+
+- [x] **A row is a ticket.** Linear issues and local tickets are the list; git enriches them and
+      never becomes a row. Ids only the code knows are a collapsed footnote with three actions —
+      link, adopt, hide for good — and hiding is remembered, so the list shrinks as it is used.
+- [x] **The board.** Five columns that describe my day (Heute · Als nächstes · Wartet ·
+      Zurückgestellt · Fertig), never Linear's workflow, with Linear's state as a pill beside
+      mine. Native drag and drop, plus arrow buttons on every card so a keyboard reaches the same
+      endpoint. A finished ticket leaves after seven days.
+- [x] The column timestamp moves on a move but not on a reorder — otherwise sorting inside a
+      column would reset the "how long has this been stuck" figure the board exists to show. A
+      waiting reason belongs to one stay in Wartet, not to the ticket forever.
+- [x] **The ticket file.** Header, my notes, booked time against my estimate, pull requests,
+      branches, and one merged timeline: commits, branches, pull requests, time, column moves,
+      day notes that mention the id. Built on `git log --grep` per repository rather than on the
+      collecting service — a page may not read every commit in the window.
+- [x] **Real time on tickets** (`time_entries.ticket_id`). The timer starts *for* a ticket, from
+      the file or the card, which also moves it to Heute and focuses it. The even split stays as
+      a marked fallback where nothing was booked, and is never added on top of a measurement.
+- [x] **Writing back to Linear**: title, description, state, priority, comment, assign — a
+      written state name is resolved to Linear's id first, and a state Linear does not know is
+      refused before anything is written. My column, notes and estimate never travel.
+- [x] **Local tickets** (`TAKT-n`), full board and file behaviour, promoted into Linear on one
+      click — carrying notes, estimate, column and booked time across.
+- [x] **Contradiction badge** — Linear's state against what the code shows, silent when they
+      agree. Only the four contradictions the data can prove: open pulls carry no review verdict
+      and only open ones are fetched, so the rest would have been invented.
+- [x] Stuck list, estimate calibration (measured against my own estimate, three tickets minimum),
+      focus in the menu bar next to the clock, tickets and their notes in the full-text search.
