@@ -1421,21 +1421,17 @@ body::before {
         transparent 75%);
 }
 
-.surface,
-.surface-plain {
-    contain: paint;
-}
-
 /*
- * No content-visibility here, deliberately. It looks like the obvious win — skip the work for
- * widgets below the fold — but .dashboard-grid uses grid-auto-flow: row dense, so the first
- * layout of a slot can re-place every slot after it. That happened once per scrolled-in widget,
- * which is a full board layout per frame: the exact stutter it was meant to remove.
- * Paint containment below does the cheap half of the job without touching layout.
+ * No paint containment on surfaces or slots, and it was tried twice: it clips every descendant
+ * that reaches past the box, which is exactly what the things worth reaching past it do — the
+ * export menu on the evaluation page, and the remove button that sits at -0.55rem outside its
+ * widget slot. Both rendered as fragments. Which card carries a popover is not something a
+ * stylesheet can know, so the containment is gone rather than narrowed.
+ *
+ * No content-visibility on .widget-slot either: .dashboard-grid uses grid-auto-flow: row dense,
+ * so the first layout of a slot can re-place every slot after it — a full board layout per
+ * widget scrolled into view, which is the stutter it was meant to remove.
  */
-.widget-slot {
-    contain: paint;
-}
 
 .dashboard-grid {
     display: grid;

@@ -21,7 +21,33 @@ class StylesheetTest extends TestCase
             $this->markTestSkipped('Run `npm run build` first.');
         }
 
+        /*
+         * The newest, not the first: the build hashes its filename and leaves the previous one
+         * behind, so alphabetical order can hand back a stale stylesheet — a test that reads the
+         * wrong file passes or fails for reasons that have nothing to do with the source.
+         */
+        usort($files, static fn (string $a, string $b): int => filemtime($b) <=> filemtime($a));
+
         return (string) file_get_contents($files[0]);
+    }
+
+    public function test_cards_and_slots_do_not_clip_what_reaches_past_their_edge(): void
+    {
+        $css = $this->stylesheet();
+
+        /*
+         * Paint containment on a card is a tempting performance knob and it broke two things
+         * that deliberately live outside their box: the export menu on the evaluation page and
+         * the widget remove button at -0.55rem. Both rendered as fragments, which reads as a
+         * broken control rather than a clipped one.
+         */
+        foreach (['.surface', '.surface-plain', '.widget-slot'] as $selector) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/'.preg_quote($selector, '/').'[^{}]*\{[^}]*contain:\s*(paint|strict|content)/',
+                $css,
+                $selector.' must not clip descendants that sit outside its box.',
+            );
+        }
     }
 
     public function test_neumorphism_lifts_its_surfaces_off_the_canvas(): void
