@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Enums\EntryType;
 use App\Models\Tag;
+use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use App\Services\TimeTracker;
@@ -60,11 +61,20 @@ class AppServiceProvider extends ServiceProvider
 
             // the app shell reads this to fill its menu bar item — always present, because the
             // menu bar exists whether or not the notifications are switched on
+            /*
+             * The focused ticket rides along so the menu bar can answer "what am I on right now"
+             * without opening the window. It is read from the local ticket layer, not from the
+             * running entry: a booking may carry no ticket, and the focus outlives the timer.
+             */
+            $focused = Ticket::query()->whereNotNull('focused_at')->orderByDesc('focused_at')->first();
+
             $view->with('shellState', [
                 'running' => $running?->type->value,
                 'since' => $running?->started_at->toIso8601String(),
                 'work' => $work,
                 'target' => $user->dailyTargetSeconds(),
+                'ticket' => $focused?->key,
+                'ticketTitle' => $focused === null ? null : mb_strimwidth((string) ($focused->title ?? ''), 0, 60, '…'),
             ]);
 
             if (! $user->notify_worktime) {

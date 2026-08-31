@@ -9,6 +9,7 @@ use App\Models\Concerns\BelongsToUser;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -18,6 +19,7 @@ class TimeEntry extends Model
 
     protected $fillable = [
         'user_id',
+        'ticket_id',
         'type',
         'started_at',
         'ended_at',
@@ -29,6 +31,12 @@ class TimeEntry extends Model
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
     ];
+
+    /** The ticket this booking belongs to, when it belongs to one — most do not. */
+    public function ticket(): BelongsTo
+    {
+        return $this->belongsTo(Ticket::class);
+    }
 
     public function scopeRunning(Builder $query): Builder
     {

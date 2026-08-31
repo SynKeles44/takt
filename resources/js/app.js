@@ -3,6 +3,7 @@ import { dayRange } from './day-range';
 import { commandRunner } from './command-runner';
 import { docker } from './docker';
 import { folderPicker } from './folder-picker';
+import { ticketBoard } from './ticket-board';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -1131,6 +1132,7 @@ commandRunner({ toast });
 
 // the container list, its actions and its logs
 docker({ swapRegions, toast });
+ticketBoard({ swapRegions });
 
 /*
  * The review sections arrive after the page: fetching them from GitHub costs more than a

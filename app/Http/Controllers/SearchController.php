@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\Snippet;
 use App\Models\StepTemplate;
 use App\Models\Tag;
+use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use App\Services\MakeTargets;
@@ -94,9 +95,37 @@ class SearchController extends Controller
                 ->concat($this->targets($term))
                 ->concat($this->pulls($request, $term))
                 ->concat($this->releases($term))
+                ->concat($this->tickets($like))
                 ->values()
                 ->all(),
         ]);
+    }
+
+    /**
+     * Tickets — key, title and my own notes. The notes are the reason this belongs in the search
+     * at all: they exist nowhere else, so without this they are unfindable the moment the ticket
+     * scrolls off the board.
+     *
+     * @return Collection<int, array>
+     */
+    private function tickets(string $like): Collection
+    {
+        return Ticket::query()
+            ->whereNull('ignored_at')
+            ->where(fn ($query) => $query
+                ->where('key', 'like', $like)
+                ->orWhere('title', 'like', $like)
+                ->orWhere('notes', 'like', $like)
+                ->orWhere('body', 'like', $like))
+            ->orderByDesc('updated_at')
+            ->limit(6)
+            ->get()
+            ->map(fn (Ticket $ticket): array => [
+                'group' => __('app.tickets.title'),
+                'label' => $ticket->key.($ticket->title === null ? '' : ' — '.$ticket->title),
+                'hint' => $ticket->column?->label() ?? __('app.ticket.column.none'),
+                'url' => route('tickets.show', ['key' => $ticket->key]),
+            ]);
     }
 
     /** @return Collection<int, array> */

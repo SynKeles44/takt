@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Project;
+use App\Models\Ticket;
+use App\Models\TimeEntry;
 use App\Models\User;
 use App\Support\Parallel;
 use Illuminate\Support\Carbon;
@@ -35,14 +37,187 @@ final class Tickets
     ) {}
 
     /**
-     * @return array{tickets: Collection<int, array<string, mixed>>, error: ?string, configured: bool}
+     * A row is a ticket: a Linear issue assigned to me, or one that exists only here. Git is
+     * enrichment and never a row — the ids that appear only in commit subjects and branch names
+     * come back separately as `loose`, because three quarters of them are residue from work long
+     * done and letting them into the list is what made this area read as a commit viewer.
+     *
+     * @return array{
+     *     tickets: Collection<int, array<string, mixed>>,
+     *     loose: Collection<int, array<string, mixed>>,
+     *     ignored: int,
+     *     error: ?string,
+     *     configured: bool,
+     * }
      */
     public function collect(User $user, int $days = self::DEFAULT_DAYS): array
     {
-        $projects = Project::query()->inOrder()->get();
         $from = Carbon::today()->subDays($days)->startOfDay();
         $to = Carbon::today()->endOfDay();
 
+        $git = $this->fromGit($user, $from, $to);
+        $split = $this->estimate($git, $from, $to);
+        $booked = $this->booked();
+        $mine = $this->linear->mine($user);
+
+        $locals = Ticket::query()->get()->keyBy('key');
+        $rows = [];
+
+        // Linear first: these are the tickets, in the order Linear last touched them
+        foreach ($mine['issues'] as $issue) {
+            $id = $issue['id'];
+
+            $rows[$id] = $this->row(
+                id: $id,
+                title: $issue['title'],
+                source: 'linear',
+                git: $git[$id] ?? null,
+                local: $locals[$id] ?? null,
+                split: $split[$id] ?? 0,
+                booked: $booked[$id] ?? 0,
+                linear: $issue,
+            );
+        }
+
+        // then the tickets that exist only here — they behave exactly like the ones above
+        foreach ($locals as $key => $local) {
+            if (isset($rows[$key]) || $local->isIgnored() || ! $local->isLocal()) {
+                continue;
+            }
+
+            $rows[$key] = $this->row(
+                id: $key,
+                title: (string) $local->title,
+                source: 'local',
+                git: $git[$key] ?? null,
+                local: $local,
+                split: $split[$key] ?? 0,
+                booked: $booked[$key] ?? 0,
+                linear: null,
+            );
+        }
+
+        // an id the work shows but no ticket claims: a footnote, with actions, not a row
+        $loose = [];
+
+        foreach ($git as $id => $ticket) {
+            if (isset($rows[$id]) || ($locals[$id] ?? null)?->isIgnored() === true) {
+                continue;
+            }
+
+            $loose[$id] = $this->row(
+                id: $id,
+                title: $ticket['title'],
+                source: 'git',
+                git: $ticket,
+                local: $locals[$id] ?? null,
+                split: $split[$id] ?? 0,
+                booked: $booked[$id] ?? 0,
+                linear: null,
+            );
+        }
+
+        return [
+            'tickets' => collect($rows)
+                ->sortByDesc(fn (array $row): string => $row['last']->toIso8601String())
+                ->values(),
+            'loose' => collect($loose)
+                ->sortByDesc(fn (array $row): string => $row['last']->toIso8601String())
+                ->values(),
+            'ignored' => $locals->filter(fn (Ticket $ticket): bool => $ticket->isIgnored())->count(),
+            'error' => $mine['error'],
+            'configured' => $this->linear->configured($user),
+        ];
+    }
+
+    /**
+     * One row shape for all three origins, so a card renders the same whether the ticket came
+     * from Linear, from here, or from a commit subject.
+     *
+     * @param  array<string, mixed>|null  $git
+     * @param  array<string, mixed>|null  $linear
+     * @return array<string, mixed>
+     */
+    private function row(
+        string $id,
+        ?string $title,
+        string $source,
+        ?array $git,
+        ?Ticket $local,
+        int $split,
+        int $booked,
+        ?array $linear,
+    ): array {
+        $last = $git['last'] ?? null;
+
+        if ($last === null) {
+            $updated = (string) ($linear['updated_at'] ?? '');
+            $last = $updated === '' ? ($local?->updated_at ?? Carbon::now()) : Carbon::parse($updated);
+        }
+
+        return [
+            'id' => $id,
+            'title' => $title === null || $title === '' ? ($local?->title ?? null) : $title,
+            'state' => $linear['state'] ?? null,
+            'state_type' => $linear['state_type'] ?? null,
+            'team' => $linear['team'] ?? null,
+            'assignee' => $linear['assignee'] ?? null,
+            'priority' => $linear['priority'] ?? null,
+            'url' => $linear['url'] ?? $local?->promoted_url,
+            'source' => $source,
+            'projects' => array_values(array_unique($git['projects'] ?? [])),
+            'commits' => $git['commits'] ?? [],
+            'pulls' => $git['pulls'] ?? [],
+            'branches' => $git['branches'] ?? [],
+            // measured against guessed, kept apart on purpose: one is evidence, the other is not
+            'booked' => $booked,
+            'split' => $booked > 0 ? 0 : $split,
+            'seconds' => $booked > 0 ? $booked : $split,
+            'estimate' => $local?->estimate_seconds,
+            'local' => $local,
+            'column' => $local?->column,
+            'last' => $last,
+        ];
+    }
+
+    /**
+     * Seconds actually booked per ticket key — the measurement that replaces the even split
+     * wherever it exists.
+     *
+     * @return array<string, int>
+     */
+    private function booked(): array
+    {
+        $seconds = [];
+
+        $entries = TimeEntry::query()
+            ->completed()
+            ->whereNotNull('ticket_id')
+            ->with('ticket')
+            ->get();
+
+        foreach ($entries as $entry) {
+            $key = $entry->ticket?->key;
+
+            if ($key === null) {
+                continue;
+            }
+
+            $seconds[$key] = ($seconds[$key] ?? 0) + $entry->durationInSeconds();
+        }
+
+        return $seconds;
+    }
+
+    /**
+     * Everything git knows about ids in the window: which projects touched them, what was
+     * committed, which branches carry them, which pull requests mention them.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function fromGit(User $user, Carbon $from, Carbon $to): array
+    {
+        $projects = Project::query()->inOrder()->get();
         $tickets = [];
 
         foreach ($this->commits->forRange($from, $to, $projects) as $projectId => $commits) {
@@ -81,66 +256,38 @@ final class Tickets
             }
         }
 
-        $seconds = $this->estimate($tickets, $from, $to);
-        $mine = $this->linear->mine($user);
+        return $tickets;
+    }
 
-        $rows = [];
+    /**
+     * How my estimates compare to measured time. Only tickets that carry both a local estimate
+     * and real booked time count — a split-evenly guess against an estimate would be two guesses
+     * multiplied, and the factor would mean nothing.
+     *
+     * Null until there is something to say: with fewer than three comparable tickets a factor is
+     * noise wearing a decimal point.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return array{factor: float, count: int, estimated: int, booked: int}|null
+     */
+    public function calibration(Collection $rows): ?array
+    {
+        $usable = $rows->filter(
+            fn (array $row): bool => ($row['estimate'] ?? 0) > 0 && ($row['booked'] ?? 0) > 0,
+        );
 
-        // Linear first: these are the tickets, in the order Linear last touched them
-        foreach ($mine['issues'] as $issue) {
-            $id = $issue['id'];
-            $git = $tickets[$id] ?? null;
-
-            $rows[$id] = [
-                'id' => $id,
-                'title' => $issue['title'],
-                'state' => $issue['state'],
-                'state_type' => $issue['state_type'],
-                'team' => $issue['team'],
-                'assignee' => $issue['assignee'],
-                'priority' => $issue['priority'],
-                'url' => $issue['url'],
-                'source' => 'linear',
-                'projects' => array_values(array_unique($git['projects'] ?? [])),
-                'commits' => $git['commits'] ?? [],
-                'pulls' => $git['pulls'] ?? [],
-                'branches' => $git['branches'] ?? [],
-                'seconds' => $seconds[$id] ?? 0,
-                'last' => $git['last'] ?? Carbon::parse($issue['updated_at'] === '' ? 'now' : $issue['updated_at']),
-            ];
+        if ($usable->count() < 3) {
+            return null;
         }
 
-        // then what the work shows but Linear does not — hiding it would hide the work
-        foreach ($tickets as $id => $ticket) {
-            if (isset($rows[$id])) {
-                continue;
-            }
-
-            $rows[$id] = [
-                'id' => $id,
-                'title' => $ticket['title'],
-                'state' => null,
-                'state_type' => null,
-                'team' => null,
-                'assignee' => null,
-                'priority' => null,
-                'url' => null,
-                'source' => 'git',
-                'projects' => array_values(array_unique($ticket['projects'])),
-                'commits' => $ticket['commits'],
-                'pulls' => $ticket['pulls'],
-                'branches' => $ticket['branches'],
-                'seconds' => $seconds[$id] ?? 0,
-                'last' => $ticket['last'],
-            ];
-        }
+        $estimated = (int) $usable->sum(fn (array $row): int => (int) $row['estimate']);
+        $booked = (int) $usable->sum(fn (array $row): int => (int) $row['booked']);
 
         return [
-            'tickets' => collect($rows)
-                ->sortByDesc(fn (array $row): string => $row['last']->toIso8601String())
-                ->values(),
-            'error' => $mine['error'],
-            'configured' => $this->linear->configured($user),
+            'factor' => $estimated === 0 ? 0.0 : round($booked / $estimated, 2),
+            'count' => $usable->count(),
+            'estimated' => $estimated,
+            'booked' => $booked,
         ];
     }
 

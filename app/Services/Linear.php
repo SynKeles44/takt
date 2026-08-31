@@ -264,4 +264,252 @@ final class Linear
 
         return ['issues' => $issues, 'error' => null];
     }
+
+    /**
+     * MARK: writing back
+     *
+     * Only the fields Linear owns travel this way — title, description, state, priority,
+     * estimate, assignee, comments. My column, my notes and my local estimate stay here; putting
+     * them into a shared tracker would be a bug, not a feature.
+     *
+     * The state and assignee ids Linear needs are not the names shown in the UI, so a write that
+     * changes state resolves the team's workflow states first. That costs one extra request and
+     * is the reason this is not a single generic setter.
+     */
+
+    /** @return array{ok: bool, error: ?string} */
+    public function update(User $user, string $identifier, array $fields): array
+    {
+        $id = $this->issueId($user, $identifier);
+
+        if ($id === null) {
+            return ['ok' => false, 'error' => __('app.linear.unknown_issue', ['id' => $identifier])];
+        }
+
+        $input = [];
+
+        foreach (['title', 'description'] as $key) {
+            if (array_key_exists($key, $fields) && is_string($fields[$key])) {
+                $input[$key] = $fields[$key];
+            }
+        }
+
+        if (array_key_exists('priority', $fields) && $fields['priority'] !== null) {
+            $input['priority'] = (int) $fields['priority'];
+        }
+
+        if (array_key_exists('estimate', $fields) && $fields['estimate'] !== null) {
+            $input['estimate'] = (int) $fields['estimate'];
+        }
+
+        if (array_key_exists('state', $fields) && is_string($fields['state']) && $fields['state'] !== '') {
+            $stateId = $this->stateId($user, $identifier, $fields['state']);
+
+            if ($stateId === null) {
+                return ['ok' => false, 'error' => __('app.linear.unknown_state', ['state' => $fields['state']])];
+            }
+
+            $input['stateId'] = $stateId;
+        }
+
+        if (array_key_exists('assignToMe', $fields)) {
+            $me = $this->viewerId($user);
+
+            if ($me === null) {
+                return ['ok' => false, 'error' => __('app.linear.unknown_viewer')];
+            }
+
+            $input['assigneeId'] = $fields['assignToMe'] === true ? $me : null;
+        }
+
+        if ($input === []) {
+            return ['ok' => true, 'error' => null];
+        }
+
+        $response = $this->post($user, <<<'GRAPHQL'
+            mutation Update($id: String!, $input: IssueUpdateInput!) {
+              issueUpdate(id: $id, input: $input) { success }
+            }
+        GRAPHQL, ['id' => $id, 'input' => $input]);
+
+        if ($response['error'] !== null) {
+            return ['ok' => false, 'error' => $response['error']];
+        }
+
+        $this->forget($user);
+
+        return ['ok' => ($response['data']['issueUpdate']['success'] ?? false) === true, 'error' => null];
+    }
+
+    /** @return array{ok: bool, error: ?string} */
+    public function comment(User $user, string $identifier, string $body): array
+    {
+        $id = $this->issueId($user, $identifier);
+
+        if ($id === null) {
+            return ['ok' => false, 'error' => __('app.linear.unknown_issue', ['id' => $identifier])];
+        }
+
+        $response = $this->post($user, <<<'GRAPHQL'
+            mutation Comment($input: CommentCreateInput!) {
+              commentCreate(input: $input) { success }
+            }
+        GRAPHQL, ['input' => ['issueId' => $id, 'body' => $body]]);
+
+        if ($response['error'] !== null) {
+            return ['ok' => false, 'error' => $response['error']];
+        }
+
+        return ['ok' => ($response['data']['commentCreate']['success'] ?? false) === true, 'error' => null];
+    }
+
+    /**
+     * Create a Linear issue from a local ticket. The team is the one I work in most — read from
+     * the issues already assigned to me, so no team has to be configured by hand.
+     *
+     * @return array{ok: bool, url: ?string, identifier: ?string, error: ?string}
+     */
+    public function create(User $user, string $title, ?string $body = null): array
+    {
+        $teamId = $this->teamId($user);
+
+        if ($teamId === null) {
+            return ['ok' => false, 'url' => null, 'identifier' => null, 'error' => __('app.linear.unknown_team')];
+        }
+
+        $input = array_filter([
+            'teamId' => $teamId,
+            'title' => $title,
+            'description' => $body,
+            'assigneeId' => $this->viewerId($user),
+        ], static fn (mixed $value): bool => $value !== null);
+
+        $response = $this->post($user, <<<'GRAPHQL'
+            mutation Create($input: IssueCreateInput!) {
+              issueCreate(input: $input) {
+                success
+                issue { identifier url }
+              }
+            }
+        GRAPHQL, ['input' => $input]);
+
+        if ($response['error'] !== null) {
+            return ['ok' => false, 'url' => null, 'identifier' => null, 'error' => $response['error']];
+        }
+
+        $created = $response['data']['issueCreate'] ?? [];
+
+        $this->forget($user);
+
+        return [
+            'ok' => ($created['success'] ?? false) === true,
+            'url' => $created['issue']['url'] ?? null,
+            'identifier' => $created['issue']['identifier'] ?? null,
+            'error' => null,
+        ];
+    }
+
+    /** The workflow states of the team an issue belongs to, name => id. */
+    public function states(User $user, string $identifier): array
+    {
+        $response = $this->post($user, <<<'GRAPHQL'
+            query States($id: String!) {
+              issue(id: $id) {
+                team {
+                  states { nodes { id name type position } }
+                }
+              }
+            }
+        GRAPHQL, ['id' => $identifier]);
+
+        $states = [];
+
+        foreach ($response['data']['issue']['team']['states']['nodes'] ?? [] as $node) {
+            if (is_array($node) && is_string($node['name'] ?? null) && is_string($node['id'] ?? null)) {
+                $states[(string) $node['name']] = ['id' => $node['id'], 'type' => (string) ($node['type'] ?? '')];
+            }
+        }
+
+        return $states;
+    }
+
+    private function stateId(User $user, string $identifier, string $name): ?string
+    {
+        $states = $this->states($user, $identifier);
+
+        // Linear's own name first; a case-insensitive match second, so "todo" finds "Todo"
+        if (isset($states[$name])) {
+            return $states[$name]['id'];
+        }
+
+        foreach ($states as $stateName => $state) {
+            if (mb_strtolower($stateName) === mb_strtolower($name)) {
+                return $state['id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Linear's mutations want the internal uuid, not the identifier shown everywhere. The
+     * identifier resolves to it through a plain issue lookup, which Linear accepts.
+     */
+    private function issueId(User $user, string $identifier): ?string
+    {
+        $response = $this->post($user, <<<'GRAPHQL'
+            query Id($id: String!) { issue(id: $id) { id } }
+        GRAPHQL, ['id' => $identifier]);
+
+        $id = $response['data']['issue']['id'] ?? null;
+
+        return is_string($id) ? $id : null;
+    }
+
+    private function viewerId(User $user): ?string
+    {
+        $response = $this->post($user, <<<'GRAPHQL'
+            query Me { viewer { id } }
+        GRAPHQL, []);
+
+        $id = $response['data']['viewer']['id'] ?? null;
+
+        return is_string($id) ? $id : null;
+    }
+
+    /** The team most of my assigned issues live in — a majority vote, not a configured value. */
+    private function teamId(User $user): ?string
+    {
+        $response = $this->post($user, <<<'GRAPHQL'
+            query Teams {
+              viewer {
+                assignedIssues(first: 50) { nodes { team { id } } }
+              }
+            }
+        GRAPHQL, []);
+
+        $counts = [];
+
+        foreach ($response['data']['viewer']['assignedIssues']['nodes'] ?? [] as $node) {
+            $id = $node['team']['id'] ?? null;
+
+            if (is_string($id)) {
+                $counts[$id] = ($counts[$id] ?? 0) + 1;
+            }
+        }
+
+        if ($counts === []) {
+            $teams = $this->post($user, <<<'GRAPHQL'
+                query AnyTeam { teams(first: 1) { nodes { id } } }
+            GRAPHQL, []);
+
+            $id = $teams['data']['teams']['nodes'][0]['id'] ?? null;
+
+            return is_string($id) ? $id : null;
+        }
+
+        arsort($counts);
+
+        return (string) array_key_first($counts);
+    }
 }

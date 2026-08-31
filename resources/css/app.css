@@ -1253,6 +1253,125 @@ body::before {
 }
 
 /*
+ * MARK: the ticket board
+ *
+ * Five columns that describe a day. On a narrow window they scroll sideways rather than
+ * collapsing into one another — a kanban column that wraps is no longer a column.
+ */
+.ticket-board {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(15rem, 1fr);
+    gap: 0.75rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-block-end: 0.5rem;
+}
+
+@media (width < 64rem) {
+    .ticket-board {
+        grid-auto-columns: minmax(14rem, 78vw);
+    }
+}
+
+.ticket-column {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 12rem;
+    border: var(--border-w) solid var(--color-line);
+    border-radius: var(--radius-card);
+    background-color: var(--color-surface);
+    /* the column's own colour, one hairline at the top — enough to tell them apart */
+    box-shadow: inset 0 2px 0 0 color-mix(in oklab, var(--column-accent, var(--color-line)) 70%, transparent);
+    padding: 0.6rem;
+    transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.ticket-column[data-over] {
+    border-color: color-mix(in oklab, var(--column-accent, var(--color-accent)) 60%, transparent);
+    background-color: color-mix(in oklab, var(--column-accent, var(--color-accent)) 8%, var(--color-surface));
+}
+
+.ticket-column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-inline: 0.25rem;
+}
+
+.ticket-column-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ticket-card {
+    border: var(--border-w) solid var(--color-line);
+    border-radius: var(--radius-control);
+    background-color: var(--color-raised);
+    padding: 0.6rem 0.7rem;
+    cursor: grab;
+    transition:
+        border-color var(--dur-fast) ease,
+        background-color var(--dur-fast) ease,
+        box-shadow var(--dur-fast) ease;
+}
+
+.ticket-card:hover {
+    border-color: var(--color-line-strong);
+}
+
+.ticket-card-focus {
+    border-color: color-mix(in oklab, var(--color-work) 55%, transparent);
+    box-shadow: inset 3px 0 0 0 var(--color-work);
+}
+
+/* the card being carried, and the hole it left behind */
+.ticket-card[data-dragging] {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+
+/*
+ * MARK: the ticket timeline
+ *
+ * One stream: commits, branches, pull requests, booked time, column moves, notes. The rail is a
+ * border on the list, not an element per row, so a long timeline stays cheap to paint.
+ */
+.ticket-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-inline-start: 0.35rem;
+    border-inline-start: 1px solid var(--color-line);
+    padding-inline-start: 1rem;
+}
+
+.ticket-event {
+    position: relative;
+    display: flex;
+    gap: 0.6rem;
+}
+
+.ticket-event-dot {
+    position: absolute;
+    inset-inline-start: -1.32rem;
+    inset-block-start: 0.32rem;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: 50%;
+    background-color: var(--color-line-strong);
+}
+
+.ticket-event[data-kind='commit'] .ticket-event-dot { background-color: var(--color-accent); }
+.ticket-event[data-kind='pull'] .ticket-event-dot { background-color: var(--color-accent-2, var(--color-accent)); }
+.ticket-event[data-kind='time'] .ticket-event-dot { background-color: var(--color-work); }
+.ticket-event[data-kind='column'] .ticket-event-dot { background-color: var(--color-rest); }
+.ticket-event[data-kind='note'] .ticket-event-dot { background-color: var(--color-muted); }
+
+/*
  * MARK: arriving — everything that appears does it in the same direction and rhythm
  *
  * Cards of a page and rows of a list rise in sequence rather than all at once, capped at eight

@@ -67,7 +67,8 @@ class TicketTest extends TestCase
         $path = $this->repository();
         Project::query()->create(['name' => 'Testrepo', 'path' => $path]);
 
-        $tickets = app(Tickets::class)->collect(auth()->user(), 30)['tickets']->keyBy('id');
+        // an id only git knows is not a row any more: it is the footnote list, with actions
+        $tickets = app(Tickets::class)->collect(auth()->user(), 30)['loose']->keyBy('id');
 
         $this->assertTrue($tickets->has('COR-6839'));
         $this->assertTrue($tickets->has('DEV-5472'));
@@ -89,7 +90,7 @@ class TicketTest extends TestCase
             'ended_at' => Carbon::today()->setTime(17, 0),
         ]);
 
-        $tickets = app(Tickets::class)->collect(auth()->user(), 30)['tickets']->keyBy('id');
+        $tickets = app(Tickets::class)->collect(auth()->user(), 30)['loose']->keyBy('id');
 
         // eight hours, two tickets committed today
         $this->assertSame(4 * 3600, $tickets['COR-6839']['seconds']);
@@ -105,7 +106,7 @@ class TicketTest extends TestCase
 
         Process::path($path)->run(['git', 'branch', 'feat/COR-9999/nur-ein-branch'])->throw();
 
-        $tickets = app(Tickets::class)->collect(auth()->user(), 30)['tickets']->keyBy('id');
+        $tickets = app(Tickets::class)->collect(auth()->user(), 30)['loose']->keyBy('id');
 
         $this->assertSame(0, $tickets['COR-9999']['seconds']);
         $this->assertSame([], $tickets['COR-9999']['commits']);
@@ -134,7 +135,7 @@ class TicketTest extends TestCase
             'fetched_at' => '2026-08-27T10:00:00+02:00',
         ], 600);
 
-        $ticket = app(Tickets::class)->collect(auth()->user(), 30)['tickets']->keyBy('id')['COR-7000'];
+        $ticket = app(Tickets::class)->collect(auth()->user(), 30)['loose']->keyBy('id')['COR-7000'];
 
         $this->assertSame(['Webshop'], $ticket['projects']);
         $this->assertCount(1, $ticket['pulls']);

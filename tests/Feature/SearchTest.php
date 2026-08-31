@@ -14,6 +14,7 @@ use App\Models\StepTemplate;
 use App\Models\Tag;
 use App\Models\TimeEntry;
 use App\Models\Todo;
+use App\Services\TicketBoard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -136,5 +137,21 @@ class SearchTest extends TestCase
         $this->assertContains(__('app.dev.snippets'), $this->groupsFor('galawork'));
         $this->assertContains(__('app.notes.title'), $this->groupsFor('deploy'));
         $this->assertContains(__('app.nav.history'), $this->groupsFor('zeiterfassung'));
+    }
+
+    public function test_tickets_are_found_by_key_title_and_my_own_notes(): void
+    {
+        $board = app(TicketBoard::class);
+        $ticket = $board->create('Serverwechsel Firma Weber');
+        $board->notes($ticket->key, 'Zertifikat vorher prüfen');
+
+        // the notes exist nowhere else, so they are the case that matters most here
+        $labels = fn (string $term): array => collect($this->getJson(route('search', ['q' => $term]))->json('results'))
+            ->pluck('label')
+            ->all();
+
+        $this->assertContains('TAKT-1 — Serverwechsel Firma Weber', $labels('Weber'));
+        $this->assertContains('TAKT-1 — Serverwechsel Firma Weber', $labels('TAKT-1'));
+        $this->assertContains('TAKT-1 — Serverwechsel Firma Weber', $labels('Zertifikat'));
     }
 }

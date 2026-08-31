@@ -220,6 +220,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         let running = state["running"] as? String
         let worked = state["work"] as? Int ?? 0
+        /*
+         * The focused ticket next to the clock — the whole point of a focus is answering "what am
+         * I on" without opening the window. Only while a timer runs: a key sitting in the menu bar
+         * on an idle day is noise, not information.
+         */
+        let ticket = state["ticket"] as? String
 
         guard let running else {
             return worked > 0 ? " " + clock(worked) : ""
@@ -227,8 +233,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         let since = ISO8601DateFormatter().date(from: state["since"] as? String ?? "")
         let live = worked + Int(since.map { -$0.timeIntervalSinceNow } ?? 0)
+        let prefix = running == "break" ? " ☕ " : " "
 
-        return (running == "break" ? " ☕ " : " ") + clock(live)
+        if running == "work", let key = ticket, !key.isEmpty {
+            return prefix + clock(live) + " · " + key
+        }
+
+        return prefix + clock(live)
     }
 
     private static func clock(_ seconds: Int) -> String {
@@ -242,6 +253,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         if signedIn, let running {
             menu.addItem(withTitle: running == "break" ? "Pause läuft" : "Arbeit läuft", action: nil, keyEquivalent: "")
+
+            // the title is capped in the page, so a long ticket cannot stretch the menu
+            if let key = state?["ticket"] as? String, !key.isEmpty {
+                let title = state?["ticketTitle"] as? String ?? ""
+
+                menu.addItem(withTitle: title.isEmpty ? key : key + " — " + title, action: nil, keyEquivalent: "")
+            }
+
             menu.addItem(NSMenuItem.separator())
             menu.addItem(withTitle: running == "break" ? "Zurück zur Arbeit" : "Pause starten",
                          action: running == "break" ? #selector(startWork) : #selector(startBreak), keyEquivalent: "")

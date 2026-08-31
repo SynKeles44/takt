@@ -8,6 +8,38 @@ use Illuminate\Support\Number;
 
 final class Duration
 {
+    /**
+     * Reads a duration the way a person types one: `1:30`, `90m`, `2h`, `2,5h`, or a bare `4`
+     * meaning four hours — because an estimate is thought of in hours, not minutes. Anything
+     * unparseable is null rather than zero: a rejected input must not silently become "no time".
+     */
+    public static function parse(string $input): ?int
+    {
+        $value = mb_strtolower(trim(str_replace(',', '.', $input)));
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d{1,3}):([0-5]?\d)$/', $value, $m) === 1) {
+            return ((int) $m[1] * 3600) + ((int) $m[2] * 60);
+        }
+
+        if (preg_match('/^(\d+(?:\.\d+)?)\s*h$/', $value, $m) === 1) {
+            return (int) round(((float) $m[1]) * 3600);
+        }
+
+        if (preg_match('/^(\d+(?:\.\d+)?)\s*m(?:in)?$/', $value, $m) === 1) {
+            return (int) round(((float) $m[1]) * 60);
+        }
+
+        if (preg_match('/^(\d+(?:\.\d+)?)$/', $value, $m) === 1) {
+            return (int) round(((float) $m[1]) * 3600);
+        }
+
+        return null;
+    }
+
     public static function human(int $seconds): string
     {
         $seconds = max(0, $seconds);

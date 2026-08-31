@@ -28,8 +28,16 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SnippetController;
 use App\Http\Controllers\StepTemplateController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\TicketBoardController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketFocusController;
+use App\Http\Controllers\TicketLinearController;
+use App\Http\Controllers\TicketLooseController;
 use App\Http\Controllers\TicketRefreshController;
+use App\Http\Controllers\TicketShowController;
+use App\Http\Controllers\TicketStoreController;
+use App\Http\Controllers\TicketTimerController;
+use App\Http\Controllers\TicketUpdateController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\TimerController;
 use App\Http\Controllers\TodoAttachmentController;
@@ -69,6 +77,21 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/tickets', TicketController::class)->name('tickets');
     Route::post('/tickets/neu-laden', TicketRefreshController::class)->name('tickets.refresh');
+    Route::post('/tickets/spalte', TicketBoardController::class)->name('tickets.place');
+    Route::post('/tickets/gefunden', TicketLooseController::class)->name('tickets.loose');
+    Route::post('/tickets/anlegen', TicketStoreController::class)->name('tickets.store');
+
+    /*
+     * The key is the identity — `COR-6950`, `TAKT-3` — never a database id: a Linear ticket has
+     * no local row until something local is said about it. The pattern keeps the static segments
+     * above from ever being swallowed by this one.
+     */
+    Route::pattern('key', '[A-Z][A-Z0-9]{1,9}-[0-9]{1,6}');
+    Route::get('/tickets/{key}', TicketShowController::class)->name('tickets.show');
+    Route::post('/tickets/{key}', TicketUpdateController::class)->name('tickets.update');
+    Route::post('/tickets/{key}/fokus', TicketFocusController::class)->name('tickets.focus');
+    Route::post('/tickets/{key}/timer', TicketTimerController::class)->name('tickets.timer');
+    Route::post('/tickets/{key}/linear', TicketLinearController::class)->name('tickets.linear');
 
     Route::get('/entwicklung', [DeveloperController::class, 'index'])->name('dev');
     Route::post('/entwicklung/reviews', [DeveloperController::class, 'refreshReviews'])->name('dev.reviews');

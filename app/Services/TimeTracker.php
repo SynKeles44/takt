@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\EntryType;
+use App\Models\Ticket;
 use App\Models\TimeEntry;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -18,15 +19,21 @@ final class TimeTracker
         return TimeEntry::query()->running()->latest('started_at')->first();
     }
 
-    public function start(EntryType $type, ?CarbonInterface $at = null): TimeEntry
+    /**
+     * A ticket may be given, and then the booking is evidence rather than a guess: it is what
+     * turns "time per ticket" from an even split of the day into a measurement. A timer already
+     * running for the same type but a different ticket is closed and reopened, because the work
+     * did change — only the same type on the same ticket is left alone.
+     */
+    public function start(EntryType $type, ?CarbonInterface $at = null, ?Ticket $ticket = null): TimeEntry
     {
         $at = $at ? Carbon::instance($at->toDateTimeImmutable()) : Carbon::now();
 
-        return DB::transaction(function () use ($type, $at): TimeEntry {
+        return DB::transaction(function () use ($type, $at, $ticket): TimeEntry {
             $running = $this->running();
 
             if ($running !== null) {
-                if ($running->type === $type) {
+                if ($running->type === $type && $running->ticket_id === $ticket?->getKey()) {
                     return $running;
                 }
 
@@ -35,6 +42,7 @@ final class TimeTracker
 
             return TimeEntry::query()->create([
                 'type' => $type,
+                'ticket_id' => $ticket?->getKey(),
                 'started_at' => $at,
             ]);
         });
