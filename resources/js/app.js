@@ -29,7 +29,12 @@ const tick = () => {
         const base = Number(element.dataset.base ?? 0);
         const seconds = Math.max(0, base + Math.floor((now - since) / 1000));
 
-        element.textContent = element.dataset.format === 'human' ? asHuman(seconds) : asClock(seconds);
+        const text = element.dataset.format === 'human' ? asHuman(seconds) : asClock(seconds);
+
+        // writing the same string still costs a layout; the human format changes once a minute
+        if (element.textContent !== text) {
+            element.textContent = text;
+        }
     });
 };
 
@@ -539,35 +544,87 @@ const NAV_SAFE = ['/login', '/registrieren', '/logout'];
  * exactly those regions are replaced — that is how paging through the days leaves the
  * reviews alone instead of fetching them from GitHub again.
  */
-const swapRegions = (html, only = null) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    let swapped = false;
+const calmed = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/*
+ * A view transition makes a region swap read as one movement instead of a jump. It is opt-in by
+ * capability and by preference: without startViewTransition, or with reduced motion asked for,
+ * the swap happens exactly as it did before. The names are set per region, so only the parts
+ * that actually changed animate — the rest of the page stays still.
+ */
+const withTransition = (mutate) => {
+    if (! document.startViewTransition || calmed()) {
+        mutate();
+
+        return;
+    }
 
     document.querySelectorAll('[data-region]').forEach((node) => {
-        if (only !== null && ! only.includes(node.dataset.region)) {
-            return;
-        }
-
-        const fresh = doc.querySelector(`[data-region="${node.dataset.region}"]`);
-
-        if (! fresh) {
-            return;
-        }
-
-        node.replaceWith(fresh);
-        swapped = true;
-
-        // the entrance animation belongs to a page load; an in-place update only fades
-        fresh.querySelectorAll(':scope > *').forEach((child) => {
-            child.style.animation = 'none';
-        });
-
-        fresh.dataset.swapped = '';
-        requestAnimationFrame(() => requestAnimationFrame(() => delete fresh.dataset.swapped));
+        node.style.viewTransitionName = 'region-' + node.dataset.region;
     });
 
-    // a swapped-in region brings new collapsible blocks with it
-    if (swapped) rememberBlocks();
+    const transition = document.startViewTransition(mutate);
+
+    transition.finished
+        .catch(() => {})
+        .finally(() => {
+            document.querySelectorAll('[data-region]').forEach((node) => {
+                node.style.viewTransitionName = '';
+            });
+
+            delete document.documentElement.dataset.swapDirection;
+        });
+};
+
+const swapRegions = (html, only = null) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // decided before anything moves, so the caller still gets a synchronous yes or no
+    const pairs = [...document.querySelectorAll('[data-region]')]
+        .filter((node) => only === null || only.includes(node.dataset.region))
+        .map((node) => [node, doc.querySelector(`[data-region="${node.dataset.region}"]`)])
+        .filter(([, fresh]) => fresh !== null);
+
+    const swapped = pairs.length > 0;
+
+    if (swapped) {
+        // what actually changed, read before the swap so it can be pointed at afterwards
+        const changed = pairs.flatMap(([node, fresh]) => {
+            const before = [...node.querySelectorAll('.metric')].map((m) => m.textContent.trim());
+
+            return [...fresh.querySelectorAll('.metric')]
+                .map((metric, index) => (metric.textContent.trim() === before[index] ? null : metric))
+                .filter(Boolean);
+        });
+
+        withTransition(() => {
+            pairs.forEach(([node, fresh]) => {
+                node.replaceWith(fresh);
+
+                // the entrance animation belongs to a page load; an in-place update only fades
+                fresh.querySelectorAll(':scope > *').forEach((child) => {
+                    child.style.animation = 'none';
+                });
+
+                fresh.dataset.swapped = '';
+                requestAnimationFrame(() => requestAnimationFrame(() => delete fresh.dataset.swapped));
+            });
+        });
+
+        // a swapped-in region brings new collapsible blocks with it
+        rememberBlocks();
+
+        /*
+         * A number that changed says so once. Without this a live update is silent: the value is
+         * simply different afterwards and nothing tells the eye where to look.
+         */
+        if (! calmed()) {
+            changed.forEach((metric) => {
+                metric.dataset.changed = '';
+                metric.addEventListener('animationend', () => delete metric.dataset.changed, { once: true });
+            });
+        }
+    }
 
     const title = doc.querySelector('title')?.textContent;
 
@@ -740,6 +797,15 @@ if (accountMenu && accountToggle) {
     };
 
     const setOpen = (open) => {
+        /*
+         * Leaving early when nothing changes is not a micro-optimisation here: this runs from a
+         * scroll listener, so without it every scrolled frame wrote aria-expanded again and
+         * invalidated style recalculation for the header — while the menu was already closed.
+         */
+        if (open === ! accountMenu.classList.contains('hidden')) {
+            return;
+        }
+
         accountMenu.classList.toggle('hidden', ! open);
         accountToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
 
@@ -1156,12 +1222,35 @@ const partialLink = (url, regions, push = true) =>
             return true;
         });
 
+/*
+ * Which way the content should travel. A link that carries a date or a week says where it goes,
+ * so paging forward slides the new content in from the right and back from the left — the same
+ * reading direction the dates have.
+ */
+const direction = (href) => {
+    const now = new URL(window.location.href).searchParams;
+    const next = new URL(href, window.location.origin).searchParams;
+
+    for (const key of ['tag', 'from', 'woche', 'monat', 'jahr']) {
+        const a = now.get(key);
+        const b = next.get(key);
+
+        if (a && b && a !== b) return b > a ? 'forward' : 'back';
+    }
+
+    return null;
+};
+
 document.addEventListener('click', (event) => {
     const link = event.target.closest('a[data-partial]');
 
     if (! link || event.metaKey || event.ctrlKey || event.shiftKey || link.target === '_blank') return;
 
     event.preventDefault();
+
+    const way = direction(link.href);
+
+    if (way) document.documentElement.dataset.swapDirection = way;
 
     partialLink(link.href, link.dataset.partial.split(' ')).catch(() => {
         window.location.href = link.href;

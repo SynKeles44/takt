@@ -565,6 +565,11 @@ export const createBoard = ({ swapRegions, toast }) => {
      * move opens the peek again.
      */
     window.addEventListener('scroll', () => {
+        // There is no peek outside edit mode, so there is nothing to hide and nothing to
+        // remember. Leaving first matters because this runs on every scrolled frame — and on
+        // every page, since the board module loads everywhere.
+        if (! editing) return;
+
         scrolledAt = Date.now();
 
         clearTimeout(peekTimer);
@@ -572,6 +577,8 @@ export const createBoard = ({ swapRegions, toast }) => {
     }, { capture: true, passive: true });
 
     window.addEventListener('wheel', () => {
+        if (! editing) return;
+
         scrolledAt = Date.now();
     }, { passive: true });
 

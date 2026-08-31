@@ -798,7 +798,7 @@ body {
         opacity: 0;
         transform: translateY(4px);
         pointer-events: none;
-        transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: opacity 0.16s ease, transform 0.16s var(--ease);
     }
 
     .hint-panel-start {
@@ -895,7 +895,7 @@ body {
         font-weight: 500;
         color: var(--color-work-text);
         backdrop-filter: blur(var(--blur));
-        animation: wb-toast 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation: wb-toast 0.25s var(--ease) both;
     }
 
     .nav-shell {
@@ -1075,7 +1075,7 @@ body {
         background-color: var(--color-popover);
         overflow: hidden;
         box-shadow: 0 40px 80px -32px var(--shadow-color), 0 0 0 1px color-mix(in oklab, var(--color-line) 60%, transparent);
-        animation: wb-dialog 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation: wb-dialog 0.22s var(--ease) both;
     }
 
     .check {
@@ -1186,7 +1186,6 @@ body {
 html {
     color-scheme: var(--scheme);
     background-color: var(--color-canvas);
-    scroll-behavior: smooth;
 }
 
 body {
@@ -1205,6 +1204,9 @@ body::before {
     z-index: -1;
     background-image: var(--ambient);
     pointer-events: none;
+    /* promote it once: a fixed gradient the content scrolls over is otherwise re-composited
+     * against that content on every frame */
+    will-change: transform;
 }
 
 
@@ -1243,11 +1245,111 @@ body::before {
 
 @keyframes wb-rise {
     from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: none; }
 }
 
 .rise {
-    animation: wb-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: wb-rise 0.45s var(--ease) both;
+}
+
+/*
+ * MARK: arriving — everything that appears does it in the same direction and rhythm
+ *
+ * Cards of a page and rows of a list rise in sequence rather than all at once, capped at eight
+ * steps so a long list never waits on its own animation. Pure CSS: the index comes from
+ * nth-child, so nothing has to be counted in JavaScript.
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .stack > .surface,
+    .stack > .surface-plain,
+    .dashboard-grid > .widget-slot,
+    .stack-grid > .surface,
+    .stack-grid > .stack {
+        animation: wb-rise var(--dur-slow) var(--ease) both;
+    }
+
+    .stack > *:nth-child(2),
+    .stack-grid > *:nth-child(2),
+    .dashboard-grid > *:nth-child(2) { animation-delay: calc(1 * var(--stagger)); }
+
+    .stack > *:nth-child(3),
+    .stack-grid > *:nth-child(3),
+    .dashboard-grid > *:nth-child(3) { animation-delay: calc(2 * var(--stagger)); }
+
+    .stack > *:nth-child(4),
+    .stack-grid > *:nth-child(4),
+    .dashboard-grid > *:nth-child(4) { animation-delay: calc(3 * var(--stagger)); }
+
+    .stack > *:nth-child(5),
+    .dashboard-grid > *:nth-child(5) { animation-delay: calc(4 * var(--stagger)); }
+
+    .dashboard-grid > *:nth-child(n + 6) { animation-delay: calc(5 * var(--stagger)); }
+
+    /*
+     * Only the rows that are actually looked at animate. Every animated row is a compositing
+     * layer for the duration, and a long history has hundreds — so the rhythm stops after
+     * the fourth row rather than being spread across the whole list.
+     */
+    ul > li:nth-child(1) > .row,
+    ul > li:nth-child(1).row { animation: wb-rise var(--dur) var(--ease) both; }
+    ul > li:nth-child(2) > .row,
+    ul > li:nth-child(2).row { animation: wb-rise var(--dur) var(--ease) calc(1 * var(--stagger)) both; }
+    ul > li:nth-child(3) > .row,
+    ul > li:nth-child(3).row { animation: wb-rise var(--dur) var(--ease) calc(2 * var(--stagger)) both; }
+    ul > li:nth-child(4) > .row,
+    ul > li:nth-child(4).row { animation: wb-rise var(--dur) var(--ease) calc(3 * var(--stagger)) both; }
+}
+
+/* a value that just changed, pointed at once and then left alone */
+@keyframes wb-changed {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+.metric[data-changed] {
+    animation: wb-changed 0.5s var(--spring) both;
+    color: var(--color-accent-text);
+}
+
+/*
+ * MARK: touching — one feedback vocabulary
+ *
+ * A control that can be pressed gives way a little; a row that can be reached lifts a little.
+ * Both on transform only, so neither costs a repaint.
+ */
+.row {
+    transition:
+        background-color var(--dur-fast) ease,
+        border-color var(--dur-fast) ease;
+}
+
+.btn,
+.icon-action,
+.pill {
+    transition:
+        background-color var(--dur-fast) ease,
+        border-color var(--dur-fast) ease,
+        color var(--dur-fast) ease,
+        box-shadow var(--dur-fast) ease,
+        transform var(--dur-fast) var(--ease);
+}
+
+.btn:active:not(:disabled),
+.icon-action:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.btn:disabled,
+.icon-action:disabled {
+    transform: none;
+}
+
+/* the focus ring arrives instead of appearing */
+:where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-accent) 70%, transparent);
+    outline-offset: 2px;
+    transition: outline-offset var(--dur-fast) var(--ease);
 }
 
 /* a region that was just swapped in place settles instead of blinking */
@@ -1289,11 +1391,11 @@ body::before {
 }
 
 .slide-in-right {
-    animation: wb-slide-right 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: wb-slide-right 0.28s var(--ease) both;
 }
 
 .slide-in-left {
-    animation: wb-slide-left 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: wb-slide-left 0.28s var(--ease) both;
 }
 
 /*
@@ -1324,9 +1426,15 @@ body::before {
     contain: paint;
 }
 
+/*
+ * No content-visibility here, deliberately. It looks like the obvious win — skip the work for
+ * widgets below the fold — but .dashboard-grid uses grid-auto-flow: row dense, so the first
+ * layout of a slot can re-place every slot after it. That happened once per scrolled-in widget,
+ * which is a full board layout per frame: the exact stutter it was meant to remove.
+ * Paint containment below does the cheap half of the job without touching layout.
+ */
 .widget-slot {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 12rem;
+    contain: paint;
 }
 
 .dashboard-grid {
@@ -1368,7 +1476,7 @@ body::before {
 .widget-slot {
     position: relative;
     min-width: 0;
-    animation: wb-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: wb-rise 0.34s var(--ease) both;
 }
 
 @media (width >= 64rem) {
@@ -1419,8 +1527,18 @@ body::before {
  * a dragged tile lifts off and follows the pointer, and the gallery slides in from the right.
  */
 
+/*
+ * One motion language, declared once. Two curves and three durations cover everything the app
+ * does: things that settle (ease) and things that snap into place (spring). Every literal
+ * cubic-bezier in this file was one of these two before they had names.
+ */
 :root {
+    --ease: var(--ease);
     --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --dur-fast: 0.16s;
+    --dur: 0.28s;
+    --dur-slow: 0.42s;
+    --stagger: 45ms;
 }
 
 .widget-tools {
@@ -2146,7 +2264,7 @@ body::before {
 /* entrance for page content, lightly staggered — widget slots bring their own stagger */
 main > *:not(.dashboard-grid),
 main > .grid > *:not(.widget-slot) {
-    animation: wb-rise 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: wb-rise 0.3s var(--ease) both;
 }
 
 main > .grid > *:not(.widget-slot):nth-child(2) { animation-delay: 40ms; }
@@ -2162,7 +2280,7 @@ main > .grid > *:not(.widget-slot):nth-child(4) { animation-delay: 120ms; }
     details::details-content {
         height: 0;
         overflow: hidden;
-        transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1), content-visibility 0.28s allow-discrete;
+        transition: height 0.28s var(--ease), content-visibility 0.28s allow-discrete;
     }
 
     details[open]::details-content {
@@ -2180,7 +2298,7 @@ details summary:hover {
 
 /* the chevron follows the block it opens */
 details > summary svg:first-of-type {
-    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.2s var(--ease);
 }
 
 details[open] > summary svg:first-of-type {
@@ -2188,10 +2306,6 @@ details[open] > summary svg:first-of-type {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    html {
-        scroll-behavior: auto;
-    }
-
     *,
     *::before,
     *::after {
@@ -2256,4 +2370,68 @@ input[type='time'] {
 :root[data-shell='native'],
 :root[data-shell='native'] body {
     overscroll-behavior: none;
+}
+
+/*
+ * MARK: view transitions — how a region swap moves
+ *
+ * The default is a cross-fade with a hint of lift, which reads as "this updated". Paging
+ * through days or weeks gets a direction instead: the outgoing content leaves the way the
+ * reader came from, the incoming one arrives from where it is going. Only regions carry
+ * transition names, so nothing else on the page moves.
+ */
+@media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation-duration: var(--dur);
+        animation-timing-function: var(--ease);
+    }
+
+    ::view-transition-old(*) {
+        animation-name: vt-out;
+    }
+
+    ::view-transition-new(*) {
+        animation-name: vt-in;
+    }
+
+    :root[data-swap-direction='forward'] ::view-transition-old(*) {
+        animation-name: vt-out-left;
+    }
+
+    :root[data-swap-direction='forward'] ::view-transition-new(*) {
+        animation-name: vt-in-right;
+    }
+
+    :root[data-swap-direction='back'] ::view-transition-old(*) {
+        animation-name: vt-out-right;
+    }
+
+    :root[data-swap-direction='back'] ::view-transition-new(*) {
+        animation-name: vt-in-left;
+    }
+}
+
+@keyframes vt-out {
+    to { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes vt-in {
+    from { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes vt-out-left {
+    to { opacity: 0; transform: translateX(-2.5%); }
+}
+
+@keyframes vt-in-right {
+    from { opacity: 0; transform: translateX(3%); }
+}
+
+@keyframes vt-out-right {
+    to { opacity: 0; transform: translateX(2.5%); }
+}
+
+@keyframes vt-in-left {
+    from { opacity: 0; transform: translateX(-3%); }
 }
