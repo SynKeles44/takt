@@ -14,7 +14,7 @@ class CommandRun extends Model
 {
     use BelongsToUser;
 
-    protected $fillable = ['project_id', 'target', 'interactive', 'status', 'exit_code', 'pid', 'started_at', 'finished_at'];
+    protected $fillable = ['project_id', 'target', 'kind', 'interactive', 'status', 'exit_code', 'pid', 'started_at', 'finished_at'];
 
     protected function casts(): array
     {
@@ -39,9 +39,19 @@ class CommandRun extends Model
         $query->orderByDesc('started_at')->orderByDesc('id');
     }
 
+    /** What was actually run — the target is a make target or a package name, per kind. */
     public function command(): string
     {
-        return 'make '.$this->target;
+        return match ($this->kind) {
+            'composer' => 'composer update '.$this->target,
+            'npm' => 'npm install '.$this->target.'@latest',
+            default => 'make '.$this->target,
+        };
+    }
+
+    public function isPackageUpdate(): bool
+    {
+        return in_array($this->kind, ['composer', 'npm'], true);
     }
 
     public function logPath(): string

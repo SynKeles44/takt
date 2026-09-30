@@ -1,14 +1,5 @@
 <x-app-layout :title="__('app.dev.testpost')" :wide="true">
-    <x-card class="rise">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h2 class="text-base font-semibold text-ink">{{ __('app.dev.testpost') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.dev.testpost_hint') }}</p>
-            </div>
-
-            <x-dev-tabs active="dev.testpost"/>
-        </div>
-    </x-card>
+    <x-dev-page :title="__('app.dev.testpost')" :hint="__('app.dev.testpost_hint')" active="dev.testpost"/>
 
     <div class="stack-grid mt-5 grid lg:grid-cols-2">
         <x-card class="rise">
@@ -121,4 +112,5 @@
             </div>
         </x-card>
     </div>
+    <x-mascot pose="send" class="mascot-at-tail size-14"/>
 </x-app-layout>

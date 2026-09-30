@@ -1,14 +1,5 @@
 <x-app-layout :title="__('app.dev.snippets')" :wide="true">
-    <x-card class="rise">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h2 class="text-base font-semibold text-ink">{{ __('app.dev.snippets') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.dev.snippets_hint') }}</p>
-            </div>
-
-            <x-dev-tabs active="snippets"/>
-        </div>
-    </x-card>
+    <x-dev-page :title="__('app.dev.snippets')" :hint="__('app.dev.snippets_hint')" active="snippets"/>
 
     <div class="stack-grid mt-5 grid lg:grid-cols-[1.3fr_1fr]">
         <x-card class="rise">
@@ -76,4 +67,5 @@
             </form>
         </x-card>
     </div>
+    <x-mascot pose="stack" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

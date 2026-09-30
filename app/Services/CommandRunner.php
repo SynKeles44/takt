@@ -111,6 +111,74 @@ final class CommandRunner
     }
 
     /**
+     * Update one package, as a detached run with its own log — the same machinery `make` uses,
+     * because an update takes minutes and a request may not wait for it.
+     *
+     * The command is BUILT here from a manager and a package name, never accepted as a string.
+     * That is the security boundary: a caller cannot pass a command, only a name, and the name
+     * has already been checked against the project's own manifest by the caller. Both halves
+     * matter — the allowlist stops an arbitrary package, escapeshellarg stops an arbitrary shell.
+     */
+    public function startPackageUpdate(Project $project, string $manager, string $package): ?CommandRun
+    {
+        $binary = match ($manager) {
+            'composer' => 'composer',
+            'npm' => 'npm',
+            default => null,
+        };
+
+        if ($binary === null || ! $project->exists()) {
+            return null;
+        }
+
+        File::ensureDirectoryExists(storage_path('app/runs'));
+
+        $run = CommandRun::query()->create([
+            'project_id' => $project->getKey(),
+            'target' => $package,
+            'kind' => $manager,
+            'interactive' => false,
+            'status' => RunStatus::Running,
+            'started_at' => Carbon::now(),
+        ]);
+
+        File::put($run->logPath(), '');
+        File::delete([$run->exitPath(), $run->inputPath()]);
+
+        $inner = $manager === 'composer'
+            ? sprintf(
+                'composer update %s --with-dependencies --no-interaction',
+                escapeshellarg($package),
+            )
+            : sprintf('npm install %s --no-fund --no-audit', escapeshellarg($package.'@latest'));
+
+        $script = sprintf(
+            'cd %s && nohup %s -lc %s </dev/null >/dev/null 2>&1 & echo $!',
+            escapeshellarg($project->absolutePath()),
+            escapeshellarg(ShellEnvironment::shell()),
+            escapeshellarg(sprintf(
+                '%s >>%s 2>&1; printf "%%s" "$?" >%s',
+                $inner,
+                escapeshellarg($run->logPath()),
+                escapeshellarg($run->exitPath()),
+            )),
+        );
+
+        $result = Process::timeout(15)->env(ShellEnvironment::variables())->run($script);
+        $pid = (int) trim($result->output());
+
+        if (! $result->successful() || $pid <= 0) {
+            $run->update(['status' => RunStatus::Failed, 'finished_at' => Carbon::now()]);
+
+            return $run;
+        }
+
+        $run->update(['pid' => $pid]);
+
+        return $run;
+    }
+
+    /**
      * The run as it stands right now, with the tail of its output.
      *
      * @return array{status: RunStatus, exit_code: ?int, output: string, size: int, running: bool}

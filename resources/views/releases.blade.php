@@ -1,14 +1,5 @@
 <x-app-layout :title="__('app.dev.releases')" :wide="true">
-    <x-card class="rise">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h2 class="text-base font-semibold text-ink">{{ __('app.dev.releases') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.dev.releases_intro') }}</p>
-            </div>
-
-            <x-dev-tabs active="releases"/>
-        </div>
-    </x-card>
+    <x-dev-page :title="__('app.dev.releases')" :hint="__('app.dev.releases_intro')" active="releases"/>
 
     <div class="stack mt-5">
         @if ($count === 0)
@@ -51,4 +42,5 @@
             </x-card>
         @endforeach
     </div>
+    <x-mascot pose="rocket" class="mascot-at-tail size-14"/>
 </x-app-layout>

@@ -1,25 +1,16 @@
 <x-app-layout :title="__('app.docker.title')" :wide="true">
-    <x-card class="rise">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h2 class="text-base font-semibold text-ink">{{ __('app.docker.title') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.docker.hint') }}</p>
-            </div>
+    <x-dev-page :title="__('app.docker.title')" :hint="__('app.docker.hint')" active="docker">
+        <x-slot:actions>
+            @if ($docker['ok'])
+                <span class="pill">{{ __('app.docker.summary', ['running' => $docker['running'], 'total' => $docker['total']]) }}</span>
+            @endif
 
-            <div class="flex flex-wrap items-center gap-2">
-                @if ($docker['ok'])
-                    <span class="pill">{{ __('app.docker.summary', ['running' => $docker['running'], 'total' => $docker['total']]) }}</span>
-                @endif
-
-                <button type="button" class="btn btn-icon" data-docker-refresh
-                        aria-label="{{ __('app.docker.refresh') }}" title="{{ __('app.docker.refresh') }}">
-                    <x-icon name="repeat" class="size-4"/>
-                </button>
-
-                <x-dev-tabs active="docker"/>
-            </div>
-        </div>
-    </x-card>
+            <button type="button" class="btn btn-icon" data-docker-refresh
+                    aria-label="{{ __('app.docker.refresh') }}" title="{{ __('app.docker.refresh') }}">
+                <x-icon name="repeat" class="size-4"/>
+            </button>
+        </x-slot:actions>
+    </x-dev-page>
 
     <div class="mt-5" data-docker data-list-url="{{ route('docker.list') }}"
          data-act-url="{{ route('docker.act') }}" data-logs-url="{{ route('docker.logs') }}">
@@ -53,4 +44,5 @@
             </div>
         </div>
     </div>
+    <x-mascot pose="whale" class="mascot-at-tail size-14"/>
 </x-app-layout>

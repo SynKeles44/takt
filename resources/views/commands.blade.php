@@ -1,14 +1,5 @@
 <x-app-layout :title="__('app.dev.commands')" :wide="true">
-    <x-card class="rise">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h2 class="text-base font-semibold text-ink">{{ __('app.dev.commands') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.dev.commands_hint') }}</p>
-            </div>
-
-            <x-dev-tabs active="commands"/>
-        </div>
-
+    <x-dev-page :title="__('app.dev.commands')" :hint="__('app.dev.commands_hint')" active="commands">
         <div class="field-with-action mt-4">
             <input type="search" class="control text-sm" data-command-filter autocomplete="off"
                    placeholder="{{ __('app.dev.filter_targets') }}" aria-label="{{ __('app.dev.filter_targets') }}">
@@ -17,7 +8,7 @@
                 <x-icon name="search" class="size-4"/>
             </span>
         </div>
-    </x-card>
+    </x-dev-page>
 
     <div class="stack-grid mt-5 grid lg:grid-cols-[1.4fr_1fr]" data-region="commands">
         <div class="stack">
@@ -150,4 +141,5 @@
             </div>
         </div>
     </div>
+    <x-mascot pose="run" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

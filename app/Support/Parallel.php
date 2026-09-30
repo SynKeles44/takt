@@ -41,4 +41,37 @@ final class Parallel
 
         return $outputs;
     }
+
+    /**
+     * The same fan-out, but the output is kept whatever the exit code says.
+     *
+     * Needed because a healthy tool can exit non-zero: `npm outdated` returns 1 exactly when it
+     * HAS something to report, so run() above would discard every interesting answer and keep
+     * only the empty ones.
+     *
+     * @param  array<string, list<string>>  $commands
+     * @return array<string, string> the output per key, empty only when nothing was produced
+     */
+    public static function outputs(array $commands, int $timeout = 15): array
+    {
+        if ($commands === []) {
+            return [];
+        }
+
+        $results = Process::pool(function (Pool $pool) use ($commands, $timeout): void {
+            foreach ($commands as $key => $arguments) {
+                $pool->as($key)->timeout($timeout)->command($arguments);
+            }
+        })->start()->wait();
+
+        $outputs = [];
+
+        foreach (array_keys($commands) as $key) {
+            $result = $results[$key] ?? null;
+
+            $outputs[$key] = $result === null ? '' : $result->output();
+        }
+
+        return $outputs;
+    }
 }

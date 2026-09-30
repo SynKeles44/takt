@@ -3,6 +3,7 @@
 <x-app-layout :title="__('app.nav.dev')" :wide="true">
     <div data-region="dev-head">
     <x-card class="rise">
+
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <h2 class="text-base font-semibold text-ink">{{ $day->isoFormat('dddd, D. MMMM YYYY') }}</h2>
@@ -177,13 +178,10 @@
                         <span class="pill text-[10px]">{{ __('app.dev.reviews_loading') }}</span>
                     </div>
 
-                    <div class="mt-4 space-y-1.5">
-                        @foreach (range(1, 3) as $ignored)
-                            <div class="row h-11 animate-pulse px-3 py-2"></div>
-                        @endforeach
-                    </div>
+                    <x-skeleton class="mt-4" type="row" :count="4"/>
                 </x-card>
             @endif
         </div>
     </div>
+    <x-mascot pose="code" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

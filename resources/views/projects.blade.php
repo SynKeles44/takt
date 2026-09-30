@@ -1,14 +1,5 @@
 <x-app-layout :title="__('app.dev.projects')" :wide="true">
-    <x-card class="rise">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <h2 class="text-base font-semibold text-ink">{{ __('app.dev.projects') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.dev.projects_hint') }}</p>
-            </div>
-
-            <x-dev-tabs active="projects"/>
-        </div>
-    </x-card>
+    <x-dev-page :title="__('app.dev.projects')" :hint="__('app.dev.projects_hint')" active="projects"/>
 
     <div class="stack-grid mt-5 grid lg:grid-cols-[1.3fr_1fr]">
         <x-card class="rise">
@@ -80,9 +71,7 @@
                     </form>
                 </details>
             @empty
-                <p class="mt-4 rounded-[var(--radius-control)] border border-dashed border-line px-4 py-6 text-center text-sm text-faint">
-                    {{ __('app.dev.no_projects_short') }}
-                </p>
+                <x-empty class="mt-4" pose="search" :hint="__('app.dev.no_projects_short')"/>
             @endforelse
         </x-card>
 
@@ -179,4 +168,5 @@
             </div>
         </div>
     </div>
+    <x-mascot pose="build" class="mascot-at-tail size-14"/>
 </x-app-layout>
