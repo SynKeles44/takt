@@ -7,6 +7,7 @@
 
     <div class="mt-5 grid gap-5 lg:grid-cols-2">
         <x-card class="rise">
+
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-base font-semibold text-ink">{{ __('app.edit.title') }}</h2>
                 <x-type-badge :type="$entry->type" :running="$entry->isRunning()"/>
@@ -52,4 +53,5 @@
             </form>
         </x-card>
     </div>
+    <x-mascot pose="wait" class="mascot-at-tail size-14"/>
 </x-app-layout>

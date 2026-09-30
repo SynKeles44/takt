@@ -23,7 +23,8 @@ class BrandingTest extends TestCase
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Takt')
-            ->assertSee('taktBadge', false)
+            // the mark is the mascot now, rendered by the same component the app uses everywhere
+            ->assertSee('data-mascot', false)
             ->assertDontSee('Werkbank');
 
         $this->assertSame('Takt', config('app.name'));

@@ -2,6 +2,7 @@
 
 <x-app-layout :title="__('app.insights.title')">
     <x-card class="rise">
+
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
                 <h2 class="text-base font-semibold text-ink">{{ $title }}</h2>
@@ -147,4 +148,5 @@
             </div>
         </x-card>
     @endif
+    <x-mascot pose="chart" class="mascot-at-tail size-14"/>
 </x-app-layout>

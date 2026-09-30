@@ -2,6 +2,7 @@
 
 <x-app-layout :title="__('app.tickets.title')" :wide="true">
     <x-card class="rise">
+
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <h2 class="text-base font-semibold text-ink">{{ __('app.tickets.title') }}</h2>
@@ -94,7 +95,7 @@
 
                         <p class="px-1 pb-2 text-[10px] leading-snug text-faint">{{ $column->hint() }}</p>
 
-                        <div class="ticket-column-body">
+                        <div class="ticket-column-body" data-auto-animate>
                             @forelse ($cards as $ticket)
                                 <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused"/>
                             @empty
@@ -185,7 +186,7 @@
 
                 <p class="mt-2 text-[11px] leading-snug text-faint">{{ __('app.ticket.loose_hint') }}</p>
 
-                <ul class="mt-3 space-y-1.5">
+                <ul class="mt-3 space-y-1.5" data-auto-animate>
                     @foreach ($loose as $ticket)
                         <li class="row flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
                             <span class="metric shrink-0 text-xs text-dim">{{ $ticket['id'] }}</span>
@@ -228,4 +229,5 @@
     @endif
 
     <p class="mt-4 text-[11px] leading-snug text-faint">{{ __('app.tickets.estimate_hint') }}</p>
+    <x-mascot pose="ticket" class="mascot-at-tail size-14"/>
 </x-app-layout>

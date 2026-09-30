@@ -8,6 +8,7 @@
     @endphp
 
     <x-card class="rise">
+
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
                 <h2 class="text-base font-semibold text-ink">
@@ -172,4 +173,5 @@
             </x-card>
         @endforeach
     </div>
+    <x-mascot pose="clock" class="mascot-at-tail size-14"/>
 </x-app-layout>

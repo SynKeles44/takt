@@ -2,6 +2,7 @@
 
 <x-app-layout :title="__('app.trash.title')">
     <x-card class="rise">
+
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-base font-semibold text-ink">{{ __('app.trash.title') }}</h2>
@@ -106,4 +107,5 @@
             </div>
         </x-card>
     </div>
+    <x-mascot pose="clean" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

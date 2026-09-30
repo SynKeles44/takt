@@ -6,6 +6,7 @@
 
     <div class="grid gap-5 lg:grid-cols-2">
         <x-card class="rise">
+
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="flex flex-wrap items-center gap-2">
                 @unless ($todo->isDone())
@@ -239,4 +240,5 @@
             </div>
         </x-card>
     </div>
+    <x-mascot pose="read" class="mascot-at-tail size-14"/>
 </x-app-layout>

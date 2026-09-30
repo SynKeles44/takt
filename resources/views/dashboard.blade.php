@@ -1,4 +1,7 @@
 <x-app-layout :title="__('app.nav.dashboard')">
+    {{-- the one Takti that is pure greeting: the dashboard is where a day starts --}}
+    <x-mascot pose="wave" class="mascot-at-page-br size-12"/>
+
     <div data-board
          data-arrange-url="{{ route('dashboard.arrange') }}"
          data-widget-url="{{ route('dashboard.widget', ['widget' => '__widget__']) }}"
@@ -63,6 +66,8 @@
 
         @if ($widgets->isEmpty())
             <x-card class="rise text-center">
+                <x-mascot pose="empty" class="mx-auto mb-3 size-16"/>
+
                 <p class="text-sm text-faint">{{ __('app.widget.empty_dashboard') }}</p>
                 <button type="button" class="btn btn-primary mt-4" data-board-toggle>
                     <x-icon name="plus" class="size-4"/>

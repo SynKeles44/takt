@@ -5,6 +5,7 @@
     </a>
 
     <x-card class="rise lg:max-w-2xl">
+
         <x-todo-form :action="route('todos.update', $todo)"
                      method="PUT"
                      :todo="$todo"
@@ -12,4 +13,5 @@
                      :submit-label="__('app.settings.save')"
                      :cancel-url="route('todos.show', $todo)"/>
     </x-card>
+    <x-mascot pose="point" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

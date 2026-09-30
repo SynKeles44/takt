@@ -1,3 +1,3 @@
-<div {{ $attributes->class('surface') }}>
+<div {{ $attributes->class('surface relative') }}>
     {{ $slot }}
 </div>

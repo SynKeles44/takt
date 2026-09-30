@@ -7,6 +7,7 @@
     <div class="grid stack-grid lg:grid-cols-5">
         <div class="lg:col-span-3">
         <x-card class="rise">
+
             <div class="flex items-start gap-3">
                 <span class="grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text"><x-icon name="tag" class="size-5"/></span>
                 <div>
@@ -160,4 +161,5 @@
             </x-card>
         </div>
     </div>
+    <x-mascot pose="tag" class="mascot-at-tail size-14"/>
 </x-app-layout>

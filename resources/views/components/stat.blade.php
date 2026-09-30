@@ -37,9 +37,10 @@
 
     @if ($progress !== null)
         <div class="space-y-1.5">
+            {{-- scaleX, not width: a width transition relayouts on every frame, a transform does not --}}
             <div class="h-1.5 overflow-hidden rounded-[var(--radius-pill)] bg-hover">
-                <div class="h-full rounded-[var(--radius-pill)] bg-gradient-to-r {{ $palette['bar'] }} transition-[width] duration-700"
-                     style="width: {{ $progress }}%"></div>
+                <div class="h-full origin-left rounded-[var(--radius-pill)] bg-gradient-to-r {{ $palette['bar'] }} transition-transform duration-700 ease-out"
+                     style="transform: scaleX({{ number_format($progress / 100, 4, '.', '') }})"></div>
             </div>
             <p class="text-xs text-faint">{{ $hint }}</p>
         </div>

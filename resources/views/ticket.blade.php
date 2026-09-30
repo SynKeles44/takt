@@ -10,6 +10,7 @@
 
 <x-app-layout :title="$file['key']" :wide="true">
     <x-card class="rise">
+
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -348,4 +349,5 @@
             @endif
         </div>
     </div>
+    <x-mascot pose="think" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

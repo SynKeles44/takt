@@ -2,6 +2,7 @@
     <div class="stack-grid grid lg:grid-cols-2">
         <div class="stack">
             <x-card class="rise">
+
                 <div class="flex items-start gap-3">
                     <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-work/10 text-work-text"><x-icon name="clock" class="size-4"/></span>
                     <div>
@@ -521,4 +522,5 @@
             </x-card>
         </div>
     </div>
+    <x-mascot pose="gear" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

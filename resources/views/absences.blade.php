@@ -7,6 +7,7 @@
     <div class="stack-grid grid lg:grid-cols-5">
         <div class="stack lg:col-span-3">
             <x-card class="rise">
+
                 <h2 class="text-base font-semibold text-ink">{{ __('app.absence.new') }}</h2>
                 <p class="mt-0.5 text-xs text-muted">{{ __('app.absence.intro') }}</p>
 
@@ -152,7 +153,7 @@
                     <span class="pill">{{ $region }}</span>
                 </div>
 
-                <ul class="mt-4 space-y-1.5 text-xs">
+                <ul class="mt-4 space-y-1.5 text-xs" data-auto-animate>
                     @foreach ($holidays as $date => $name)
                         @php $day = \Illuminate\Support\Carbon::parse($date); @endphp
                         <li class="flex items-center justify-between gap-2 {{ $day->isPast() ? 'text-dim' : 'text-muted' }}">
@@ -166,4 +167,5 @@
             </x-card>
         </div>
     </div>
+    <x-mascot pose="vacation" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

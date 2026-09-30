@@ -6,6 +6,7 @@
 
     <div class="stack-grid grid lg:grid-cols-2">
         <x-card class="rise">
+
             <h2 class="text-base font-semibold text-ink">{{ __('app.templates.new') }}</h2>
             <p class="mt-0.5 text-xs text-muted">{{ __('app.templates.intro') }}</p>
 
@@ -75,4 +76,5 @@
             </div>
         </x-card>
     </div>
+    <x-mascot pose="box" class="mascot-at-tail size-14"/>
 </x-app-layout>

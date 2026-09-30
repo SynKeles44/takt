@@ -2,6 +2,7 @@
     <div class="stack-grid grid lg:grid-cols-5">
         <div class="stack lg:col-span-3" data-todo-list data-filter="{{ $filter }}">
             <x-card class="rise">
+
                 <form method="POST" action="{{ route('todos.store') }}" class="space-y-3" data-live>
                     @csrf
 
@@ -98,7 +99,7 @@
             @forelse ($groups as $stateValue => $todos)
                 @php $state = \App\Enums\DueState::from($stateValue); @endphp
 
-                <section class="space-y-2" data-group>
+                <section class="space-y-2" data-group data-auto-animate>
                     <div class="flex items-center gap-2 px-1">
                         <h2 class="heading {{ $state->headingClass() }}">{{ $state->label() }}</h2>
                         <span class="metric text-xs text-dim" data-group-count>{{ $todos->count() }}</span>
@@ -148,4 +149,5 @@
             </x-card>
         </div>
     </div>
+    <x-mascot pose="note" class="mascot-at-tail-right size-14"/>
 </x-app-layout>

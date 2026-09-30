@@ -2,6 +2,7 @@
 
 <x-app-layout :title="__('app.nav.calendar')">
     <x-card class="rise">
+
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-semibold text-ink">{{ $month->isoFormat('MMMM YYYY') }}</h2>
@@ -123,18 +124,26 @@
         <div class="absolute inset-0 bg-canvas/75 backdrop-blur-sm" data-absence-cancel></div>
 
         <div class="surface-plain dialog-panel pointer-events-auto relative w-full max-w-md p-0">
-            <form method="POST" action="{{ route('absences.store') }}" data-live data-absence-form>
-                @csrf
-
-                <div class="flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6">
-                    <span class="grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text">
-                        <x-icon name="calendar-days" class="size-4"/>
-                    </span>
-                    <div class="min-w-0">
-                        <h2 id="absence-dialog-title" class="text-sm font-semibold text-ink">{{ __('app.absence.new') }}</h2>
-                        <p class="metric mt-0.5 truncate text-xs text-muted" data-absence-range></p>
-                    </div>
+            {{-- one selection of days, two things you might want to do with it --}}
+            <div class="flex items-start gap-3 border-b border-line px-5 py-4 sm:px-6">
+                <span class="grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text">
+                    <x-icon name="calendar-days" class="size-4"/>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <h2 id="absence-dialog-title" class="text-sm font-semibold text-ink">{{ __('app.absence.new') }}</h2>
+                    <p class="metric mt-0.5 truncate text-xs text-muted" data-absence-range></p>
                 </div>
+            </div>
+
+            <div class="px-5 pt-4 sm:px-6">
+                <div class="segmented" data-dialog-mode>
+                    <button type="button" class="segment segment-active" data-mode="absence">{{ __('app.absence.new') }}</button>
+                    <button type="button" class="segment" data-mode="bulk">{{ __('app.bulk.title') }}</button>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('absences.store') }}" data-live data-absence-form data-mode-panel="absence">
+                @csrf
 
                 <div class="space-y-4 px-5 py-5 sm:px-6">
                     <input type="hidden" name="starts_on" data-absence-start>
@@ -172,6 +181,76 @@
                     </button>
                 </div>
             </form>
+
+            {{--
+                The same days, filled with working time instead. The scatter is what keeps a month
+                of entries from reading as typed in: each day gets its own offset, and both ends of
+                a stretch move independently.
+            --}}
+            <form method="POST" action="{{ route('entries.bulk') }}" data-live data-mode-panel="bulk" class="hidden">
+                @csrf
+
+                <div class="space-y-4 px-5 py-5 sm:px-6">
+                    <div data-bulk-days></div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="block">
+                            <span class="label">{{ __('app.form.start') }}</span>
+                            <input type="time" name="von" value="09:00" required class="control mt-1 w-full">
+                        </label>
+                        <label class="block">
+                            <span class="label">{{ __('app.form.end') }}</span>
+                            <input type="time" name="bis" value="17:00" required class="control mt-1 w-full">
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="block">
+                            <span class="label">{{ __('app.bulk.break_from') }}</span>
+                            <input type="time" name="pause_von" value="12:30" class="control mt-1 w-full">
+                        </label>
+                        <label class="block">
+                            <span class="label">{{ __('app.bulk.break_to') }}</span>
+                            <input type="time" name="pause_bis" value="13:00" class="control mt-1 w-full">
+                        </label>
+                    </div>
+
+                    <label class="block">
+                        <span class="flex items-baseline justify-between">
+                            <span class="label">{{ __('app.bulk.scatter') }}</span>
+                            <span class="metric text-xs text-accent-text" data-scatter-value>15 min</span>
+                        </span>
+                        <input type="range" name="streuung" min="0" max="60" step="5" value="15"
+                               class="mt-2 w-full accent-[var(--color-accent)]" data-scatter>
+                        <span class="mt-1 block text-[11px] leading-snug text-faint">{{ __('app.bulk.scatter_hint') }}</span>
+                    </label>
+
+                    <div class="space-y-2 border-t border-line pt-3">
+                        <label class="flex items-start gap-2.5">
+                            <input type="hidden" name="ueberschreiben" value="0">
+                            <input type="checkbox" name="ueberschreiben" value="1" class="mt-0.5">
+                            <span class="text-xs text-muted">{{ __('app.bulk.overwrite') }}</span>
+                        </label>
+
+                        <label class="flex items-start gap-2.5">
+                            <input type="hidden" name="feiertage" value="0">
+                            <input type="checkbox" name="feiertage" value="1" class="mt-0.5">
+                            <span class="text-xs text-muted">{{ __('app.bulk.include_exempt') }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 border-t border-line px-5 py-4 sm:px-6">
+                    <button type="button" class="btn btn-ghost flex-1" data-absence-cancel>
+                        {{ __('app.dialog.cancel') }}
+                    </button>
+                    <button type="submit" class="btn btn-primary flex-1">
+                        <x-icon name="check" class="size-4"/>
+                        {{ __('app.bulk.save') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+    <x-mascot pose="calendar" class="mascot-at-tail size-14"/>
 </x-app-layout>
