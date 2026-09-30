@@ -1,0 +1,46 @@
+# Takt, ready to run on a machine that has only Docker.
+#
+#   docker compose up -d --build     → http://localhost:8000
+#
+# The two mounts below are what make the development area work rather than sit
+# empty: Takt reads your repositories and talks to your Docker daemon, and a
+# container sees neither by default.
+
+services:
+  takt:
+    build:
+      context: .
+    image: takt:local
+    container_name: takt
+    restart: unless-stopped
+    ports:
+      - "${TAKT_PORT:-8000}:8000"
+    environment:
+      APP_URL: "http://localhost:${TAKT_PORT:-8000}"
+      TZ: "${TZ:-Europe/Berlin}"
+    volumes:
+      # the database, the generated key, the run logs — everything that must
+      # survive a rebuild
+      - takt-data:/data
+      - takt-storage:/app/storage
+
+      # Your projects, so the development area has repositories to read.
+      #
+      # PROJECTS_PATH is where they live on your machine. PROJECTS_MOUNT is where
+      # they appear inside the container, and it defaults to the same string —
+      # which is what you want on macOS and Linux, because Takt stores absolute
+      # paths and a project registered on the host then resolves unchanged.
+      #
+      # On Windows they MUST differ: C:\Projekte is not a valid path inside a
+      # Linux container. Set PROJECTS_MOUNT=/projects there and register your
+      # projects in Takt as /projects/<name>.
+      - "${PROJECTS_PATH:-../}:${PROJECTS_MOUNT:-${PROJECTS_PATH:-../}}"
+
+      # read-only: the Docker area lists and inspects containers. Drop this line
+      # and that one area goes quiet; nothing else changes. Docker Desktop on
+      # Windows exposes the daemon at this same path inside Linux containers.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  takt-data:
+  takt-storage:

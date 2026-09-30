@@ -56,6 +56,33 @@ export const dayRange = () => {
             ? (first?.dataset.dayLabel ?? from)
             : `${first?.dataset.dayLabel ?? from} – ${last?.dataset.dayLabel ?? to}`;
 
+        /*
+         * The bulk form needs every day, not just the two ends: the planner decides per day what
+         * to skip, and a from/to pair would make it guess which days were meant in between.
+         */
+        const list = node.querySelector('[data-bulk-days]');
+
+        if (list) {
+            const selected = days()
+                .filter((day) => day.dataset.selected !== undefined)
+                .map((day) => day.dataset.day);
+
+            list.innerHTML = '';
+
+            selected.forEach((day) => {
+                const field = document.createElement('input');
+
+                field.type = 'hidden';
+                field.name = 'tage[]';
+                field.value = day;
+                list.append(field);
+            });
+
+            const count = node.querySelector('[data-bulk-count]');
+
+            if (count) count.textContent = String(selected.length);
+        }
+
         node.classList.remove('hidden');
         node.classList.add('flex');
         node.querySelector('input[name="note"]')?.focus();

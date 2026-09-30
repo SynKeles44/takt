@@ -964,3 +964,22 @@ A section for the programmer's day, reachable as its own sidebar entry with four
 - [x] Linear owns title, state, priority, comments; Takt owns column, notes, estimate, ignore
       flags. Neither writes into the other's half.
 - [x] A local ticket can become a Linear issue and keeps everything local it had.
+
+## R60 Dependencies are visible and updatable per project
+
+- [x] Every project's declared packages with their installed versions, read from the manifests
+      and lock files — no network, no vendor directory, instant.
+- [x] What is behind is a separate, cached question, asked on demand.
+- [x] An update runs as its own logged run, and only for a package the project declares.
+
+## R61 The interface moves, and the movement means something
+
+- [x] Loading states carry the shape of what is coming; selections travel; slow buttons say so.
+- [x] Every animation respects `prefers-reduced-motion` and leaves no compositing layer behind.
+- [x] A motion token that cannot resolve is a test failure, not a silent absence.
+
+## R62 The app runs on a machine that has only Docker
+
+- [x] One command builds and starts it, with the database and the generated key in volumes.
+- [x] The development area keeps working in the container — repositories, make, package updates.
+- [x] What the container cannot do is named, not implied.

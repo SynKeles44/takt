@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AwayGapController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\BulkEntryController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CalendarEventController;
 use App\Http\Controllers\CommandController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\HomeOfficeRangeController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\MonthController;
 use App\Http\Controllers\NetworkAccessController;
+use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\SearchController;
@@ -119,6 +121,11 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/entwicklung/projekte/{project}/start', [ProjectController::class, 'start'])->name('projects.start');
     Route::post('/entwicklung/projekte/{project}/stop', [ProjectController::class, 'stop'])->name('projects.stop');
 
+    Route::get('/entwicklung/pakete', [PackageController::class, 'index'])->name('packages');
+    Route::post('/entwicklung/pakete/pruefen', [PackageController::class, 'checkAll'])->name('packages.check.all');
+    Route::post('/entwicklung/pakete/{project}/pruefen', [PackageController::class, 'check'])->name('packages.check');
+    Route::post('/entwicklung/pakete/{project}/aktualisieren', [PackageController::class, 'update'])->name('packages.update');
+
     Route::get('/entwicklung/releases', ReleaseController::class)->name('releases');
 
     Route::get('/entwicklung/bausteine', [SnippetController::class, 'index'])->name('snippets');
@@ -176,6 +183,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/timer/stop', [TimerController::class, 'stop'])->name('timer.stop');
 
     Route::post('/entries', [TimeEntryController::class, 'store'])->name('entries.store');
+    Route::post('/entries/mehrere', [BulkEntryController::class, 'store'])->name('entries.bulk');
     Route::get('/entries/{entry}/bearbeiten', [TimeEntryController::class, 'edit'])->name('entries.edit');
     Route::put('/entries/{entry}', [TimeEntryController::class, 'update'])->name('entries.update');
     Route::delete('/entries/{entry}', [TimeEntryController::class, 'destroy'])->name('entries.destroy');

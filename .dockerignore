@@ -1,0 +1,25 @@
+# the build installs its own; a host vendor/ is the wrong platform and megabytes of it
+vendor/
+node_modules/
+public/build/
+
+# state belongs to the volume, never to the image
+database/*.sqlite
+database/*.sqlite-*
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/runs/*
+storage/app/backups/*
+storage/app/network-access
+
+.env
+.git/
+.github/
+.idea/
+.DS_Store
+
+# the native macOS shell cannot run in a container and is not part of the image
+desktop/
+*.app/

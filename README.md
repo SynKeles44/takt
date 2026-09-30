@@ -204,6 +204,52 @@ eine SQLite-Datei im Projektordner, keine Cloud, keine externen Dienste.
 - PHP 8.3+ mit `pdo_sqlite` und `gd`
 - Composer 2, Node 20+
 - Für das App-Bundle: Xcode Command Line Tools (`xcode-select --install`)
+- Oder nichts davon: [mit Docker](#mit-docker) bringt das Image alles mit
+
+## Mit Docker
+
+Auf einem Rechner, auf dem nichts installiert ist außer Docker:
+
+```bash
+PROJECTS_PATH=/Users/du/Projekte docker compose up -d --build
+```
+
+Dann `http://localhost:8000` öffnen und unter *Registrieren* den ersten Benutzer anlegen.
+Schlüssel, Datenbank und Logs liegen in Volumes und überleben jeden Rebuild; der
+Anwendungsschlüssel wird beim ersten Start einmalig erzeugt und danach wiederverwendet — im
+Image steckt keiner, sonst hätte jede Kopie denselben.
+
+`PROJECTS_PATH` ist der Ordner mit Deinen Repositories. Er wird unter demselben Pfad in den
+Container gehängt, damit ein auf dem Host registriertes Projekt drinnen auch auffindbar ist.
+Ohne ihn läuft die App, aber der Entwicklungsbereich hat nichts zu lesen. Der Docker-Socket
+ist nur lesend eingehängt und versorgt ausschließlich den Docker-Bereich.
+
+### Windows
+
+Die App selbst läuft unverändert. Der Entwicklungsbereich braucht eine Zeile mehr, und zwar aus
+einem Grund, der sich nicht wegkonfigurieren lässt: Takt speichert **absolute Pfade**, und
+`C:\Projekte` gibt es in einem Linux-Container nicht. Deshalb wird der Ort im Container getrennt
+angegeben:
+
+```powershell
+$env:PROJECTS_PATH="C:\Projekte"; $env:PROJECTS_MOUNT="/projects"; docker compose up -d --build
+```
+
+Die Projekte trägst Du in Takt dann als `/projects/<name>` ein, nicht mit ihrem Windows-Pfad.
+Auf macOS und Linux bleibt `PROJECTS_MOUNT` weg — dort ist der Pfad innen und außen derselbe, und
+ein bereits eingetragenes Projekt funktioniert ohne Änderung weiter.
+
+Im Image stecken `git`, `make`, `composer` und `npm`, denn der Entwicklungsbereich benutzt
+sie: Commits lesen, Make-Ziele starten, Pakete aktualisieren — das läuft alles im Container.
+
+**Was der Container nicht kann, und nicht können wird:** die native macOS-Shell. Menüleisten-Uhr,
+globaler Hotkey, Kalenderzugriff und die Abwesenheitserkennung sind Cocoa und EventKit; in
+einem Linux-Container gibt es beides nicht. Wer das will, baut zusätzlich `make app` auf einem
+Mac. Alles andere — Zeiterfassung, Auswertung, Tickets, Entwicklung, Pakete — ist vollständig da.
+
+Der Server im Container ist FrankenPHP und nicht `artisan serve`: der Entwicklungsbereich stellt
+Anfragen, die zehn Sekunden und mehr dauern (GitHub-Reviews, zwei Paket-Registries), und ein
+Server mit einem einzigen Thread macht daraus eine eingefrorene Anwendung.
 
 ## As a macOS app
 

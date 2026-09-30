@@ -15,6 +15,20 @@
         default => 'border-line bg-raised text-muted',
     };
     $blocking = $exemption !== null && ($exemption['blocking'] ?? true);
+
+    /*
+     * Takti mirrors the timer rather than decorating it: the pose is the state, so a glance at
+     * the figure answers the same question as a glance at the clock. Idle is deliberately not
+     * "asleep" — nothing running at eleven in the morning is waiting, not finished.
+     */
+    $pose = match (true) {
+        $running !== null && $isWork => 'working',
+        $running !== null => 'break',
+        ($overtime ?? false) === true => 'over',
+        ($reached ?? false) === true => 'done',
+        (int) now()->format('H') >= 19 => 'sleep',
+        default => 'idle',
+    };
 @endphp
 
 <x-card class="relative overflow-hidden">
@@ -106,9 +120,38 @@
             @endforeach
         </div>
 
-        <div class="flex shrink-0 flex-col gap-2.5 sm:flex-row">
+        {{--
+            In the flow between the clock and the buttons, not on top of them. The absolute corner
+            looked free and was not: that is exactly where "Pause starten" sits. Hidden below the
+            wide breakpoint, where the two columns stack and there is no gap to stand in.
+        --}}
+        <x-mascot :pose="$pose" class="mascot-timer hidden shrink-0 self-end lg:block size-20"/>
+
+        <div class="flex shrink-0 flex-col gap-2.5 sm:flex-row sm:items-start">
             @if ($running === null)
-                <form method="POST" action="{{ route('timer.start') }}" data-live>
+                {{--
+                    Both buttons post the same optional start time, so "I started at nine and
+                    forgot to press it" is one field away instead of a booking after the fact.
+                    The field is hidden until it is asked for — the common case is "now".
+                --}}
+                <details class="backdate">
+                    <summary class="btn btn-ghost btn-lg w-full cursor-pointer">
+                        <x-icon name="clock" class="size-4"/>
+                        {{ __('app.timer.backdate') }}
+                    </summary>
+
+                    <div class="backdate-panel">
+                        <label class="block">
+                            <span class="label">{{ __('app.timer.backdate_from') }}</span>
+                            <input type="time" name="ab" form="timer-work" value="{{ now()->subMinutes(30)->format('H:i') }}"
+                                   class="control mt-1 w-full text-sm" data-backdate>
+                        </label>
+
+                        <p class="mt-1.5 text-[11px] leading-snug text-faint">{{ __('app.timer.backdate_hint') }}</p>
+                    </div>
+                </details>
+
+                <form method="POST" action="{{ route('timer.start') }}" data-live id="timer-work">
                     @csrf
                     <input type="hidden" name="type" value="{{ EntryType::Work->value }}">
                     <button type="submit" class="{{ $btnWork }} w-full">
@@ -120,6 +163,7 @@
                 <form method="POST" action="{{ route('timer.start') }}" data-live>
                     @csrf
                     <input type="hidden" name="type" value="{{ EntryType::Break->value }}">
+                    <input type="hidden" name="ab" data-backdate-mirror>
                     <button type="submit" class="{{ $btnGhost }} w-full">
                         <x-icon name="coffee" class="size-4"/>
                         {{ __('app.timer.start_break') }}

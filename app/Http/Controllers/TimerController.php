@@ -12,9 +12,12 @@ class TimerController extends Controller
 {
     public function start(StartTimerRequest $request, TimeTracker $tracker): RedirectResponse
     {
-        $entry = $tracker->start($request->type());
+        $at = $request->startedAt();
+        $entry = $tracker->start($request->type(), $at);
 
-        return back()->with('status', __('app.flash.started', ['type' => $entry->type->label()]));
+        return back()->with('status', $at === null
+            ? __('app.flash.started', ['type' => $entry->type->label()])
+            : __('app.flash.started_at', ['type' => $entry->type->label(), 'time' => $at->format('H:i')]));
     }
 
     public function stop(TimeTracker $tracker): RedirectResponse

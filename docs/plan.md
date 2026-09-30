@@ -613,3 +613,58 @@ rendered. The area read as a commit viewer because by row count it was one.
       and only open ones are fetched, so the rest would have been invented.
 - [x] Stuck list, estimate calibration (measured against my own estimate, three tickets minimum),
       focus in the menu bar next to the clock, tickets and their notes in the full-text search.
+
+## Phase 63 — Packages per project (R60)
+
+- [x] **A read that costs nothing.** composer.json / package.json and their lock files answer
+      "what is installed" from disk — 234 packages across four projects in 14 ms, no network and
+      no vendor directory needed. Whether something newer exists is a separate, cached step,
+      because `composer outdated` and `npm outdated` take tens of seconds.
+- [x] Both tools' real output shapes were read before anything was built against them, which
+      caught the one that matters: **`npm outdated` exits 1 exactly when it has something to
+      report**, so the existing `Parallel::run` would have discarded every interesting answer and
+      kept the empty ones. `Parallel::outputs()` is the variant that keeps output regardless.
+- [x] Status comes from what each tool actually states — composer's `latest-status`, npm's gap
+      between `current`, `wanted` and `latest` — rather than from comparing version strings here.
+- [x] **One button per outdated package**, running as a detached `CommandRun` with its own log
+      (`command_runs.kind` tells a package update from a make target). An update takes minutes;
+      a request may not wait for it.
+- [x] The security boundary is the manifest, not a pattern: an update is refused unless the
+      project itself declares that package. A regex would accept any well-formed name; this
+      accepts only names already on the page. Tested with shell metacharacters.
+
+## Phase 64 — A motion layer, and the bug it uncovered (R61)
+
+- [x] Two small framework-free libraries rather than one large one: `motion/mini` (the Web
+      Animations API with a spring) and `@formkit/auto-animate` (lists that add, remove and
+      reorder). +7.4 KB gzipped for both. `inView` and `stagger` are fifteen local lines rather
+      than a reason to pull the full `motion` bundle.
+- [x] Skeletons with the real geometry (row, card, line) and a shimmer on `transform`, not on
+      `background-position` — a moving background repaints every frame, which is the cost the
+      skeleton exists to hide.
+- [x] A sliding marker behind every segmented control, absolutely positioned so it takes no grid
+      column, and the active segment keeps its own background until JavaScript has built the
+      marker — so a selection is still visible without it.
+- [x] `data-busy` on the slow forms: the button says it is working and cannot be pressed twice.
+- [x] Progress bars moved from `transition-[width]` to `scaleX` — a width transition relayouts
+      on every frame.
+- [x] **`--ease: var(--ease)`** — found by probing the built stylesheet in a browser rather than
+      by reading it. A self-referential custom property is invalid at computed-value time, so
+      every `animation: … var(--ease) …` shorthand silently did nothing, including the whole
+      earlier motion pass. Introduced by a search-and-replace that rewrote the token's own
+      definition. Two tests now cover it; sensitivity checked by reintroducing it.
+
+## Phase 65 — The container (R62)
+
+- [x] `docker compose up -d --build` on a machine carrying nothing but Docker. Built and started
+      here: healthy, `/up` 200, every migration applied, registration reachable.
+- [x] FrankenPHP, not `artisan serve`: the development area makes requests that take tens of
+      seconds, and a single-threaded server turns one of them into a frozen application.
+- [x] The application key is generated into the volume on first start, never baked into the
+      image — a baked key would be the same key in every copy.
+- [x] `git`, `make`, `composer` and `npm` are in the image because the development area uses
+      them; the projects folder and a read-only docker socket are the two mounts that make that
+      area work rather than sit empty.
+- [x] Stated plainly in the README: the native macOS shell — menu-bar clock, global hotkey,
+      calendar, away detection — is Cocoa and EventKit and cannot run in a Linux container.
+      Everything else is there.
