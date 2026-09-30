@@ -4,6 +4,8 @@ import { commandRunner } from './command-runner';
 import { docker } from './docker';
 import { folderPicker } from './folder-picker';
 import { ticketBoard } from './ticket-board';
+import { motionLayer, segmentedIndicator } from './motion';
+import { prefetchLinks } from './prefetch';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -1133,6 +1135,113 @@ commandRunner({ toast });
 // the container list, its actions and its logs
 docker({ swapRegions, toast });
 ticketBoard({ swapRegions });
+motionLayer();
+segmentedIndicator();
+prefetchLinks();
+
+/*
+ * The back-dated start time belongs to both start buttons. The work form owns the field (via
+ * form=), and the break form carries a mirror of it — simpler than moving one input between two
+ * forms, and it keeps both buttons working with JavaScript switched off, just without the mirror.
+ */
+/* the dialog's two modes: one selection of days, two things to do with it */
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-dialog-mode] [data-mode]');
+
+    if (! button) return;
+
+    const wanted = button.dataset.mode;
+
+    button.closest('[data-dialog-mode]').querySelectorAll('[data-mode]').forEach((other) => {
+        other.classList.toggle('segment-active', other === button);
+    });
+
+    document.querySelectorAll('[data-mode-panel]').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.dataset.modePanel !== wanted);
+    });
+});
+
+/* the scatter slider says what it means in minutes, not as a number nobody can picture */
+document.addEventListener('input', (event) => {
+    if (! event.target.matches('[data-scatter]')) return;
+
+    const label = event.target.closest('label')?.querySelector('[data-scatter-value]');
+
+    if (label) label.textContent = `± ${event.target.value} min`;
+});
+
+document.addEventListener('input', (event) => {
+    if (! event.target.matches('[data-backdate]')) return;
+
+    document.querySelectorAll('[data-backdate-mirror]').forEach((field) => {
+        field.value = event.target.value;
+    });
+});
+
+/*
+ * A form marked data-busy says so while it works. Without it the slow actions on this app —
+ * asking two package registries, starting an update — look like a button that did nothing, and
+ * the second click starts the work twice.
+ */
+document.addEventListener('submit', (event) => {
+    const form = event.target.closest('form[data-busy]');
+
+    if (! form) return;
+
+    const button = form.querySelector('button[type="submit"], button:not([type])');
+
+    if (! button || button.disabled) return;
+
+    const label = button.querySelector('[data-busy-label]');
+
+    button.disabled = true;
+    button.dataset.busy = '';
+
+    if (label) {
+        label.dataset.idle = label.textContent;
+        label.textContent = label.dataset.busyLabel;
+    }
+
+    /*
+     * A live form swaps its region and this button goes away with it; a plain one navigates.
+     * Either way the state is released after a moment, so a refused request does not leave a
+     * dead button behind.
+     */
+    setTimeout(() => {
+        button.disabled = false;
+        delete button.dataset.busy;
+
+        if (label && label.dataset.idle) label.textContent = label.dataset.idle;
+    }, 30_000);
+});
+
+/* The package list, filtered down to what is actually behind. */
+document.querySelectorAll('[data-package-filter]').forEach((group) => {
+    group.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-filter]');
+
+        if (! button) return;
+
+        const outdated = button.dataset.filter === 'outdated';
+
+        document.querySelectorAll('[data-package-row]').forEach((row) => {
+            const behind = ['minor', 'major', 'abandoned', 'vulnerable'].includes(row.dataset.status);
+
+            row.hidden = outdated && ! behind;
+        });
+
+        document.querySelectorAll('[data-package-project]').forEach((card) => {
+            const rows = [...card.querySelectorAll('[data-package-row]')];
+
+            /*
+             * A project whose every row is hidden has nothing left to say. It is hidden, never
+             * opened: opening a card the user did not click is the page deciding what they wanted
+             * to look at, and the summary line already carries the answer most visits need.
+             */
+            card.hidden = rows.length > 0 && rows.every((row) => row.hidden);
+        });
+    });
+});
 
 /*
  * The review sections arrive after the page: fetching them from GitHub costs more than a

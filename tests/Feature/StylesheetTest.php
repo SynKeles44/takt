@@ -31,6 +31,42 @@ class StylesheetTest extends TestCase
         return (string) file_get_contents($files[0]);
     }
 
+    public function test_no_custom_property_refers_to_itself(): void
+    {
+        $css = $this->stylesheet();
+
+        /*
+         * `--ease: var(--ease)` is a cycle, which makes the property invalid at computed-value
+         * time — and everything downstream of it falls back to its initial value. It shipped
+         * once: a search-and-replace turning the literal easing curve into the token also
+         * rewrote the token's own definition, and every animation using the shorthand
+         * `animation: … var(--ease) …` silently stopped. Nothing rendered an error.
+         */
+        preg_match_all('/--([a-z0-9-]+)\s*:\s*var\(\s*--([a-z0-9-]+)\s*\)/i', $css, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $this->assertNotSame(
+                mb_strtolower($match[1]),
+                mb_strtolower($match[2]),
+                sprintf('--%s is defined as itself, which makes it and everything using it invalid.', $match[1]),
+            );
+        }
+    }
+
+    public function test_the_motion_tokens_resolve_to_real_values(): void
+    {
+        $css = $this->stylesheet();
+
+        // the tokens every animation in this file is written against
+        $this->assertMatchesRegularExpression('/--ease:\s*cubic-bezier\(/', $css);
+        $this->assertMatchesRegularExpression('/--spring:\s*cubic-bezier\(/', $css);
+        $this->assertMatchesRegularExpression('/--dur:\s*[.0-9]+m?s/', $css);
+
+        // and the two animations that carry the loading states
+        $this->assertStringContainsString('@keyframes wb-shimmer', $css);
+        $this->assertStringContainsString('@keyframes wb-spin', $css);
+    }
+
     public function test_cards_and_slots_do_not_clip_what_reaches_past_their_edge(): void
     {
         $css = $this->stylesheet();

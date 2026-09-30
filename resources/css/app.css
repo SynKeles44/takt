@@ -22,6 +22,7 @@
     --color-dim: #475569;
     --color-accent: #6366f1;
     --color-accent-2: #8b5cf6;
+    --color-accent-deep: #4747ae;
     --color-accent-text: #c7d2fe;
     --color-accent-ink: #ffffff;
     --color-work: #10b981;
@@ -67,6 +68,7 @@
     --color-dim: #475569;
     --color-accent: #6366f1;
     --color-accent-2: #8b5cf6;
+    --color-accent-deep: #4747ae;
     --color-accent-text: #c7d2fe;
     --color-accent-ink: #ffffff;
     --color-work: #10b981;
@@ -100,6 +102,7 @@
     --color-dim: #94a3b8;
     --color-accent: #4f46e5;
     --color-accent-2: #7c3aed;
+    --color-accent-deep: #3932a6;
     --color-accent-text: #4338ca;
     --color-accent-ink: #ffffff;
     --color-work: #059669;
@@ -138,6 +141,7 @@
     --color-dim: #52525b;
     --color-accent: #fafafa;
     --color-accent-2: #d4d4d8;
+    --color-accent-deep: #aeacb4;
     --color-accent-text: #e4e4e7;
     --color-accent-ink: #09090b;
     --color-work: #22c55e;
@@ -174,6 +178,7 @@
     --color-dim: #5d6b62;
     --color-accent: #8fe39a;
     --color-accent-2: #b7f0b6;
+    --color-accent-deep: #659c73;
     --color-accent-text: #a8ecad;
     --color-accent-ink: #0b1a0f;
     --color-work: #5bc47a;
@@ -700,6 +705,7 @@ body {
     }
 
     .segmented {
+        position: relative;
         display: grid;
         grid-auto-flow: column;
         grid-auto-columns: 1fr;
@@ -711,6 +717,8 @@ body {
     }
 
     .segment {
+        position: relative;
+        z-index: 1;
         border-radius: calc(var(--radius-control) - 0.2rem);
         padding: 0.3rem 0.35rem;
         font-size: 0.6875rem;
@@ -727,6 +735,31 @@ body {
         background-color: var(--color-surface);
         color: var(--color-ink);
         box-shadow: var(--shadow-card);
+    }
+
+    /*
+     * The sliding selection marker. It is absolutely positioned so it takes no grid column —
+     * a marker in the flow would add a track and push the segments out of shape.
+     */
+    .segment-marker {
+        position: absolute;
+        inset-block-start: 0.15rem;
+        inset-inline-start: 0;
+        z-index: 0;
+        border-radius: calc(var(--radius-control) - 0.2rem);
+        background-color: var(--color-surface);
+        box-shadow: var(--shadow-card);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /*
+     * Only once the marker exists does the active segment give up its own background — without
+     * JavaScript the selection still has to be visible, and that is the state shipped in HTML.
+     */
+    .segmented[data-indicator] .segment-active {
+        background-color: transparent;
+        box-shadow: none;
     }
 
     .folder-crumb {
@@ -1253,6 +1286,559 @@ body::before {
 }
 
 /*
+ * MARK: Takti
+ *
+ * The figure moves, and every movement is transform or opacity only — a mascot that costs a
+ * relayout on every frame is a mascot that gets deleted after the first scroll complaint.
+ *
+ * `transform-box: fill-box` is the one line that makes SVG parts rotate around themselves. Without
+ * it transform-origin resolves against the whole SVG's coordinate system, and a 'centre' rotation
+ * throws the part across the canvas — the reason hand-animated SVG so often looks broken.
+ */
+[data-mascot] {
+    overflow: visible;
+}
+
+[data-mascot] .mascot-hand,
+[data-mascot] .mascot-eyes,
+[data-mascot] .mascot-mouth,
+[data-mascot] .mascot-prop,
+[data-mascot] .mascot-arms {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    /* breathing: the baseline that keeps the figure from reading as a sticker */
+    [data-mascot] {
+        animation: takti-breathe 3.6s var(--ease) infinite;
+        transform-origin: 50% 90%;
+    }
+
+    /* blinking, off-beat per pose so two figures on one page do not blink in lockstep */
+    [data-mascot] .mascot-eyes {
+        animation: takti-blink 6.2s 1.1s infinite;
+    }
+
+    [data-mascot='working'] {
+        animation-duration: 2.6s;
+    }
+
+    /* the hand ticks like a second hand — only while work is actually running */
+    [data-mascot='working'] .mascot-hand {
+        animation: takti-tick 2s steps(2, end) infinite;
+        transform-origin: 50% 100%;
+    }
+
+    /* steam rises off the cup and fades */
+    [data-mascot='break'] .mascot-prop {
+        animation: takti-steam 2.4s ease-in-out infinite;
+    }
+
+    [data-mascot='break'] {
+        animation-duration: 4.4s;
+    }
+
+    /* worry: a small, fast tremor, never a cartoon shake */
+    [data-mascot='over'] {
+        animation: takti-worry 0.9s ease-in-out infinite;
+    }
+
+    [data-mascot='over'] .mascot-eyes {
+        animation: none;
+    }
+
+    /* the celebration: one hop, arms already up in the pose itself */
+    [data-mascot='cheer'] {
+        animation: takti-hop 1.4s var(--spring) infinite;
+    }
+
+    [data-mascot='cheer'] .mascot-prop {
+        animation: takti-sparkle 1.4s ease-out infinite;
+    }
+
+    /* sleeping breathes slower, and the z's drift up */
+    [data-mascot='sleep'] {
+        animation-duration: 5.6s;
+    }
+
+    [data-mascot='sleep'] .mascot-eyes {
+        animation: none;
+    }
+
+    [data-mascot='sleep'] .mascot-prop {
+        animation: takti-drift 3.2s ease-in-out infinite;
+    }
+
+    /* looking around: the glass sweeps, the body leans after it */
+    [data-mascot='search'] .mascot-prop {
+        animation: takti-sweep 3s ease-in-out infinite;
+    }
+
+    [data-mascot='error'] .mascot-prop {
+        animation: takti-alert 1.6s ease-in-out infinite;
+    }
+
+    /* --- the area poses ------------------------------------------------ */
+
+    /* typing: the arms tap, the angle brackets pulse like a caret */
+    [data-mascot='code'] .mascot-arms { animation: takti-type 0.45s ease-in-out infinite; }
+    [data-mascot='code'] .mascot-prop { animation: takti-caret 1.1s steps(2, end) infinite; }
+
+    /* the calendar page flips */
+    [data-mascot='calendar'] .mascot-prop { animation: takti-flip 4s ease-in-out infinite; }
+
+    /* holiday: the palm sways, the sun pulses, he barely moves */
+    [data-mascot='vacation'] { animation-duration: 5.2s; }
+    [data-mascot='vacation'] .mascot-prop { animation: takti-sway 3.4s ease-in-out infinite; }
+
+    /* writing: the pen scratches along the line */
+    [data-mascot='note'] .mascot-prop { animation: takti-scribble 1.6s ease-in-out infinite; }
+
+    /* carrying something heavy is a slower breath and a small bob */
+    [data-mascot='package'],
+    [data-mascot='box'],
+    [data-mascot='stack'] { animation: takti-heave 2.2s ease-in-out infinite; }
+
+    /* the whale swims, so he rides */
+    [data-mascot='whale'] { animation: takti-swim 3.6s ease-in-out infinite; }
+    [data-mascot='whale'] .mascot-prop-back { animation: takti-swim 3.6s ease-in-out infinite reverse; }
+
+    /* the ticket flutters */
+    [data-mascot='ticket'] .mascot-prop { animation: takti-flutter 2.8s ease-in-out infinite; }
+
+    /* bars grow, one after the other */
+    [data-mascot='chart'] .mascot-prop rect:nth-child(1) { animation: takti-grow 2.4s var(--ease) infinite; }
+    [data-mascot='chart'] .mascot-prop rect:nth-child(2) { animation: takti-grow 2.4s var(--ease) 0.12s infinite; }
+    [data-mascot='chart'] .mascot-prop rect:nth-child(3) { animation: takti-grow 2.4s var(--ease) 0.24s infinite; }
+
+    /* sweeping */
+    [data-mascot='clean'] .mascot-prop { animation: takti-sweep-broom 1.4s ease-in-out infinite; }
+
+    /* the second block drops into place */
+    [data-mascot='build'] .mascot-prop rect:nth-child(2) { animation: takti-drop 2.6s var(--spring) infinite; }
+
+    /* running: the body leans and bounces, the speed lines rush */
+    [data-mascot='run'] { animation: takti-dash 0.6s ease-in-out infinite; }
+    [data-mascot='run'] .mascot-prop { animation: takti-rush 0.6s linear infinite; }
+
+    /* the gear turns */
+    [data-mascot='gear'] .mascot-prop { animation: takti-turn 4s linear infinite; }
+
+    /* the tag swings on its hole */
+    [data-mascot='tag'] .mascot-prop { animation: takti-swing 2.6s ease-in-out infinite; }
+
+    /* lift-off, then back to the pad */
+    [data-mascot='rocket'] .mascot-prop { animation: takti-launch 2.8s ease-in infinite; }
+
+    /* the paper plane flies away and a new one appears */
+    [data-mascot='send'] .mascot-prop { animation: takti-fly 2.4s ease-in infinite; }
+
+    /* only the hands move on a clock */
+    [data-mascot='clock'] .mascot-needle { animation: takti-turn 6s steps(12, end) infinite; transform-origin: 56px 26px; }
+
+    /* waving is the one pose where an arm is the whole point */
+    [data-mascot='wave'] .mascot-arms { animation: takti-wave 1.1s ease-in-out infinite; transform-origin: 20% 60%; }
+    [data-mascot='wave'] .mascot-prop { animation: takti-alert 1.1s ease-in-out infinite; }
+
+    /* pointing insists a little */
+    [data-mascot='point'] .mascot-arms { animation: takti-nudge 1.8s ease-in-out infinite; }
+
+    /* thought bubbles rise in sequence */
+    [data-mascot='think'] .mascot-prop circle:nth-child(1) { animation: takti-bubble 2.4s ease-out infinite; }
+    [data-mascot='think'] .mascot-prop circle:nth-child(2) { animation: takti-bubble 2.4s ease-out 0.25s infinite; }
+    [data-mascot='think'] .mascot-prop circle:nth-child(3) { animation: takti-bubble 2.4s ease-out 0.5s infinite; }
+
+    /* reading is calm, but the page still turns */
+    [data-mascot='read'] { animation-duration: 4.8s; }
+    [data-mascot='read'] .mascot-prop path:nth-child(2) { animation: takti-page 3.4s ease-in-out infinite; transform-origin: 32px 46px; }
+
+    /* the four quiet poses still do something — a figure that only breathes reads as frozen */
+    [data-mascot='idle'] .mascot-eyes { animation: takti-blink 6.2s 1.1s infinite, takti-glance 7s ease-in-out infinite; }
+    [data-mascot='done'] { animation: takti-nod 4.2s ease-in-out infinite; }
+    [data-mascot='empty'] .mascot-arms { animation: takti-shrug 3.6s ease-in-out infinite; }
+
+    /* waiting: three dots, the universal "still going" */
+    [data-mascot='wait'] .mascot-prop circle:nth-child(1) { animation: takti-dot 1.4s ease-in-out infinite; }
+    [data-mascot='wait'] .mascot-prop circle:nth-child(2) { animation: takti-dot 1.4s ease-in-out 0.18s infinite; }
+    [data-mascot='wait'] .mascot-prop circle:nth-child(3) { animation: takti-dot 1.4s ease-in-out 0.36s infinite; }
+
+    /* the trophy gleams */
+    [data-mascot='trophy'] { animation: takti-hop 2.2s var(--spring) infinite; }
+    [data-mascot='trophy'] .mascot-prop { animation: takti-gleam 2.2s ease-in-out infinite; }
+}
+
+@keyframes takti-type {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(1.2px); }
+}
+
+@keyframes takti-caret {
+    0%, 49% { opacity: 0.35; }
+    50%, 100% { opacity: 1; }
+}
+
+@keyframes takti-flip {
+    0%, 70%, 100% { transform: rotateY(0deg); }
+    80% { transform: rotateY(-38deg); }
+}
+
+@keyframes takti-sway {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+}
+
+@keyframes takti-scribble {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    30% { transform: translate(-1.2px, 0.8px) rotate(-4deg); }
+    65% { transform: translate(1px, -0.6px) rotate(3deg); }
+}
+
+@keyframes takti-heave {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(1.8%); }
+}
+
+@keyframes takti-swim {
+    0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+    50% { transform: translateY(-3%) rotate(1.5deg); }
+}
+
+@keyframes takti-flutter {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg) translateY(-1px); }
+}
+
+@keyframes takti-grow {
+    0%, 100% { transform: scaleY(1); }
+    45% { transform: scaleY(0.55); }
+}
+
+@keyframes takti-sweep-broom {
+    0%, 100% { transform: rotate(-7deg) translateX(0); }
+    50% { transform: rotate(7deg) translateX(-1.5px); }
+}
+
+@keyframes takti-drop {
+    0%, 55%, 100% { transform: translateY(0); opacity: 1; }
+    25% { transform: translateY(-7px); opacity: 0.6; }
+}
+
+@keyframes takti-dash {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-4%) rotate(-1deg); }
+}
+
+@keyframes takti-rush {
+    0% { transform: translateX(2px); opacity: 0.2; }
+    50% { opacity: 0.7; }
+    100% { transform: translateX(-4px); opacity: 0; }
+}
+
+@keyframes takti-turn {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes takti-swing {
+    0%, 100% { transform: rotate(-6deg); }
+    50% { transform: rotate(6deg); }
+}
+
+@keyframes takti-launch {
+    0%, 55% { transform: translateY(0); opacity: 1; }
+    80% { transform: translateY(-16px); opacity: 0; }
+    81%, 100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes takti-fly {
+    0%, 20% { transform: translate(0, 0); opacity: 1; }
+    70% { transform: translate(14px, -10px); opacity: 0; }
+    71%, 100% { transform: translate(0, 0); opacity: 1; }
+}
+
+@keyframes takti-wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-9deg); }
+    75% { transform: rotate(9deg); }
+}
+
+@keyframes takti-nudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(1.5px); }
+}
+
+@keyframes takti-bubble {
+    0% { transform: scale(0.5); opacity: 0; }
+    30% { transform: scale(1); opacity: 0.85; }
+    100% { transform: scale(0.9) translateY(-2px); opacity: 0; }
+}
+
+@keyframes takti-dot {
+    0%, 100% { transform: translateY(0); opacity: 0.45; }
+    50% { transform: translateY(-2px); opacity: 1; }
+}
+
+@keyframes takti-glance {
+    0%, 60%, 100% { transform: translateX(0); }
+    70%, 85% { transform: translateX(1.6px); }
+}
+
+@keyframes takti-nod {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-1%) rotate(1.6deg); }
+}
+
+@keyframes takti-shrug {
+    0%, 70%, 100% { transform: translateY(0); }
+    80% { transform: translateY(-2px); }
+}
+
+@keyframes takti-page {
+    0%, 75%, 100% { transform: scaleX(1); }
+    88% { transform: scaleX(-0.6); }
+}
+
+@keyframes takti-gleam {
+    0%, 100% { filter: none; }
+    50% { filter: brightness(1.35); }
+}
+
+@keyframes takti-breathe {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-1.5%) scaleY(1.015); }
+}
+
+@keyframes takti-blink {
+    0%, 94%, 100% { transform: scaleY(1); }
+    96.5% { transform: scaleY(0.08); }
+}
+
+@keyframes takti-tick {
+    0%, 49% { transform: rotate(-7deg); }
+    50%, 100% { transform: rotate(7deg); }
+}
+
+@keyframes takti-steam {
+    0%, 100% { transform: translateY(0); opacity: 0.55; }
+    50% { transform: translateY(-2.5px); opacity: 1; }
+}
+
+@keyframes takti-worry {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25% { transform: translateX(-1px) rotate(-1.4deg); }
+    75% { transform: translateX(1px) rotate(1.4deg); }
+}
+
+@keyframes takti-hop {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-9%); }
+}
+
+@keyframes takti-sparkle {
+    0% { transform: scale(0.6); opacity: 0; }
+    35% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.9) translateY(-3px); opacity: 0; }
+}
+
+@keyframes takti-drift {
+    0% { transform: translate(0, 0); opacity: 0; }
+    30% { opacity: 0.85; }
+    100% { transform: translate(3px, -7px); opacity: 0; }
+}
+
+@keyframes takti-sweep {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-3px, 2px) rotate(-12deg); }
+}
+
+@keyframes takti-alert {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.12); opacity: 1; }
+}
+
+/* the mark holds still — a logo that breathes is a logo that distracts */
+.mascot-still,
+.mascot-still * {
+    animation: none !important;
+}
+
+/*
+ * MARK: where Takti stands
+ *
+ * Rewritten after the first attempt put him on top of things. Absolute corners inside a card
+ * looked fine in isolation and were wrong everywhere: the top-right of a card is where the tabs,
+ * the action buttons and the count pills already live, so the figure landed on all of them.
+ *
+ * So no position here overlaps content. Each one either takes its own place in the flow, or sits
+ * in space that is empty by construction — the gap between cards, the end of the page, the middle
+ * of an empty state. The only floating one is fixed to the viewport corner, where nothing of the
+ * page ever is, and there is at most one of those per page.
+ */
+[class*='mascot-at-'] {
+    pointer-events: none;
+    user-select: none;
+}
+
+/* beside a heading, in the flow — reserves its own width, so nothing can collide */
+.mascot-at-lead {
+    flex: none;
+    align-self: center;
+}
+
+/* its own row under a card's header, pushed to one side */
+.mascot-at-under-left,
+.mascot-at-under-right {
+    display: block;
+    margin-block-start: 0.85rem;
+}
+
+.mascot-at-under-right {
+    margin-inline-start: auto;
+}
+
+/* between two cards: the stack gap is empty by definition */
+.mascot-at-between {
+    display: block;
+    margin-block: -0.35rem auto;
+    margin-inline-start: 1.75rem;
+}
+
+.mascot-at-between-right {
+    display: block;
+    margin-block: -0.35rem auto;
+    margin-inline-end: 1.75rem;
+    margin-inline-start: auto;
+}
+
+/* the end of the page, after everything */
+.mascot-at-tail {
+    display: block;
+    margin-block-start: 1.25rem;
+    margin-inline: auto;
+    opacity: 0.85;
+}
+
+.mascot-at-tail-right {
+    display: block;
+    margin-block-start: 1.25rem;
+    margin-inline-start: auto;
+    opacity: 0.85;
+}
+
+/* centred in an empty state, where there is nothing else by definition */
+.mascot-at-empty {
+    display: block;
+    margin-inline: auto;
+}
+
+/*
+ * The one floating position. Fixed to the viewport corner — never over page content, because the
+ * page does not extend there — and hidden on narrow windows, where that corner IS content.
+ */
+.mascot-at-page-br {
+    position: fixed;
+    inset-block-end: 1.25rem;
+    inset-inline-end: 1.25rem;
+    z-index: 5;
+    opacity: 0.8;
+}
+
+@media (width < 80rem) {
+    .mascot-at-page-br { display: none; }
+}
+
+/*
+ * MARK: skeletons — the shape of what is coming
+ *
+ * A skeleton is only honest when it has the proportions of the real thing: a shimmer in the
+ * wrong shape is a second loading spinner wearing a costume. So these carry the app's own row
+ * and card geometry, and the sweep runs on transform — a moving background-position repaints
+ * the element every frame, which is the cost this is meant to hide.
+ */
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-control);
+    background-color: color-mix(in oklab, var(--color-ink) 7%, transparent);
+}
+
+.skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg,
+        transparent,
+        color-mix(in oklab, var(--color-ink) 9%, transparent),
+        transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .skeleton::after {
+        animation: wb-shimmer 1.4s var(--ease) infinite;
+    }
+}
+
+@keyframes wb-shimmer {
+    to { transform: translateX(100%); }
+}
+
+.skeleton-line {
+    block-size: 0.7rem;
+    border-radius: var(--radius-pill);
+}
+
+.skeleton-row {
+    block-size: 2.6rem;
+}
+
+.skeleton-card {
+    block-size: 7rem;
+    border-radius: var(--radius-card);
+}
+
+/*
+ * MARK: working — a control that is busy says so
+ *
+ * The spinner rides in the button's own box via a pseudo-element, so no markup changes and the
+ * button cannot change width mid-press.
+ */
+[data-busy] {
+    position: relative;
+    cursor: progress;
+    opacity: 0.75;
+}
+
+[data-busy]::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0.5rem;
+    inline-size: 0.7rem;
+    block-size: 0.7rem;
+    margin-block-start: -0.35rem;
+    border: 2px solid color-mix(in oklab, currentcolor 30%, transparent);
+    border-block-start-color: currentcolor;
+    border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    [data-busy]::after {
+        animation: wb-spin 0.7s linear infinite;
+    }
+}
+
+@keyframes wb-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* a row the filter took out leaves without a jump */
+[data-package-row][hidden],
+[data-package-project][hidden] {
+    display: none;
+}
+
+/*
  * MARK: the ticket board
  *
  * Five columns that describe a day. On a narrow window they scroll sideways rather than
@@ -1648,7 +2234,7 @@ body::before {
  * cubic-bezier in this file was one of these two before they had names.
  */
 :root {
-    --ease: var(--ease);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
     --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
     --dur-fast: 0.16s;
     --dur: 0.28s;
@@ -2549,4 +3135,87 @@ input[type='time'] {
 
 @keyframes vt-in-left {
     from { opacity: 0; transform: translateX(-3%); }
+}
+
+/*
+ * MARK: moving between pages
+ *
+ * The complaint was "hard, stuttering loading with no animation", and the measurement says the
+ * pages are not slow: 21–173 ms for almost all of them. What was missing is that a full page load
+ * has no transition at all — the old page is thrown away, the screen goes blank, the new one snaps
+ * in and the scroll position jumps. That reads as a stutter even when it is fast.
+ *
+ * `@view-transition` hands that problem to the engine: the browser keeps the old frame, fades to
+ * the new one, and does it on the compositor. No single-page rewrite, so every event handler,
+ * every module and every form keeps working exactly as before — which matters, because this app
+ * binds fifteen handlers directly at load and a SPA conversion would have to re-run all of them
+ * correctly on every navigation.
+ */
+@view-transition {
+    navigation: auto;
+}
+
+/*
+ * The shell stays put while the content changes. Without these names the whole document is one
+ * transition group and the sidebar cross-fades with itself on every click — which looks worse than
+ * no transition at all.
+ */
+.nav-aside {
+    view-transition-name: takt-nav;
+}
+
+main[data-region='main'] {
+    view-transition-name: takt-page;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    /*
+     * The shell does not animate; it is simply still. That is the half that sells the whole
+     * effect — a sidebar that stays put while the content moves reads as one application, and
+     * a sidebar that cross-fades with itself reads as a reload wearing a fade.
+     */
+    ::view-transition-old(takt-nav),
+    ::view-transition-new(takt-nav) {
+        animation: none;
+        mix-blend-mode: normal;
+    }
+
+    ::view-transition-group(takt-page) {
+        animation-duration: 0.34s;
+        animation-timing-function: var(--ease);
+    }
+
+    /*
+     * Deliberately not subtle. The first version moved four pixels over 180 ms and was reported
+     * as "no animation at all" — which is the correct reading: a transition nobody can see is
+     * indistinguishable from none, and then only the hard cut remains to notice.
+     */
+    ::view-transition-old(takt-page) {
+        animation: takt-page-out 0.2s var(--ease) both;
+    }
+
+    ::view-transition-new(takt-page) {
+        animation: takt-page-in 0.38s var(--spring) both;
+    }
+
+    /* the root cross-fade underneath everything, so nothing ever flashes white */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.3s;
+    }
+}
+
+@keyframes takt-page-out {
+    to {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.985);
+        filter: blur(1px);
+    }
+}
+
+@keyframes takt-page-in {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.985);
+    }
 }
