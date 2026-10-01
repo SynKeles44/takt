@@ -12,6 +12,20 @@
         ['label' => __('app.nav.settings'), 'url' => route('settings'), 'icon' => 'gear'],
         ['label' => __('app.trash.title'), 'url' => route('trash'), 'icon' => 'trash'],
         ['label' => __('app.month.backup_action'), 'url' => route('backup'), 'icon' => 'download'],
+
+        // everything the sidebar and the development area can reach — a palette that is missing
+        // half the application is a palette people stop opening
+        ['label' => __('app.nav.tickets'), 'url' => route('tickets'), 'icon' => 'tag'],
+        ['label' => __('app.absence.title'), 'url' => route('absences'), 'icon' => 'calendar'],
+        ['label' => __('app.templates.title'), 'url' => route('templates'), 'icon' => 'squares'],
+        ['label' => __('app.nav.dev'), 'url' => route('dev'), 'icon' => 'terminal'],
+        ['label' => __('app.dev.projects'), 'url' => route('projects'), 'icon' => 'folder'],
+        ['label' => __('app.packages.title'), 'url' => route('packages'), 'icon' => 'squares'],
+        ['label' => __('app.dev.commands'), 'url' => route('commands'), 'icon' => 'terminal'],
+        ['label' => __('app.docker.title'), 'url' => route('docker'), 'icon' => 'grid'],
+        ['label' => __('app.dev.releases'), 'url' => route('releases'), 'icon' => 'tag'],
+        ['label' => __('app.dev.snippets'), 'url' => route('snippets'), 'icon' => 'clipboard'],
+        ['label' => __('app.dev.testpost'), 'url' => route('dev.testpost'), 'icon' => 'send'],
     ];
 @endphp
 

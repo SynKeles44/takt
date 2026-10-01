@@ -21,6 +21,15 @@
  */
 const current = new WeakMap();
 
+/**
+ * Put the marker on a target.
+ *
+ * Animated calls add to the offset the marker already carries; unanimated ones throw that offset
+ * away and measure from zero. The difference matters: a ResizeObserver fires once as soon as it
+ * starts observing — before the row has been laid out — and an accumulating call at that moment
+ * adds a bogus delta that never comes back. That is how the highlight ended up parked below the
+ * last item instead of behind the current one.
+ */
 const move = (host, target, animated) => {
     const marker = host.querySelector('[data-marker]');
 
@@ -30,35 +39,39 @@ const move = (host, target, animated) => {
 
     if (box.width === 0) return;
 
+    marker.style.width = `${box.width}px`;
+    marker.style.height = `${box.height}px`;
+
+    if (! animated) {
+        // zero it, let the browser place it, then measure the real distance once
+        const previous = marker.style.transition;
+
+        marker.style.transition = 'none';
+        marker.style.transform = 'translate(0px, 0px)';
+        marker.offsetHeight;
+
+        const base = marker.getBoundingClientRect();
+        const next = { x: box.left - base.left, y: box.top - base.top };
+
+        current.set(marker, next);
+        marker.style.transform = `translate(${next.x}px, ${next.y}px)`;
+        marker.offsetHeight;
+        marker.style.transition = previous;
+
+        return;
+    }
+
     const at = current.get(marker) ?? { x: 0, y: 0 };
     const now = marker.getBoundingClientRect();
-
-    const next = {
-        x: at.x + (box.left - now.left),
-        y: at.y + (box.top - now.top),
-    };
+    const next = { x: at.x + (box.left - now.left), y: at.y + (box.top - now.top) };
 
     current.set(marker, next);
 
     const from = marker.style.transform || 'translate(0px, 0px)';
     const to = `translate(${next.x}px, ${next.y}px)`;
 
-    /*
-     * Size is set outright, never animated: width and height are layout properties, and letting
-     * them transition relayouts the row on every frame — the judder this was reported for.
-     */
-    marker.style.width = `${box.width}px`;
-    marker.style.height = `${box.height}px`;
     marker.style.transform = to;
 
-    if (! animated) return;
-
-    /*
-     * Driven through the Web Animations API rather than a CSS transition. The transition was
-     * declared and simply did not run — measured, the marker arrived within one frame with no
-     * animation object on it at all. animate() does not depend on the cascade delivering a rule,
-     * and it composites the same way.
-     */
     marker.animate(
         [{ transform: from }, { transform: to }],
         { duration: 340, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)', fill: 'none' },
@@ -108,10 +121,17 @@ const wire = (host, selector, markerClass) => {
     move(host, active, false);
 
     // the row reflows on resize and when the sidebar collapses
-    const observer = new ResizeObserver(() => {
-        const current = items.find((item) => item.getAttribute('aria-current') === 'page') ?? active;
+    let settled = false;
 
-        move(host, current, false);
+    const observer = new ResizeObserver(() => {
+        // the first callback arrives before the row has a layout; placing from it is placing from noise
+        if (! settled) {
+            settled = true;
+
+            return;
+        }
+
+        move(host, items.find((item) => item.getAttribute('aria-current') === 'page') ?? active, false);
     });
 
     observer.observe(host);

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Parallel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * The tickets are Linear's — assigned to me, with their state, team and priority. Git only
@@ -28,6 +29,9 @@ final class Tickets
     private const string PATTERN = '/\b([A-Z][A-Z0-9]{1,9})-(\d{1,6})\b/';
 
     public const int DEFAULT_DAYS = 90;
+
+    /** How long the git side of a ticket list stays good. Commits do not arrive every second. */
+    private const int GIT_CACHE_SECONDS = 180;
 
     public function __construct(
         private readonly Commits $commits,
@@ -217,6 +221,34 @@ final class Tickets
      */
     private function fromGit(User $user, Carbon $from, Carbon $to): array
     {
+        /*
+         * Cached, because this is the slow half: reading every commit, branch and pull request in
+         * the window took 255 ms of the ticket page's 255 ms, and none of it changes between two
+         * visits a minute apart.
+         *
+         * Stored as ISO strings and rebuilt on read. This app runs with serializable_classes off,
+         * so a cached Carbon comes back as __PHP_Incomplete_Class and takes the page down with it
+         * — the one rule the cache in this project has.
+         */
+        $key = 'tickets.git.'.$user->getKey().'.'.$from->toDateString();
+        $cached = Cache::get($key);
+
+        if (is_array($cached)) {
+            return $this->rehydrate($cached);
+        }
+
+        $tickets = $this->readGit($from, $to, $user);
+
+        Cache::put($key, $this->dehydrate($tickets), self::GIT_CACHE_SECONDS);
+
+        return $tickets;
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function readGit(Carbon $from, Carbon $to, User $user): array
+    {
         $projects = Project::query()->inOrder()->get();
         $tickets = [];
 
@@ -289,6 +321,43 @@ final class Tickets
             'estimated' => $estimated,
             'booked' => $booked,
         ];
+    }
+
+    /**
+     * Carbon out, ISO in. Every date in the structure is replaced by its string form so nothing
+     * object-shaped reaches the cache.
+     *
+     * @param  array<string, array<string, mixed>>  $tickets
+     * @return array<string, array<string, mixed>>
+     */
+    private function dehydrate(array $tickets): array
+    {
+        $walk = static function (mixed $value) use (&$walk): mixed {
+            if ($value instanceof Carbon) {
+                return ['__iso' => $value->toIso8601String()];
+            }
+
+            return is_array($value) ? array_map($walk, $value) : $value;
+        };
+
+        return array_map($walk, $tickets);
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $tickets
+     * @return array<string, array<string, mixed>>
+     */
+    private function rehydrate(array $tickets): array
+    {
+        $walk = static function (mixed $value) use (&$walk): mixed {
+            if (is_array($value) && array_key_exists('__iso', $value) && count($value) === 1) {
+                return Carbon::parse((string) $value['__iso']);
+            }
+
+            return is_array($value) ? array_map($walk, $value) : $value;
+        };
+
+        return array_map($walk, $tickets);
     }
 
     /** @return list<string> */

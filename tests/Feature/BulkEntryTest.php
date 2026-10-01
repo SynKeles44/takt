@@ -103,6 +103,44 @@ class BulkEntryTest extends TestCase
         $this->assertTrue($break['ended_at']->equalTo($second['started_at']));
     }
 
+    public function test_the_break_keeps_its_exact_times_while_the_work_varies(): void
+    {
+        $days = array_fill(0, 14, '2026-09-07');
+
+        $plan = app(BulkEntryPlanner::class)->plan($days, '09:00', '17:00', '12:30', '13:00', 30);
+
+        $breaks = collect($plan['entries'])->filter(fn (array $e): bool => $e['type'] === EntryType::Break);
+
+        /*
+         * Every break identical, on every day. Scattering it would shorten it on about half of
+         * them, and thirty minutes is a statutory minimum — a random four minutes short still
+         * raises the compliance warning.
+         */
+        $this->assertCount(1, $breaks->map(fn (array $e): string => $e['started_at']->format('H:i'))->unique());
+        $this->assertCount(1, $breaks->map(fn (array $e): string => $e['ended_at']->format('H:i'))->unique());
+        $this->assertSame('12:30', $breaks->first()['started_at']->format('H:i'));
+        $this->assertSame('13:00', $breaks->first()['ended_at']->format('H:i'));
+
+        // and the working time around it still varies, or the scatter would be pointless
+        $starts = collect($plan['entries'])
+            ->filter(fn (array $e): bool => $e['type'] === EntryType::Work)
+            ->map(fn (array $e): string => $e['started_at']->format('H:i'))
+            ->unique();
+
+        $this->assertGreaterThan(1, $starts->count());
+    }
+
+    public function test_a_scattered_day_never_books_less_break_than_was_asked_for(): void
+    {
+        $plan = app(BulkEntryPlanner::class)->plan(
+            array_fill(0, 20, '2026-09-07'), '09:00', '17:00', '12:30', '13:00', 45,
+        );
+
+        foreach (collect($plan['entries'])->filter(fn (array $e): bool => $e['type'] === EntryType::Break) as $break) {
+            $this->assertSame(30, (int) $break['started_at']->diffInMinutes($break['ended_at']));
+        }
+    }
+
     public function test_days_that_already_carry_a_booking_are_left_alone(): void
     {
         TimeEntry::query()->create([

@@ -31,10 +31,17 @@
     };
 @endphp
 
-<x-card class="relative overflow-hidden">
+<x-card class="relative">
     {{-- a radial gradient, not a blurred circle: the filter cost a composited layer per repaint --}}
-    <div aria-hidden="true" class="timer-glow"
-         style="--glow: {{ $running === null ? 'var(--color-accent)' : ($isWork ? 'var(--color-work)' : 'var(--color-rest)') }}"></div>
+    {{--
+        The glow is clipped by a wrapper of its own rather than by the card. The card has to let
+        the back-date panel out, and clipping at that level took the panel with it — so the one
+        thing that needs clipping gets its own box.
+    --}}
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+        <div class="timer-glow"
+             style="--glow: {{ $running === null ? 'var(--color-accent)' : ($isWork ? 'var(--color-work)' : 'var(--color-rest)') }}"></div>
+    </div>
 
 @if (($gap ?? null) !== null)
     <div class="relative mb-4 rounded-[var(--radius-control)] border border-rest/30 bg-rest/10 px-4 py-3">
@@ -121,11 +128,11 @@
         </div>
 
         {{--
-            In the flow between the clock and the buttons, not on top of them. The absolute corner
-            looked free and was not: that is exactly where "Pause starten" sits. Hidden below the
-            wide breakpoint, where the two columns stack and there is no gap to stand in.
+            No mascot in this widget. It was tried in the corner, where it covered "Pause starten",
+            and then between the columns, where the card is too short and it was cut in half. The
+            timer is the densest card on the board; the dashboard already carries a waving one in
+            the page corner, which is where there is actually room.
         --}}
-        <x-mascot :pose="$pose" class="mascot-timer hidden shrink-0 self-end lg:block size-20"/>
 
         <div class="flex shrink-0 flex-col gap-2.5 sm:flex-row sm:items-start">
             @if ($running === null)

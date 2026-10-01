@@ -17,6 +17,9 @@ use Illuminate\Support\Collection;
  * rather than worked, and it is also simply false — nobody starts at the same minute every day.
  * So each day gets its own offset within a range you set, and the two ends of a stretch move
  * independently, because arriving eight minutes late does not make you leave eight minutes late.
+ *
+ * The break is the exception and keeps its exact times. Scattering it would shorten it on roughly
+ * half the days, and the statutory minimum does not care that the shortening was random.
  */
 final class BulkEntryPlanner
 {
@@ -72,7 +75,13 @@ final class BulkEntryPlanner
             [$workStart, $workEnd] = $work;
 
             if ($breakFrom !== null && $breakTo !== null) {
-                $break = $this->stretch($date, $breakFrom, $breakTo, $scatterMinutes);
+                /*
+                 * The break is NOT scattered, and that is a legal point rather than a preference:
+                 * over six hours of work the statutory break is thirty minutes, so a scatter that
+                 * shortens it manufactures a compliance warning on days that were entered as
+                 * compliant. Both ends stay where they were typed; only the working time varies.
+                 */
+                $break = $this->stretch($date, $breakFrom, $breakTo, 0);
 
                 /*
                  * A break inside the working time splits it in two, which is what the rest of the

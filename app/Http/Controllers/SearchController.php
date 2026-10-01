@@ -14,6 +14,7 @@ use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use App\Services\MakeTargets;
+use App\Services\Packages;
 use App\Services\Releases;
 use App\Services\Reviews;
 use Illuminate\Http\JsonResponse;
@@ -96,9 +97,50 @@ class SearchController extends Controller
                 ->concat($this->pulls($request, $term))
                 ->concat($this->releases($term))
                 ->concat($this->tickets($like))
+                ->concat($this->packages($term))
                 ->values()
                 ->all(),
         ]);
+    }
+
+    /**
+     * Packages, across every project. Read from the manifests on disk, which is why this can run
+     * inside a search that has to answer while somebody is still typing: no network, no registry,
+     * just the files. Finding "which project still has guzzle 6" is the question this answers.
+     *
+     * @return Collection<int, array>
+     */
+    private function packages(string $term): Collection
+    {
+        if (mb_strlen($term) < 3) {
+            return collect();
+        }
+
+        $needle = mb_strtolower($term);
+        $found = [];
+
+        foreach (app(Packages::class)->overview() as $row) {
+            foreach ($row['managers'] as $manager => $packages) {
+                foreach ($packages as $package) {
+                    if (! str_contains(mb_strtolower($package['name']), $needle)) {
+                        continue;
+                    }
+
+                    $found[] = [
+                        'group' => __('app.packages.title'),
+                        'label' => $package['name'].' · '.$row['project']->name,
+                        'hint' => trim(($package['current'] ?? '').' '.$manager),
+                        'url' => route('packages'),
+                    ];
+
+                    if (count($found) >= 6) {
+                        return collect($found);
+                    }
+                }
+            }
+        }
+
+        return collect($found);
     }
 
     /**
