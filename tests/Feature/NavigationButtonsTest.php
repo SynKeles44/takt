@@ -12,9 +12,8 @@ use Tests\TestCase;
  * A "back to now" button that only appears when it has something to do moves every button next to
  * it. It stays in place and stops being a link instead.
  *
- * On the dated pages that state is now what the travelling marker sits on, so it is read off the
- * marked step rather than off a dimming class — the week chart still uses the class and is checked
- * for it directly.
+ * That state is what the travelling marker sits on now, so it is read off the marked step. The
+ * dimming class it used to be is gone with the last row that drew it.
  */
 class NavigationButtonsTest extends TestCase
 {
@@ -58,10 +57,14 @@ class NavigationButtonsTest extends TestCase
 
     public function test_the_week_chart_keeps_its_button_too(): void
     {
-        $this->get(route('dashboard'))->assertOk()->assertSee('is-current', escape: false);
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee(__('app.week.current'))
+            ->assertSee(self::HERE, escape: false);
 
         $this->get(route('dashboard', ['woche' => '2026-08-17']))
             ->assertOk()
-            ->assertDontSee('is-current', escape: false);
+            ->assertSee(__('app.week.current'))
+            ->assertDontSee(self::HERE, escape: false);
     }
 }

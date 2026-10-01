@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\TicketColumn;
+use App\Enums\Widget;
+use App\Models\DashboardWidget;
 use App\Models\Project;
+use App\Models\Ticket;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Process;
@@ -85,6 +89,48 @@ class TravellingMarkerTest extends TestCase
             ->assertSee('data-marker-row', escape: false)
             ->assertSee('data-marker-key="todo-filter"', escape: false)
             ->assertSee('class="tab-marker"', escape: false);
+    }
+
+    public function test_the_week_chart_carries_the_fifth_date_navigator(): void
+    {
+        DashboardWidget::query()->create(['widget' => Widget::WeekChart, 'position' => 0]);
+        auth()->user()->forceFill(['dashboard_arranged' => true])->save();
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-marker-key="week-chart"', escape: false)
+            ->assertSee('data-marker-at="now"', escape: false);
+    }
+
+    /**
+     * The column picker on a ticket carried the segment classes all along — what it never had is
+     * the row that draws the marker, so the classes rendered and nothing moved.
+     */
+    public function test_the_ticket_column_picker_is_a_row_and_not_just_segment_classes(): void
+    {
+        Ticket::query()->create([
+            'key' => 'TAKT-7', 'source' => 'local', 'title' => 'Lokal',
+            'column' => TicketColumn::Next, 'position' => 0,
+        ]);
+
+        $this->get(route('tickets.show', 'TAKT-7'))
+            ->assertOk()
+            ->assertSee('class="segmented mt-3" data-marker-key="ticket-column"', escape: false)
+            ->assertSee('segment-active', escape: false);
+    }
+
+    public function test_the_account_menu_marks_the_page_you_are_on(): void
+    {
+        $this->get(route('settings'))
+            ->assertOk()
+            ->assertSee('data-marker-key="account"', escape: false)
+            ->assertSee('class="tab-marker"', escape: false);
+
+        // on every other page nothing in that menu is current, and nothing is marked
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-marker-key="account"', escape: false)
+            ->assertDontSee('nav-menu-item-active', escape: false);
     }
 
     /**

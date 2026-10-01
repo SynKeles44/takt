@@ -80,7 +80,8 @@
             </p>
         @endif
 
-        <div class="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+        {{-- the segment classes were here all along; what was missing is the row that carries the marker --}}
+        <div class="segmented mt-3" data-marker-key="ticket-column">
             @foreach (TicketColumn::board() as $column)
                 <form method="POST" action="{{ route('tickets.place') }}">
                     @csrf

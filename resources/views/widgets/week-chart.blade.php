@@ -15,25 +15,14 @@
             </span>
         </div>
 
-        <div class="flex items-center gap-1.5">
-            <a href="{{ route('dashboard', ['woche' => $previousWeek]) }}" class="btn btn-icon"
-               aria-label="{{ __('app.week.previous') }}" title="{{ __('app.week.previous') }}">
-                <x-icon name="chevron-left" class="size-4"/>
-            </a>
-
-            @if ($isCurrentWeek)
-                <span class="btn btn-icon is-current px-2.5 text-xs">{{ __('app.week.current') }}</span>
-            @else
-                <a href="{{ route('dashboard') }}" class="btn btn-icon border-accent/30 bg-accent/10 px-2.5 text-xs text-accent-text">
-                    {{ __('app.week.current') }}
-                </a>
-            @endif
-
-            <a href="{{ route('dashboard', ['woche' => $nextWeek]) }}" class="btn btn-icon"
-               aria-label="{{ __('app.week.next') }}" title="{{ __('app.week.next') }}">
-                <x-icon name="chevron-right" class="size-4"/>
-            </a>
-        </div>
+        <x-date-nav marker-key="week-chart"
+                    :position="$isCurrentWeek ? 'now' : ($chartStart->isBefore(today()->startOfWeek()) ? 'past' : 'future')"
+                    :previous="route('dashboard', ['woche' => $previousWeek])"
+                    :current="route('dashboard')"
+                    :next="route('dashboard', ['woche' => $nextWeek])"
+                    :label="__('app.week.current')"
+                    :previous-label="__('app.week.previous')"
+                    :next-label="__('app.week.next')"/>
     </div>
 
     @php

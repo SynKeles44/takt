@@ -143,16 +143,20 @@ const wire = (host, selector, markerClass, key) => {
         move(host, active, false);
     }
 
-    // the row reflows on resize and when the sidebar collapses
-    let settled = false;
-
+    /*
+     * The row reflows on resize, when the sidebar collapses, and when a row that started inside a
+     * closed menu is opened for the first time.
+     *
+     * The test is the row's own width, not the callback's ordinal. Skipping the first callback was
+     * the earlier guard against placing before there is a layout — and it broke exactly the menu
+     * case: a row inside `display: none` gets no callback at all while it is hidden, so the one
+     * that arrives when the menu opens IS the first one, and it was the one being thrown away.
+     * Measured: the account menu's marker stayed 0 pixels wide and never appeared. Asking about the
+     * layout directly covers both, and an extra unanimated placement is free — it measures from
+     * zero every time rather than adding to what is already there.
+     */
     const observer = new ResizeObserver(() => {
-        // the first callback arrives before the row has a layout; placing from it is placing from noise
-        if (! settled) {
-            settled = true;
-
-            return;
-        }
+        if (host.getBoundingClientRect().width === 0) return;
 
         move(host, items.find((item) => item.getAttribute('aria-current') === 'page') ?? active, false);
     });

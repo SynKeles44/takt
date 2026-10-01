@@ -2491,16 +2491,6 @@ body::before {
     background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
 }
 
-/*
- * A "back to now" button stays in place when it has nothing to do: it is simply inactive,
- * because a button that appears and disappears moves everything next to it.
- */
-.is-current {
-    opacity: 0.45;
-    pointer-events: none;
-    cursor: default;
-}
-
 /* days marked with the mouse, before the absence window opens */
 [data-day][data-selected] {
     border-color: color-mix(in oklab, var(--color-accent) 65%, transparent) !important;
@@ -3230,6 +3220,51 @@ input[type='time'] {
     .nav-marker,
     .tab-marker,
     .subtab-marker {
+        transition: none;
+    }
+}
+
+/*
+ * The command palette's keyboard cursor, as one travelling block.
+ *
+ * Every other marker in this app sits behind a row of peers; this one sits behind a list that is
+ * rebuilt on every keystroke, so it lives in the scroll container and is only ever moved. The
+ * transition is on the transform alone — the box is set outright, because a list that resizes its
+ * highlight sixty times a second is the stutter the other markers were rewritten to avoid.
+ */
+.palette-marker {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 0;
+    border-radius: var(--radius-control);
+    background-color: var(--color-hover);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.22s var(--ease), opacity 0.15s ease;
+    will-change: transform;
+}
+
+/* the container has to be the offset parent, or the cursor lands wherever the page happens to be */
+[data-palette-marked] {
+    position: relative;
+}
+
+/*
+ * The row keeps its own highlight until the cursor exists — that is the state shipped in HTML, and
+ * with both of them on, the selection would be drawn twice.
+ */
+[data-palette-marked] [data-palette-item] [data-active] {
+    background-color: transparent;
+}
+
+[data-palette-marked] [data-palette-item] > * {
+    position: relative;
+    z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .palette-marker {
         transition: none;
     }
 }

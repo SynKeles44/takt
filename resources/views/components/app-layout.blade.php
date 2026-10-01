@@ -6,13 +6,19 @@
     $style = $user?->design_style ?? \App\Enums\DesignStyle::Soft;
 
     $sections = [
+        /*
+         * `match` is what keeps a section lit on its own sub-pages. Five of them were missing and
+         * the sidebar simply went dark there — the packages page, a ticket, an entry being edited,
+         * the absences and the checklist templates. Anything reachable under a section belongs in
+         * its list; `SidebarSectionTest` asks every page whether exactly one section claims it.
+         */
         ['route' => 'dashboard', 'label' => __('app.nav.dashboard'), 'icon' => 'clock'],
-        ['route' => 'history', 'label' => __('app.nav.history'), 'icon' => 'calendar'],
-        ['route' => 'calendar', 'label' => __('app.nav.calendar'), 'icon' => 'calendar-days'],
+        ['route' => 'history', 'label' => __('app.nav.history'), 'icon' => 'calendar', 'match' => ['history', 'entries.*']],
+        ['route' => 'calendar', 'label' => __('app.nav.calendar'), 'icon' => 'calendar-days', 'match' => ['calendar', 'absences', 'absences.*']],
         ['route' => 'insights', 'label' => __('app.nav.insights'), 'icon' => 'chart'],
-        ['route' => 'todos.index', 'label' => __('app.nav.todos'), 'icon' => 'list-check', 'match' => ['todos.*', 'tags.*', 'steps.*', 'attachments.*']],
-        ['route' => 'tickets', 'label' => __('app.nav.tickets'), 'icon' => 'tag'],
-        ['route' => 'dev', 'label' => __('app.nav.dev'), 'icon' => 'terminal', 'match' => ['dev', 'dev.*', 'projects', 'projects.*', 'snippets', 'snippets.*', 'releases', 'docker', 'docker.*', 'commands', 'commands.*']],
+        ['route' => 'todos.index', 'label' => __('app.nav.todos'), 'icon' => 'list-check', 'match' => ['todos.*', 'tags.*', 'steps.*', 'attachments.*', 'templates', 'templates.*']],
+        ['route' => 'tickets', 'label' => __('app.nav.tickets'), 'icon' => 'tag', 'match' => ['tickets', 'tickets.*']],
+        ['route' => 'dev', 'label' => __('app.nav.dev'), 'icon' => 'terminal', 'match' => ['dev', 'dev.*', 'projects', 'projects.*', 'snippets', 'snippets.*', 'releases', 'docker', 'docker.*', 'commands', 'commands.*', 'packages', 'packages.*']],
     ];
 @endphp
 
@@ -170,15 +176,24 @@
             {{ __('app.nav.account') }}
         </p>
 
-        <a href="{{ route('settings') }}" @class(['nav-menu-item', 'nav-menu-item-active' => request()->routeIs('settings')])>
-            <x-icon name="gear" class="size-4 shrink-0"/>
-            {{ __('app.nav.settings') }}
-        </a>
+        {{-- the two pages of this menu are peers, so the highlight travels between them like any row --}}
+        <div data-marker-row data-marker-key="account">
+            @foreach ([
+                ['settings', 'gear', __('app.nav.settings')],
+                ['trash', 'trash', __('app.trash.title')],
+            ] as [$route, $icon, $menuLabel])
+                @php $here = request()->routeIs($route); @endphp
 
-        <a href="{{ route('trash') }}" @class(['nav-menu-item', 'nav-menu-item-active' => request()->routeIs('trash')])>
-            <x-icon name="trash" class="size-4 shrink-0"/>
-            {{ __('app.trash.title') }}
-        </a>
+                <a href="{{ route($route) }}" @class(['nav-menu-item relative', 'nav-menu-item-active' => $here])>
+                    @if ($here)
+                        <span class="tab-marker" aria-hidden="true"></span>
+                    @endif
+
+                    <x-icon :name="$icon" class="relative size-4 shrink-0"/>
+                    <span class="relative">{{ $menuLabel }}</span>
+                </a>
+            @endforeach
+        </div>
 
         <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-line pt-1">
             @csrf

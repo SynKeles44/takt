@@ -204,6 +204,48 @@ if (palette) {
     const items = () => [...palette.querySelectorAll('[data-palette-item]')];
     const visible = () => items().filter((item) => ! item.classList.contains('hidden'));
 
+    /*
+     * The highlight behind the keyboard cursor, as one element that travels.
+     *
+     * It is positioned against the scroll container rather than animated per row, so it follows
+     * the list while it scrolls and does not have to be rebuilt when the results are replaced —
+     * which happens on every keystroke. Offsets, not bounding boxes: the container is the offset
+     * parent, so the numbers stay right no matter how far the list has scrolled.
+     */
+    const cursor = (() => {
+        if (! scroll) return null;
+
+        const element = document.createElement('span');
+
+        element.className = 'palette-marker';
+        element.setAttribute('aria-hidden', 'true');
+        scroll.prepend(element);
+        scroll.dataset.paletteMarked = '';
+
+        return element;
+    })();
+
+    const place = (target) => {
+        if (! cursor) return;
+
+        if (! target) {
+            cursor.style.opacity = '0';
+
+            return;
+        }
+
+        // size without transition, travel with one: animating the box would repaint the whole row
+        cursor.style.width = `${target.offsetWidth}px`;
+        cursor.style.height = `${target.offsetHeight}px`;
+        cursor.style.transform = `translate(${target.offsetLeft}px, ${target.offsetTop}px)`;
+
+        // the first placement must not slide in from the corner
+        if (cursor.style.opacity !== '1') {
+            cursor.getAnimations().forEach((animation) => animation.cancel());
+            cursor.style.opacity = '1';
+        }
+    };
+
     const mark = () => {
         const shown = visible();
         active = Math.max(0, Math.min(active, shown.length - 1));
@@ -213,6 +255,8 @@ if (palette) {
         const target = shown[active]?.querySelector('a, button');
         target?.setAttribute('data-active', '');
         target?.scrollIntoView({ block: 'nearest' });
+
+        place(target ?? null);
     };
 
     const render = (rows) => {
