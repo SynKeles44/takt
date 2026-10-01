@@ -1992,6 +1992,30 @@ body::before {
 }
 
 /*
+ * MARK: settings-columns — one flow, balanced across two
+ *
+ * Two fixed column stacks each ended where their own contents did, so the shorter one left a
+ * screen and a half of nothing beside the longer. Multi-column lets the browser balance them and
+ * a card simply goes where there is room. `break-inside: avoid` keeps a card whole; one taller
+ * than the column will still split, which is the one case this cannot promise.
+ */
+.settings-columns {
+    column-gap: var(--stack-gap);
+}
+
+@media (min-width: 1024px) {
+    .settings-columns {
+        column-count: 2;
+    }
+}
+
+.settings-columns > * {
+    display: block;
+    margin-block-end: var(--stack-gap);
+    break-inside: avoid;
+}
+
+/*
  * MARK: pending — Takti, while you wait
  *
  * Bottom centre rather than a centred overlay: the page you are leaving stays readable, and a

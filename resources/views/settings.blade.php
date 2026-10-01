@@ -1,6 +1,12 @@
 <x-app-layout :title="__('app.nav.settings')">
-    <div class="stack-grid grid lg:grid-cols-2">
-        <div class="stack">
+    {{--
+        One flow in two columns, not two columns of cards.
+
+        Two fixed stacks meant each column was as tall as its own contents: the left one ended at
+        the password card and the right one carried on for another screen and a half, with nothing
+        beside it. Multi-column balances the two, so a card lands wherever there is room for it.
+    --}}
+    <div class="settings-columns">
             <x-card class="rise">
 
                 <div class="flex items-start gap-3">
@@ -216,9 +222,6 @@
                     </button>
                 </form>
             </x-card>
-        </div>
-
-        <div class="stack">
             <x-card class="rise">
                 <div class="flex items-start gap-3">
                     <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text"><x-icon name="panel" class="size-4"/></span>
@@ -597,7 +600,6 @@
                     @endif
                 </form>
             </x-card>
-        </div>
     </div>
     <x-mascot pose="gear" class="mascot-at-tail-right size-20"/>
 </x-app-layout>
