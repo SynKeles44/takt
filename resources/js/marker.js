@@ -85,7 +85,7 @@ const move = (host, target, animated) => {
  * the active item and re-parented onto the row, because a marker that lives inside an item can
  * only ever be as wide as that item.
  */
-const wire = (host, selector, markerClass) => {
+const wire = (host, selector, markerClass, key) => {
     if (host.dataset.markerHost !== undefined) return;
 
     const items = [...host.querySelectorAll(selector)];
@@ -94,6 +94,7 @@ const wire = (host, selector, markerClass) => {
     if (! active) return;
 
     host.dataset.markerHost = '';
+    host.dataset.markerKey = key;
 
     const marker = active.querySelector(`.${markerClass}`);
 
@@ -118,7 +119,29 @@ const wire = (host, selector, markerClass) => {
         host.style.position = 'relative';
     }
 
-    move(host, active, false);
+    const from = handover(host);
+
+    if (from) {
+        /*
+         * Put the marker where it stood on the previous page, in that page's coordinates, and let
+         * it find its way to the current item. The jump to the old spot is instant and invisible;
+         * what is seen is the travel from there.
+         */
+        move(host, active, false);
+
+        const now = marker.getBoundingClientRect();
+        const at = current.get(marker) ?? { x: 0, y: 0 };
+
+        marker.animate(
+            [
+                { transform: `translate(${at.x + (from.left - now.left)}px, ${at.y + (from.top - now.top)}px)` },
+                { transform: `translate(${at.x}px, ${at.y}px)` },
+            ],
+            { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)', fill: 'none' },
+        );
+    } else {
+        move(host, active, false);
+    }
 
     // the row reflows on resize and when the sidebar collapses
     let settled = false;
@@ -143,6 +166,75 @@ const wire = (host, selector, markerClass) => {
 const rows = [];
 
 /*
+ * The handover across a page load.
+ *
+ * This is the part three attempts missed. Clicking a section starts the marker travelling and
+ * starts a navigation at the same time — and the navigation wins: these pages answer in 10 to 90
+ * milliseconds, so a 340 ms animation is thrown away with the old document long before it is
+ * visible. Every measurement said the marker moved; nobody could ever see it.
+ *
+ * So the position is handed to the next page instead. The click records where the marker is in
+ * viewport coordinates, the new document puts it back there, and only then lets it travel to the
+ * item that is now current. The movement spans the page load rather than being cut off by it.
+ */
+const HANDOVER = 'takt.marker.from';
+
+const remember = (host, item) => {
+    const marker = host.querySelector('[data-marker]');
+
+    if (! marker) return;
+
+    const box = marker.getBoundingClientRect();
+
+    try {
+        sessionStorage.setItem(HANDOVER, JSON.stringify({
+            key: host.dataset.markerKey,
+            top: box.top,
+            left: box.left,
+            width: box.width,
+            height: box.height,
+            at: Date.now(),
+        }));
+    } catch {
+        // private browsing, blocked storage: the marker simply appears in place
+    }
+};
+
+const handover = (host) => {
+    let saved = null;
+
+    try {
+        saved = JSON.parse(sessionStorage.getItem(HANDOVER) ?? 'null');
+    } catch {
+        return null;
+    }
+
+    // a stale entry — a reload, a back button, a tab opened an hour ago — must not animate
+    if (! saved || Date.now() - saved.at > 4000) {
+        try {
+            sessionStorage.removeItem(HANDOVER);
+        } catch { /* nothing to clean up */ }
+
+        return null;
+    }
+
+    /*
+     * Only the row the handover belongs to consumes it. Rows are wired in order, and the sidebar
+     * goes first — it used to clear the entry on its way past, so a click on a tab row handed its
+     * position to a row that then threw it away. The tab row found nothing and appeared in place.
+     */
+    if (saved.key !== host.dataset.markerKey) {
+        return null;
+    }
+
+    try {
+        sessionStorage.removeItem(HANDOVER);
+    } catch { /* nothing to clean up */ }
+
+    return saved;
+};
+
+/*
  * Delegated on the document rather than bound per row. A listener on the row itself did not fire
  * — and a marker whose movement depends on a binding that may not have taken is worse than no
  * marker. This is also the pattern the rest of this app uses, for the same reason: it survives a
@@ -157,15 +249,17 @@ document.addEventListener('click', (event) => {
         const item = target.closest(selector);
 
         if (item && host.contains(item)) {
+            // hand the position to the next document first, then move for the same-page case
+            remember(host, item);
             move(host, item, true);
         }
     });
 }, true);
 
 export function slidingMarkers() {
-    document.querySelectorAll('.nav-list').forEach((row) => wire(row, '.nav-item', 'nav-marker'));
+    document.querySelectorAll('.nav-list').forEach((row) => wire(row, '.nav-item', 'nav-marker', 'nav'));
 
-    document.querySelectorAll('[data-tab-row]').forEach((row) => wire(row, 'a', 'tab-marker'));
-    document.querySelectorAll('[data-subtab-row]').forEach((row) => wire(row, 'a', 'subtab-marker'));
-    document.querySelectorAll('[data-period-row]').forEach((row) => wire(row, 'a', 'tab-marker'));
+    document.querySelectorAll('[data-tab-row]').forEach((row) => wire(row, 'a', 'tab-marker', 'tabs'));
+    document.querySelectorAll('[data-subtab-row]').forEach((row) => wire(row, 'a', 'subtab-marker', 'subtabs'));
+    document.querySelectorAll('[data-period-row]').forEach((row) => wire(row, 'a', 'tab-marker', 'period'));
 }
