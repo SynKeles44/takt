@@ -74,6 +74,32 @@ final class Sidebar
         ];
     }
 
+    /**
+     * The seven in this user's order.
+     *
+     * A stored order is a list of routes, not a list of sections: a section added in a later
+     * version is not in it, and must not therefore disappear. Anything the list does not name
+     * keeps its shipped position relative to the rest, appended after what was ordered — the
+     * section is new to the user, so the end is where it is noticed.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function sectionsFor(?User $user): array
+    {
+        $order = $user?->sidebar_order ?? [];
+
+        if ($order === []) {
+            return self::sections();
+        }
+
+        $by = collect(self::sections())->keyBy('route');
+
+        return [
+            ...collect($order)->map(fn (string $route): ?array => $by[$route] ?? null)->filter()->values()->all(),
+            ...$by->reject(fn (array $section): bool => in_array($section['route'], $order, true))->values()->all(),
+        ];
+    }
+
     /** @return Collection<string, list<array<string, mixed>>> the extras, grouped under their section's label */
     public static function offered(): Collection
     {
@@ -102,7 +128,7 @@ final class Sidebar
         $here = $picked->first(static fn (array $extra): bool => self::isHere($extra));
         $rows = [];
 
-        foreach (self::sections() as $section) {
+        foreach (self::sectionsFor($user) as $section) {
             $rows[] = $section + [
                 'current' => $here === null && request()->routeIs($section['match'] ?? $section['route']),
                 'url' => route($section['route']),

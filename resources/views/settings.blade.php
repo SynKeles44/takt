@@ -228,28 +228,48 @@
                     </div>
                 </div>
 
-                {{--
-                    The seven sections are shown and not offered: they are the shape of the app,
-                    every page lives under exactly one of them, and a sidebar whose top level can
-                    be emptied is one you can lock yourself out of. What is offered is everything
-                    underneath — pages that today need a tab row to reach.
-                --}}
-                <div class="mt-4 flex flex-wrap gap-1.5 rounded-[var(--radius-control)] border border-line bg-raised/40 p-2">
-                    @foreach (\App\Support\Sidebar::sections() as $fixed)
-                        <span class="pill text-[10px] text-dim">
-                            <x-icon :name="$fixed['icon']" class="size-3"/>
-                            {{ $fixed['label'] }}
-                        </span>
-                    @endforeach
-                </div>
-
-                <p class="mt-1.5 text-[11px] text-faint">{{ __('app.settings.sidebar_fixed') }}</p>
-
                 <form method="POST" action="{{ route('settings.sidebar') }}" class="mt-4 space-y-4">
                     @csrf
                     @method('PUT')
 
                     @php $pinned = old('sidebar_extras', $user->sidebar_extras ?? []); @endphp
+
+                    {{--
+                        The seven sections are ordered here and not offered: they are the shape of
+                        the app, every page lives under exactly one of them, and a sidebar whose
+                        top level can be emptied is one you can lock yourself out of. What IS
+                        offered is everything underneath — the pages a tab row reaches today.
+
+                        Dragging and the two arrows do the same thing on purpose. A drag is faster
+                        with a mouse and impossible with a keyboard, and the arrows are the half
+                        that still works on a phone.
+                    --}}
+                    <div>
+                        <p class="label">{{ __('app.settings.sidebar_order') }}</p>
+
+                        <div class="mt-1.5 space-y-1" data-sidebar-order>
+                            @foreach (\App\Support\Sidebar::sectionsFor($user) as $fixed)
+                                <div class="row flex items-center gap-2.5 px-2.5 py-1.5" draggable="true" data-order-item>
+                                    <x-icon name="grip" class="size-3.5 shrink-0 cursor-grab text-faint"/>
+                                    <x-icon :name="$fixed['icon']" class="size-4 shrink-0 text-dim"/>
+                                    <span class="min-w-0 flex-1 truncate text-xs text-ink">{{ $fixed['label'] }}</span>
+
+                                    <input type="hidden" name="sidebar_order[]" value="{{ $fixed['route'] }}">
+
+                                    <button type="button" class="icon-action size-6" data-order-move="-1"
+                                            aria-label="{{ __('app.settings.sidebar_up') }}" title="{{ __('app.settings.sidebar_up') }}">
+                                        <x-icon name="chevron-up" class="size-3.5"/>
+                                    </button>
+                                    <button type="button" class="icon-action size-6" data-order-move="1"
+                                            aria-label="{{ __('app.settings.sidebar_down') }}" title="{{ __('app.settings.sidebar_down') }}">
+                                        <x-icon name="chevron-down" class="size-3.5"/>
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <p class="mt-1.5 text-[11px] text-faint">{{ __('app.settings.sidebar_fixed') }}</p>
+                    </div>
 
                     @foreach (\App\Support\Sidebar::offered() as $group => $extras)
                         <div>

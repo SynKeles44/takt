@@ -7,6 +7,7 @@ import { ticketBoard } from './ticket-board';
 import { motionLayer } from './motion';
 import { pendingMarker } from './pending';
 import { prefetchLinks } from './prefetch';
+import { sidebarOrder } from './sidebar-order';
 import { slidingMarkers } from './marker';
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -1195,6 +1196,7 @@ ticketBoard({ swapRegions, toast });
 motionLayer();
 prefetchLinks();
 pendingMarker();
+sidebarOrder();
 slidingMarkers();
 
 /*

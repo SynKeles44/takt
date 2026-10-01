@@ -109,12 +109,23 @@ class SettingsController extends Controller
      */
     public function updateSidebar(Request $request): RedirectResponse
     {
+        $routes = array_column(Sidebar::sections(), 'route');
+
         $data = $request->validate([
             'sidebar_extras' => ['nullable', 'array'],
             'sidebar_extras.*' => ['string', Rule::in(array_column(Sidebar::extras(), 'key'))],
+            'sidebar_order' => ['nullable', 'array'],
+            'sidebar_order.*' => ['string', Rule::in($routes)],
         ]);
 
-        $request->user()->update(['sidebar_extras' => array_values($data['sidebar_extras'] ?? [])]);
+        $order = array_values(array_unique($data['sidebar_order'] ?? []));
+
+        $request->user()->update([
+            'sidebar_extras' => array_values($data['sidebar_extras'] ?? []),
+            // an order that is just the shipped one is stored as "none", so a section added later
+            // lands in its designed place instead of at the end of a list that only looked custom
+            'sidebar_order' => $order === $routes ? null : $order,
+        ]);
 
         return back()->with('status', __('app.flash.sidebar_saved'));
     }

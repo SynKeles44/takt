@@ -95,6 +95,65 @@ class SidebarPinTest extends TestCase
         }
     }
 
+    /** The shipped state: the seven, in their order, and nothing underneath. */
+    public function test_a_fresh_user_carries_the_sections_and_no_pins(): void
+    {
+        $user = auth()->user();
+
+        $this->assertNull($user->sidebar_extras);
+        $this->assertNull($user->sidebar_order);
+
+        $navigation = $this->navigation();
+
+        $this->assertSame(count(Sidebar::sections()), substr_count($navigation, 'class="nav-item'));
+        $this->assertStringNotContainsString('nav-item-sub', $navigation);
+    }
+
+    public function test_the_sections_follow_a_stored_order(): void
+    {
+        auth()->user()->update(['sidebar_order' => ['tickets', 'dev', 'dashboard']]);
+
+        $labels = [];
+        preg_match_all('/nav-label relative hidden sm:inline">([^<]+)</', $this->navigation(), $labels);
+
+        // the three that were named, in that order, and the rest after them in their shipped order
+        $this->assertSame(
+            [__('app.nav.tickets'), __('app.nav.dev'), __('app.nav.dashboard')],
+            array_slice($labels[1], 0, 3),
+        );
+        $this->assertCount(count(Sidebar::sections()), $labels[1]);
+    }
+
+    /**
+     * A section added in a later version is in nobody's stored order, and must not therefore
+     * vanish from the sidebar of everyone who ever sorted it.
+     */
+    public function test_a_section_the_stored_order_does_not_name_still_appears(): void
+    {
+        auth()->user()->update(['sidebar_order' => ['dev']]);
+
+        $navigation = $this->navigation();
+
+        foreach (Sidebar::sections() as $section) {
+            $this->assertStringContainsString($section['label'], $navigation);
+        }
+    }
+
+    /** Storing the shipped order as a custom one would freeze today's sections into the account. */
+    public function test_the_shipped_order_is_stored_as_no_order_at_all(): void
+    {
+        $this->put(route('settings.sidebar'), ['sidebar_order' => array_column(Sidebar::sections(), 'route')])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull(auth()->user()->fresh()->sidebar_order);
+    }
+
+    public function test_a_route_outside_the_seven_cannot_be_ordered_in(): void
+    {
+        $this->put(route('settings.sidebar'), ['sidebar_order' => ['dashboard', 'settings']])
+            ->assertSessionHasErrors('sidebar_order.1');
+    }
+
     public function test_a_key_nobody_offers_is_refused(): void
     {
         $this->put(route('settings.sidebar'), ['sidebar_extras' => ['docker', 'erfunden']])
