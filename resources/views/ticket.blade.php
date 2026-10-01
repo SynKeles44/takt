@@ -106,6 +106,69 @@
 
     <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div class="space-y-5">
+            @if (($issue['description'] ?? null) !== null)
+                <x-card>
+                    <h2 class="heading">{{ __('app.ticket.description') }}</h2>
+
+                    {{--
+                        Linear's description is Markdown, and it is shown as the text it is rather
+                        than rendered. Rendering it means either a Markdown library in the request
+                        path or a hand-written subset, and a hand-written subset of Markdown that
+                        emits HTML is an XSS surface for text this app does not own. Pre-wrapped
+                        text is readable, keeps the author's line breaks, and cannot execute.
+                    --}}
+                    <p class="mt-3 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-muted">{{ $issue['description'] }}</p>
+                </x-card>
+            @endif
+
+            @if (($issue['children'] ?? []) !== [])
+                <x-card>
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="heading">{{ __('app.ticket.children') }}</h2>
+                        <span class="pill text-[10px]">{{ count($issue['children']) }}</span>
+                    </div>
+
+                    <div class="mt-3 space-y-1.5">
+                        @foreach ($issue['children'] as $child)
+                            <a href="{{ route('tickets.show', ['key' => $child['id']]) }}" class="row flex items-center gap-3 px-3 py-2">
+                                <span @class([
+                                        'size-2 shrink-0 rounded-full',
+                                        'bg-work' => $child['state_type'] === 'completed',
+                                        'bg-accent' => $child['state_type'] === 'started',
+                                        'bg-line-strong' => ! in_array($child['state_type'], ['completed', 'started'], true),
+                                     ])></span>
+                                <span class="metric shrink-0 text-[11px] text-dim">{{ $child['id'] }}</span>
+                                <span class="min-w-0 flex-1 truncate text-sm text-ink">{{ $child['title'] }}</span>
+                                <span class="shrink-0 text-[11px] text-faint">{{ $child['state'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </x-card>
+            @endif
+
+            @if (($issue['comments'] ?? []) !== [])
+                <x-card>
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="heading">{{ __('app.ticket.comments') }}</h2>
+                        <span class="pill text-[10px]">{{ count($issue['comments']) }}</span>
+                    </div>
+
+                    <ul class="mt-3 space-y-3">
+                        @foreach ($issue['comments'] as $comment)
+                            <li class="rounded-[var(--radius-control)] border border-line bg-raised/40 px-3 py-2.5">
+                                <p class="flex items-baseline gap-2 text-[11px]">
+                                    <span class="font-semibold text-ink">{{ $comment['author'] ?? __('app.ticket.unknown_author') }}</span>
+                                    @if ($comment['at'] !== '')
+                                        <span class="metric text-faint">{{ \Illuminate\Support\Carbon::parse($comment['at'])->isoFormat('D. MMM, HH:mm') }}</span>
+                                    @endif
+                                </p>
+                                <p class="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">{{ $comment['body'] }}</p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </x-card>
+            @endif
+
             <x-card>
                 <div class="flex flex-wrap items-baseline justify-between gap-3">
                     <h2 class="heading">{{ __('app.ticket.booked') }}</h2>
@@ -262,6 +325,69 @@
         </div>
 
         <div class="space-y-5">
+            @if ($issue !== null)
+                <x-card>
+                    <h2 class="heading">{{ __('app.ticket.properties') }}</h2>
+
+                    <dl class="mt-3 space-y-2 text-xs">
+                        @foreach ([
+                            [__('app.ticket.prop_project'), $issue['project'] ?? null],
+                            [__('app.ticket.prop_sprint'), ($issue['cycle']['name'] ?? null) ?: (($issue['cycle']['number'] ?? null) !== null ? __('app.sprint.number', ['number' => $issue['cycle']['number']]) : null)],
+                            [__('app.ticket.prop_points'), ($issue['estimate'] ?? null) !== null ? rtrim(rtrim(number_format((float) $issue['estimate'], 1, ',', ''), '0'), ',') : null],
+                            [__('app.ticket.prop_priority'), $issue['priority'] ?? null],
+                            [__('app.ticket.prop_due'), $issue['due_on'] ?? null],
+                            [__('app.ticket.prop_assignee'), $issue['assignee'] ?? null],
+                            [__('app.ticket.prop_creator'), $issue['creator'] ?? null],
+                            [__('app.ticket.prop_team'), $issue['team'] ?? null],
+                        ] as [$label, $value])
+                            @if ($value !== null && $value !== '')
+                                <div class="flex items-baseline justify-between gap-3">
+                                    <dt class="shrink-0 text-faint">{{ $label }}</dt>
+                                    <dd class="min-w-0 truncate text-end text-ink">{{ $value }}</dd>
+                                </div>
+                            @endif
+                        @endforeach
+                    </dl>
+
+                    @if (($issue['labels'] ?? []) !== [])
+                        <div class="mt-3 flex flex-wrap gap-1 border-t border-line pt-3">
+                            @foreach ($issue['labels'] as $label)
+                                <span class="pill text-[10px] text-dim">
+                                    <span class="size-1.5 rounded-full" style="background: {{ $label['color'] ?? 'var(--color-accent)' }}"></span>
+                                    {{ $label['name'] }}
+                                </span>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (($issue['parent'] ?? null) !== null)
+                        <a href="{{ route('tickets.show', ['key' => $issue['parent']['id']]) }}"
+                           class="row mt-3 flex items-center gap-2 px-3 py-2">
+                            <x-icon name="chevron-up" class="size-3.5 shrink-0 text-dim"/>
+                            <span class="metric shrink-0 text-[11px] text-dim">{{ $issue['parent']['id'] }}</span>
+                            <span class="min-w-0 flex-1 truncate text-xs text-ink">{{ $issue['parent']['title'] }}</span>
+                        </a>
+                    @endif
+
+                    {{--
+                        Copy, because the three things a ticket is reached by live in three other
+                        programs: the key goes in a commit message, the branch name in a terminal,
+                        the link in a chat. Linear puts these behind a menu for the same reason.
+                    --}}
+                    <div class="mt-3 flex flex-wrap gap-1 border-t border-line pt-3">
+                        @foreach (array_filter([
+                            [__('app.ticket.copy_key'), $file['key']],
+                            [__('app.ticket.copy_branch'), $issue['branch'] ?? null],
+                            [__('app.ticket.copy_link'), $issue['url'] ?? null],
+                            [__('app.ticket.copy_title'), $file['key'].' '.$file['title']],
+                        ], fn (array $row): bool => $row[1] !== null) as [$label, $value])
+                            <button type="button" class="pill hover:text-ink" data-copy="{{ $value }}"
+                                    data-copy-label="{{ __('app.dev.copied') }}">{{ $label }}</button>
+                        @endforeach
+                    </div>
+                </x-card>
+            @endif
+
             <x-card>
                 <h2 class="heading">{{ __('app.ticket.notes') }}</h2>
                 <p class="mt-0.5 text-[11px] text-faint">{{ __('app.ticket.notes_hint') }}</p>

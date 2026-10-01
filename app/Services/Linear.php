@@ -38,7 +38,7 @@ final class Linear
             return ['issues' => [], 'error' => null];
         }
 
-        $key = 'linear.'.$user->getKey();
+        $key = 'linear.v2.'.$user->getKey();
         $cached = Cache::get($key);
         $known = is_array($cached) && is_array($cached['issues'] ?? null) ? $cached['issues'] : [];
         $missing = array_values(array_diff($ids, array_keys($known)));
@@ -67,7 +67,7 @@ final class Linear
 
     public function forget(User $user): void
     {
-        Cache::forget('linear.'.$user->getKey());
+        Cache::forget('linear.v2.'.$user->getKey());
         Cache::forget('linear.mine.v2.'.$user->getKey());
     }
 
@@ -193,6 +193,37 @@ final class Linear
             'updated_at' => (string) ($node['updatedAt'] ?? ''),
             'started_at' => (string) ($node['startedAt'] ?? ''),
             'completed_at' => (string) ($node['completedAt'] ?? ''),
+
+            /*
+             * Only the single-issue read asks for these — the board does not need a description per
+             * card and would pay for a hundred of them. Absent they stay null, which is the same
+             * thing the view does with an issue that simply has none.
+             */
+            'description' => ($node['description'] ?? null) === '' ? null : ($node['description'] ?? null),
+            'created_at' => (string) ($node['createdAt'] ?? ''),
+            'due_on' => ($node['dueDate'] ?? null) === '' ? null : ($node['dueDate'] ?? null),
+            'creator' => $node['creator']['displayName'] ?? null,
+            'parent' => is_array($node['parent'] ?? null) ? [
+                'id' => (string) ($node['parent']['identifier'] ?? ''),
+                'title' => (string) ($node['parent']['title'] ?? ''),
+            ] : null,
+            'children' => array_values(array_filter(array_map(
+                static fn (mixed $child): ?array => is_array($child) && is_string($child['identifier'] ?? null) ? [
+                    'id' => $child['identifier'],
+                    'title' => (string) ($child['title'] ?? ''),
+                    'state' => (string) ($child['state']['name'] ?? ''),
+                    'state_type' => (string) ($child['state']['type'] ?? ''),
+                ] : null,
+                $node['children']['nodes'] ?? [],
+            ))),
+            'comments' => array_values(array_filter(array_map(
+                static fn (mixed $comment): ?array => is_array($comment) && is_string($comment['body'] ?? null) ? [
+                    'body' => $comment['body'],
+                    'author' => $comment['user']['displayName'] ?? null,
+                    'at' => (string) ($comment['createdAt'] ?? ''),
+                ] : null,
+                $node['comments']['nodes'] ?? [],
+            ))),
         ];
     }
 
@@ -274,12 +305,27 @@ final class Linear
                 nodes {
                   identifier
                   title
+                  description
                   url
+                  createdAt
                   updatedAt
+                  startedAt
+                  completedAt
+                  dueDate
+                  estimate
+                  branchName
+                  priority
+                  priorityLabel
                   state { name type }
                   team { key name }
                   assignee { displayName }
-                  priorityLabel
+                  creator { displayName }
+                  project { name }
+                  cycle { id number name startsAt endsAt }
+                  labels(first: 10) { nodes { name color } }
+                  parent { identifier title }
+                  children(first: 20) { nodes { identifier title state { name type } } }
+                  comments(first: 20) { nodes { body createdAt user { displayName } } }
                 }
               }
             }
