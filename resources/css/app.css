@@ -1737,18 +1737,6 @@ body::before {
  * The one floating position. Fixed to the viewport corner — never over page content, because the
  * page does not extend there — and hidden on narrow windows, where that corner IS content.
  */
-.mascot-at-page-br {
-    position: fixed;
-    inset-block-end: 1.25rem;
-    inset-inline-end: 1.25rem;
-    z-index: 5;
-    opacity: 0.8;
-}
-
-@media (width < 80rem) {
-    .mascot-at-page-br { display: none; }
-}
-
 /*
  * MARK: skeletons — the shape of what is coming
  *
@@ -3184,12 +3172,11 @@ input[type='time'] {
     border-radius: inherit;
     pointer-events: none;
     /*
-     * transform only. Animating width and height alongside it relayouts the row on every frame,
-     * which is exactly the stutter this was reported for — the marker moved, and the whole
-     * navigation recalculated under it sixty times a second. The size is set without transition
-     * and the travel is composited.
+     * No transition. The travel is one animation that carries position and size together, and a
+     * transition on the same property interpolates alongside it towards a different curve — two
+     * answers to where the marker is, which is what the earlier version kept having to switch off
+     * by hand before it could place anything.
      */
-    transition: transform 0.34s var(--spring);
     will-change: transform;
 }
 

@@ -1,7 +1,4 @@
 <x-app-layout :title="__('app.nav.dashboard')">
-    {{-- the one Takti that is pure greeting: the dashboard is where a day starts --}}
-    <x-mascot pose="wave" class="mascot-at-page-br size-12"/>
-
     <div data-board
          data-arrange-url="{{ route('dashboard.arrange') }}"
          data-widget-url="{{ route('dashboard.widget', ['widget' => '__widget__']) }}"
@@ -133,4 +130,12 @@
             </div>
         </aside>
     </div>
+
+    {{--
+        The greeting. It used to float in the bottom-right corner, fixed — and that version was
+        hidden below 1280 pixels, so on a window any narrower than a wide desktop the dashboard
+        was the one page with no Takti at all. In the flow it is there at every width and overlaps
+        nothing.
+    --}}
+    <x-mascot pose="wave" class="mascot-at-tail size-14"/>
 </x-app-layout>

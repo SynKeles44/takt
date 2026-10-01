@@ -91,6 +91,36 @@ class EveryPageTest extends TestCase
         }
     }
 
+    /**
+     * Takti is on every page, and on every window.
+     *
+     * The dashboard's one was fixed to the bottom-right corner and hidden below 1280 pixels, so on
+     * any window narrower than a wide desktop it was the single page without a mascot — which is
+     * how it was reported. A rule that removes a mascot at some width is the failure, so no page
+     * may rely on one.
+     */
+    public function test_every_page_carries_a_mascot(): void
+    {
+        $this->login();
+        $this->seedContent();
+
+        $printable = ['insights.report', 'month.timesheet'];
+
+        foreach ($this->pages()->except($printable) as $name => $url) {
+            $this->assertStringContainsString(
+                'class="mascot-shadow"',
+                (string) $this->get($url)->getContent(),
+                "{$name} has no Takti",
+            );
+        }
+
+        $this->assertStringNotContainsString(
+            'mascot-at-page-br',
+            (string) file_get_contents(resource_path('css/app.css')),
+            'the width-gated mascot placement is back',
+        );
+    }
+
     /** @return Collection<string, string> route name => url */
     private function pages(): Collection
     {

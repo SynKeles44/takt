@@ -4,7 +4,7 @@ import { commandRunner } from './command-runner';
 import { docker } from './docker';
 import { folderPicker } from './folder-picker';
 import { ticketBoard } from './ticket-board';
-import { motionLayer, segmentedIndicator } from './motion';
+import { motionLayer } from './motion';
 import { prefetchLinks } from './prefetch';
 import { slidingMarkers } from './marker';
 
@@ -668,7 +668,6 @@ const swapRegions = (html, only = null) => {
              * position exactly as a page load does.
              */
             slidingMarkers();
-            segmentedIndicator();
         });
 
         // a swapped-in region brings new collapsible blocks with it
@@ -1193,7 +1192,6 @@ commandRunner({ toast });
 docker({ swapRegions, toast });
 ticketBoard({ swapRegions });
 motionLayer();
-segmentedIndicator();
 prefetchLinks();
 slidingMarkers();
 
@@ -1279,6 +1277,9 @@ document.querySelectorAll('[data-package-filter]').forEach((group) => {
         const button = event.target.closest('[data-filter]');
 
         if (! button) return;
+
+        // the marker follows this class, so the filter says which of its buttons is current
+        group.querySelectorAll('.segment').forEach((other) => other.classList.toggle('segment-active', other === button));
 
         const outdated = button.dataset.filter === 'outdated';
 
