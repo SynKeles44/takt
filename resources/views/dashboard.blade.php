@@ -63,7 +63,7 @@
 
         @if ($widgets->isEmpty())
             <x-card class="rise text-center">
-                <x-mascot pose="empty" class="mx-auto mb-3 size-16"/>
+                <x-mascot pose="empty" class="mx-auto mb-3 size-20"/>
 
                 <p class="text-sm text-faint">{{ __('app.widget.empty_dashboard') }}</p>
                 <button type="button" class="btn btn-primary mt-4" data-board-toggle>
@@ -137,5 +137,5 @@
         was the one page with no Takti at all. In the flow it is there at every width and overlaps
         nothing.
     --}}
-    <x-mascot pose="wave" class="mascot-at-tail size-14"/>
+    <x-mascot pose="wave" class="mascot-at-tail size-20"/>
 </x-app-layout>

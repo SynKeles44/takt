@@ -112,5 +112,5 @@
             </div>
         </x-card>
     </div>
-    <x-mascot pose="send" class="mascot-at-tail size-14"/>
+    <x-mascot pose="send" class="mascot-at-tail size-20"/>
 </x-app-layout>

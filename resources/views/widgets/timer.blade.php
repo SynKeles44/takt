@@ -137,7 +137,7 @@
             it. `self-start` lifts it out of the row's bottom alignment, which is what puts it at
             the top; the z-index is what puts it in front of the glow behind the card.
         --}}
-        <x-mascot :pose="$pose" class="relative z-10 size-24 shrink-0 self-center sm:self-center"/>
+        <x-mascot :pose="$pose" class="relative z-10 size-32 shrink-0 self-center sm:self-center"/>
 
         <div class="relative z-10 flex shrink-0 flex-col gap-2.5 sm:flex-row sm:items-start">
             @if ($running === null)

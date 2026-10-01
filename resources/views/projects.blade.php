@@ -168,5 +168,5 @@
             </div>
         </div>
     </div>
-    <x-mascot pose="build" class="mascot-at-tail size-14"/>
+    <x-mascot pose="build" class="mascot-at-tail size-20"/>
 </x-app-layout>

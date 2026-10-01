@@ -468,5 +468,5 @@
             @endif
         </div>
     </div>
-    <x-mascot pose="think" class="mascot-at-tail-right size-14"/>
+    <x-mascot pose="think" class="mascot-at-tail-right size-20"/>
 </x-app-layout>

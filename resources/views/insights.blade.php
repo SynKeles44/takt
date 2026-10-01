@@ -138,5 +138,5 @@
             </div>
         </x-card>
     @endif
-    <x-mascot pose="chart" class="mascot-at-tail size-14"/>
+    <x-mascot pose="chart" class="mascot-at-tail size-20"/>
 </x-app-layout>

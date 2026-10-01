@@ -264,5 +264,5 @@
     @endforelse
 
     <p class="mt-4 text-[11px] leading-snug text-faint">{{ __('app.packages.hint') }}</p>
-    <x-mascot pose="package" class="mascot-at-tail-right size-14"/>
+    <x-mascot pose="package" class="mascot-at-tail-right size-20"/>
 </x-app-layout>

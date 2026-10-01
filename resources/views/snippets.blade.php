@@ -67,5 +67,5 @@
             </form>
         </x-card>
     </div>
-    <x-mascot pose="stack" class="mascot-at-tail-right size-14"/>
+    <x-mascot pose="stack" class="mascot-at-tail-right size-20"/>
 </x-app-layout>

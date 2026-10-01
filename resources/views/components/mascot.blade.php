@@ -1,6 +1,6 @@
 @props([
     'pose' => 'idle',
-    'class' => 'size-16',
+    'class' => 'size-20',
     'label' => null,
 ])
 

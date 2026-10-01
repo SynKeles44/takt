@@ -13,7 +13,7 @@
     <div class="w-full max-w-sm">
         <div class="flex flex-col items-center gap-3 text-center">
             {{-- the one place the figure greets rather than reports --}}
-            <x-mascot pose="idle" class="size-16"/>
+            <x-mascot pose="idle" class="size-20"/>
             <div>
                 <p class="text-2xl font-bold tracking-tight brand-gradient">{{ config('app.name') }}</p>
                 <p class="text-xs text-faint">{{ __('app.tagline') }}</p>

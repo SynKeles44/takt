@@ -44,5 +44,5 @@
             </div>
         </div>
     </div>
-    <x-mascot pose="whale" class="mascot-at-tail size-14"/>
+    <x-mascot pose="whale" class="mascot-at-tail size-20"/>
 </x-app-layout>

@@ -202,5 +202,5 @@
     @endif
 
     <p class="mt-4 text-[11px] leading-snug text-faint">{{ __('app.tickets.estimate_hint') }}</p>
-    <x-mascot pose="ticket" class="mascot-at-tail size-14"/>
+    <x-mascot pose="ticket" class="mascot-at-tail size-20"/>
 </x-app-layout>

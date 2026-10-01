@@ -53,5 +53,5 @@
             </form>
         </x-card>
     </div>
-    <x-mascot pose="wait" class="mascot-at-tail size-14"/>
+    <x-mascot pose="wait" class="mascot-at-tail size-20"/>
 </x-app-layout>

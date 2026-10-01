@@ -76,5 +76,5 @@
             </div>
         </x-card>
     </div>
-    <x-mascot pose="box" class="mascot-at-tail size-14"/>
+    <x-mascot pose="box" class="mascot-at-tail size-20"/>
 </x-app-layout>

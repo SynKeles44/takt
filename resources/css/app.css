@@ -1773,16 +1773,14 @@ body::before {
 /* the end of the page, after everything */
 .mascot-at-tail {
     display: block;
-    margin-block-start: 1.25rem;
+    margin-block-start: 1.5rem;
     margin-inline: auto;
-    opacity: 0.85;
 }
 
 .mascot-at-tail-right {
     display: block;
-    margin-block-start: 1.25rem;
+    margin-block-start: 1.5rem;
     margin-inline-start: auto;
-    opacity: 0.85;
 }
 
 /* centred in an empty state, where there is nothing else by definition */

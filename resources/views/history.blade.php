@@ -167,5 +167,5 @@
             </x-card>
         @endforeach
     </div>
-    <x-mascot pose="clock" class="mascot-at-tail size-14"/>
+    <x-mascot pose="clock" class="mascot-at-tail size-20"/>
 </x-app-layout>

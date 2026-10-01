@@ -15,7 +15,7 @@
     'px-4 py-6' => $compact,
     'px-4 py-10' => ! $compact,
 ]) }}>
-    <x-mascot :pose="$pose" :class="$compact ? 'size-14' : 'size-20'"/>
+    <x-mascot :pose="$pose" :class="$compact ? 'size-16' : 'size-28'"/>
 
     <div>
         @if ($title)
