@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\TicketColumn;
 use App\Services\TicketFile;
 use Illuminate\View\View;
 
@@ -15,9 +14,6 @@ class TicketShowController extends Controller
 {
     public function __invoke(string $key, TicketFile $file): View
     {
-        return view('ticket', [
-            'file' => $file->for(auth()->user(), $key),
-            'columns' => TicketColumn::board(),
-        ]);
+        return view('ticket', ['file' => $file->for(auth()->user(), $key)]);
     }
 }

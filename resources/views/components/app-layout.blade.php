@@ -150,7 +150,14 @@
             'nav-main mx-auto w-full px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pt-10',
             'max-w-5xl xl:max-w-6xl' => ! $wide,
             // the development page carries two dense columns; on 5xl the right one is a sliver
-            'max-w-6xl xl:max-w-[92rem]' => $wide,
+            'max-w-6xl xl:max-w-[92rem]' => $wide === true,
+            /*
+             * `full` is the window minus the gutters, and only the board asks for it. A board of
+             * nine columns has nothing to do with a reading width — it was being cut off at 92rem
+             * with empty desktop either side of it — while a page of prose at that width is worse
+             * to read, not better.
+             */
+            'max-w-none' => $wide === 'full',
         ])>
             @if ($title)
                 <h1 class="mb-5 text-xl font-bold tracking-tight text-ink">{{ $title }}</h1>

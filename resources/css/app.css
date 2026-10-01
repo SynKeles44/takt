@@ -993,7 +993,13 @@ body {
 
     @media (width >= 64rem) {
         .nav-shell {
-            grid-template-columns: var(--nav-w) 1fr;
+            /*
+             * `minmax(0, 1fr)`, not `1fr`: a grid track's automatic minimum is its content, so a
+             * board of nine columns that scrolls inside itself instead pushed the track — and the
+             * page — wider than the window. With the minimum at zero the track is the window and
+             * the overflow belongs to the board, which is the element that knows how to scroll.
+             */
+            grid-template-columns: var(--nav-w) minmax(0, 1fr);
             transition: grid-template-columns 0.26s cubic-bezier(0.32, 0.72, 0, 1);
         }
 
@@ -1907,6 +1913,23 @@ body::before {
  * its own — the same shape as the board it is modelled on, and the reason is the same: a column
  * that grows the page makes the other columns unreachable without scrolling past it.
  */
+/*
+ * A comment, with its author's colour carried down the side.
+ *
+ * The bar is the avatar's colour rather than a border on the box: a coloured box per author turns
+ * a thread into a quilt, a two-pixel edge turns it into a conversation you can follow without
+ * reading the names.
+ */
+.comment-body {
+    border-inline-start: 2px solid color-mix(in oklab, var(--author, var(--color-line)) 55%, transparent);
+    padding-inline-start: 0.65rem;
+    transition: border-color 0.15s ease;
+}
+
+.comment:hover .comment-body {
+    border-color: var(--author, var(--color-accent));
+}
+
 .linear-board {
     display: flex;
     gap: 0.75rem;
@@ -1917,8 +1940,8 @@ body::before {
 .linear-column {
     display: flex;
     flex-direction: column;
-    inline-size: 20rem;
-    flex: 0 0 20rem;
+    inline-size: 18rem;
+    flex: 0 0 18rem;
     max-block-size: calc(100dvh - 20rem);
     border-radius: var(--radius-card);
     border: var(--border-w) solid var(--color-line);

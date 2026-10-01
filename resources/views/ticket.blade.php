@@ -1,5 +1,4 @@
 @use('App\Support\Duration')
-@use('App\Enums\TicketColumn')
 
 @php
     $local = $file['local'];
@@ -24,10 +23,6 @@
                             ])>{{ $issue['state'] }}</span>
                     @elseif ($local?->isLocal())
                         <span class="pill text-[10px] text-dim">{{ __('app.ticket.local') }}</span>
-                    @endif
-
-                    @if ($local?->column !== null)
-                        <span class="pill text-[10px]">{{ $local->column->label() }}</span>
                     @endif
 
                     @foreach ([$issue['priority'] ?? null, $issue['team'] ?? null, $issue['assignee'] ?? null] as $fact)
@@ -81,27 +76,6 @@
         @endif
 
         {{-- the segment classes were here all along; what was missing is the row that carries the marker --}}
-        <div class="segmented mt-3" data-marker-key="ticket-column">
-            @foreach (TicketColumn::board() as $column)
-                <form method="POST" action="{{ route('tickets.place') }}">
-                    @csrf
-                    <input type="hidden" name="key" value="{{ $file['key'] }}">
-                    <input type="hidden" name="spalte" value="{{ $column->value }}">
-                    <button type="submit" @class(['segment text-[11px]', 'segment-active' => $local?->column === $column])>
-                        {{ $column->label() }}
-                    </button>
-                </form>
-            @endforeach
-
-            @if ($local?->column !== null)
-                <form method="POST" action="{{ route('tickets.place') }}">
-                    @csrf
-                    <input type="hidden" name="key" value="{{ $file['key'] }}">
-                    <input type="hidden" name="spalte" value="">
-                    <button type="submit" class="segment text-[11px] text-faint">{{ __('app.ticket.off_board') }}</button>
-                </form>
-            @endif
-        </div>
     </x-card>
 
     <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -153,16 +127,31 @@
                         <span class="pill text-[10px]">{{ count($issue['comments']) }}</span>
                     </div>
 
+                    {{--
+                        A colour per author, derived from the name. A thread of twelve comments
+                        between three people is a wall of identical grey boxes until the eye has
+                        something to sort it by, and the name alone is at the top of each box where
+                        it has to be read rather than seen.
+                    --}}
                     <ul class="mt-3 space-y-3">
                         @foreach ($issue['comments'] as $comment)
-                            <li class="rounded-[var(--radius-control)] border border-line bg-raised/40 px-3 py-2.5">
-                                <p class="flex items-baseline gap-2 text-[11px]">
-                                    <span class="font-semibold text-ink">{{ $comment['author'] ?? __('app.ticket.unknown_author') }}</span>
-                                    @if ($comment['at'] !== '')
-                                        <span class="metric text-faint">{{ \Illuminate\Support\Carbon::parse($comment['at'])->isoFormat('D. MMM, HH:mm') }}</span>
-                                    @endif
-                                </p>
-                                <p class="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">{{ $comment['body'] }}</p>
+                            @php
+                                $author = $comment['author'] ?? __('app.ticket.unknown_author');
+                                $colour = \App\Support\Palette::forName($author);
+                            @endphp
+
+                            <li class="comment flex gap-2.5" style="--author: {{ $colour['background'] }}">
+                                <x-avatar :name="$author"/>
+
+                                <div class="comment-body min-w-0 flex-1">
+                                    <p class="flex items-baseline gap-2 text-[11px]">
+                                        <span class="font-semibold text-ink">{{ $author }}</span>
+                                        @if ($comment['at'] !== '')
+                                            <span class="metric text-faint">{{ \Illuminate\Support\Carbon::parse($comment['at'])->isoFormat('D. MMM, HH:mm') }}</span>
+                                        @endif
+                                    </p>
+                                    <p class="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">{{ $comment['body'] }}</p>
+                                </div>
                             </li>
                         @endforeach
                     </ul>
@@ -426,17 +415,6 @@
                     </div>
                 </form>
 
-                @if ($local?->column === TicketColumn::Waiting)
-                    <form method="POST" action="{{ route('tickets.update', ['key' => $file['key']]) }}" class="mt-4 space-y-2 border-t border-line pt-4">
-                        @csrf
-                        <label class="block">
-                            <span class="label">{{ __('app.ticket.waiting_reason') }}</span>
-                            <input type="text" name="grund" value="{{ $local->waiting_reason }}" maxlength="120"
-                                   class="control mt-1 w-full text-sm" placeholder="{{ __('app.ticket.waiting_placeholder') }}">
-                        </label>
-                        <button type="submit" class="btn btn-ghost text-xs">{{ __('app.ticket.saved') }}</button>
-                    </form>
-                @endif
             </x-card>
 
             @if ($file['pulls'] !== [])

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\EntryType;
-use App\Enums\TicketColumn;
 use App\Services\TicketBoard;
 use App\Services\TimeTracker;
 use Illuminate\Http\RedirectResponse;
@@ -35,10 +34,6 @@ class TicketTimerController extends Controller
         }
 
         $tracker->start(EntryType::Work, null, $ticket);
-
-        if ($ticket->column !== TicketColumn::Today) {
-            $board->place($key, TicketColumn::Today);
-        }
 
         $board->focus($key);
 

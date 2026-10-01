@@ -1,15 +1,8 @@
 @use('App\Support\Duration')
-@use('App\Enums\TicketColumn')
-
-@props(['ticket', 'columns' => [], 'focused' => null, 'states' => []])
+@props(['ticket', 'focused' => null, 'states' => []])
 
 @php
     $local = $ticket['local'] ?? null;
-    $column = $ticket['column'] ?? null;
-    $index = $column === null ? null : array_search($column, $columns, true);
-    $previous = $index === null || $index === false || $index === 0 ? null : $columns[$index - 1];
-    $next = $index === null || $index === false || $index >= count($columns) - 1 ? null : $columns[$index + 1];
-    $days = $local?->daysInColumn();
     $isFocused = $focused !== null && $focused->key === $ticket['id'];
     $drafts = collect($ticket['pulls'] ?? [])->filter(fn (array $pull): bool => ($pull['draft'] ?? false) === true)->count();
     $ready = count($ticket['pulls'] ?? []) - $drafts;
@@ -49,21 +42,7 @@
             <span class="pill shrink-0 border-work/40 bg-work/15 text-[9px] text-work-text">{{ __('app.ticket.focus_now') }}</span>
         @endif
 
-        {{-- the move buttons are a fallback for dragging, so they stay out of the way until asked for --}}
         <span class="ms-auto flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-            @foreach ([['previous', $previous, 'chevron-left'], ['next', $next, 'chevron-right']] as [$which, $target, $icon])
-                @if ($target !== null)
-                    <form method="POST" action="{{ route('tickets.place') }}" data-live>
-                        @csrf
-                        <input type="hidden" name="key" value="{{ $ticket['id'] }}">
-                        <input type="hidden" name="spalte" value="{{ $target->value }}">
-                        <button type="submit" class="icon-action size-5" title="{{ __('app.ticket.move_to', ['column' => $target->label()]) }}">
-                            <x-icon :name="$icon" class="size-3"/>
-                        </button>
-                    </form>
-                @endif
-            @endforeach
-
             <form method="POST" action="{{ route('tickets.timer', ['key' => $ticket['id']]) }}" data-live>
                 @csrf
                 <button type="submit" class="icon-action size-5" title="{{ __('app.ticket.timer_start') }}">
@@ -165,15 +144,5 @@
         @endif
     </div>
 
-    @if ($column === TicketColumn::Waiting && filled($local?->waiting_reason))
-        <p class="mt-2 line-clamp-1 text-[10px] text-rest-text">{{ $local->waiting_reason }}</p>
-    @endif
-
-    <p class="mt-2 text-[10px] text-faint">
-        @if ($days !== null && $days > 0)
-            <span @class(['metric', 'text-danger-text' => $days >= 5])>{{ __('app.ticket.waiting_since', ['days' => $days]) }}</span>
-        @else
-            <span class="metric">{{ __('app.ticket.updated', ['when' => $ticket['last']->diffForHumans(short: true)]) }}</span>
-        @endif
-    </p>
+    <p class="metric mt-2 text-[10px] text-faint">{{ __('app.ticket.updated', ['when' => $ticket['last']->diffForHumans(short: true)]) }}</p>
 </article>

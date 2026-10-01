@@ -8,6 +8,38 @@
     card here writes the state back to Linear. The day board next to it has five columns that are
     mine and writes nothing anywhere. Two boards, because they answer two questions.
 --}}
+{{--
+    Which columns to draw. Every state of every team is offered, including the ones nothing sits in
+    today — an empty column says where things go next, and a board that only draws what it happens
+    to be occupying rearranges itself as you work.
+--}}
+@if ($allStates !== [])
+    <details class="mb-3">
+        <summary class="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-muted hover:text-ink">
+            <x-icon name="chevron-right" class="size-3"/>
+            {{ __('app.ticket.pick_states') }}
+            <span class="pill text-[10px]">{{ $visibleStates === null ? __('app.tickets.filter_all') : count($visibleStates) }}</span>
+        </summary>
+
+        <form method="POST" action="{{ route('tickets.states') }}" class="mt-2 flex flex-wrap items-center gap-2">
+            @csrf
+
+            @foreach ($allStates as $state)
+                <label class="cursor-pointer">
+                    <input type="checkbox" name="states[]" value="{{ $state }}" class="peer sr-only"
+                           @checked($visibleStates === null || in_array($state, $visibleStates, true))>
+                    <span class="pill opacity-45 transition peer-checked:border-accent/40 peer-checked:bg-accent/10 peer-checked:text-accent-text peer-checked:opacity-100">
+                        {{ $state }}
+                    </span>
+                </label>
+            @endforeach
+
+            <button type="submit" class="btn btn-ghost text-[11px]">{{ __('app.ticket.states_save') }}</button>
+            <span class="text-[10px] text-faint">{{ __('app.ticket.states_hint') }}</span>
+        </form>
+    </details>
+@endif
+
 <div class="flex flex-col gap-4 xl:flex-row xl:items-start">
     <div class="linear-board min-w-0 flex-1" data-state-board>
         @forelse ($stateColumns as $column)
@@ -38,7 +70,7 @@
 
                             <div class="mt-1.5 space-y-1.5">
                                 @foreach ($group['tickets'] as $ticket)
-                                    <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
+                                    <x-ticket-card :ticket="$ticket" :focused="$focused" :states="$states"/>
                                 @endforeach
                             </div>
                         </details>
@@ -59,7 +91,7 @@
     </div>
 
     @if ($sprint !== null)
-        <x-card class="w-full shrink-0 xl:w-80">
+        <x-card class="w-full shrink-0 xl:w-72">
             <div class="flex items-center justify-between gap-2">
                 <h2 class="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
                     <x-icon name="repeat" class="size-3.5 shrink-0 text-dim"/>

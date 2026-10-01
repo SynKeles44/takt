@@ -1,103 +1,15 @@
 /**
- * Dragging a ticket between the columns of the day.
+ * The ticket board: its state picker, its shortcuts, and dragging between its columns.
  *
- * Built on the native drag events rather than the pointer-based mechanics the dashboard board
- * uses: there a widget is resized and reordered inside a dense grid, which the browser cannot
- * help with. Here a card moves from one list to another, which is exactly what native drag and
- * drop is for — and it keeps working with a keyboard, because every card also carries the two
- * arrow buttons that post the same request.
- *
- * The move is sent to the same endpoint the buttons use, so there is one way to change a column
- * and not two.
+ * Every one of those writes the same thing — a workflow state, to Linear — through the same
+ * endpoint, so there is one way to change a state and not three. There used to be a second board
+ * here with columns of its own that were stored locally; it is gone, and so is the only reason
+ * this file ever had two ways to move a card.
  */
 export function ticketBoard({ swapRegions, toast }) {
-    const board = document.querySelector('[data-ticket-board]');
-
-    // the state picker and the shortcuts belong to the cards, which the list view has as well
     stateSelects(swapRegions, toast);
-    keyboard(board, swapRegions);
+    keyboard(swapRegions);
     stateBoard(swapRegions, toast);
-
-    if (! board) return;
-
-    let dragged = null;
-
-    board.addEventListener('dragstart', (event) => {
-        const card = event.target.closest('[data-ticket]');
-
-        if (! card) return;
-
-        dragged = card;
-        card.dataset.dragging = '';
-
-        // the payload is required for the drop to be accepted at all in some engines
-        event.dataTransfer?.setData('text/plain', card.dataset.ticket);
-        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-    });
-
-    board.addEventListener('dragend', () => {
-        if (dragged) delete dragged.dataset.dragging;
-        dragged = null;
-        board.querySelectorAll('[data-over]').forEach((column) => delete column.dataset.over);
-    });
-
-    board.addEventListener('dragover', (event) => {
-        const column = event.target.closest('[data-column]');
-
-        if (! column || ! dragged) return;
-
-        // preventDefault is what marks this as a valid drop target
-        event.preventDefault();
-        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-
-        if (column.dataset.over === undefined) {
-            board.querySelectorAll('[data-over]').forEach((other) => delete other.dataset.over);
-            column.dataset.over = '';
-        }
-    });
-
-    board.addEventListener('drop', async (event) => {
-        const column = event.target.closest('[data-column]');
-
-        if (! column || ! dragged) return;
-
-        event.preventDefault();
-
-        const key = dragged.dataset.ticket;
-        const target = column.dataset.column;
-
-        delete column.dataset.over;
-
-        if (dragged.closest('[data-column]') === column) return;
-
-        /*
-         * Move the card first, then tell the server. A drop that visibly waits for a round trip
-         * feels broken even when it is fast; if the request fails the reload puts it back, and
-         * the failure is visible in the status line rather than silently swallowed.
-         */
-        column.querySelector('.ticket-column-body')?.append(dragged);
-
-        const body = new FormData();
-        body.append('key', key);
-        body.append('spalte', target);
-        body.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
-
-        try {
-            const response = await fetch('/tickets/spalte', {
-                method: 'POST',
-                body,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-
-            if (response.ok) {
-                const html = await response.text();
-
-                swapRegions(html, ['ticket-board']);
-            }
-        } catch {
-            // offline or refused: the next load shows the truth
-        }
-    });
 }
 
 /**
@@ -154,7 +66,8 @@ const stateSelects = (swapRegions, toast) => {
  * rather than focus, because focus lands on the links and buttons inside a card and would make
  * every second keypress mean something else.
  */
-const keyboard = (board, swapRegions) => {
+const keyboard = (swapRegions) => {
+    const board = document.querySelector('[data-state-board]');
     /*
      * Every card on the page, not only the ones in the columns. Most of a real board's tickets sit
      * in the not-yet-sorted list below it — walking only the columns meant j and k moved between
@@ -178,15 +91,18 @@ const keyboard = (board, swapRegions) => {
         select(all[at === -1 ? 0 : Math.min(all.length - 1, Math.max(0, at + by))]);
     };
 
-    const place = async (card, column) => {
+    /** The number keys write a state to Linear, exactly as a drop onto that column does. */
+    const place = async (card, state) => {
         const body = new FormData();
 
-        body.append('key', card.dataset.ticket);
-        body.append('spalte', column);
+        body.append('aktion', 'felder');
+        body.append('status', state);
         body.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
 
+        card.dataset.pending = '';
+
         try {
-            const response = await fetch('/tickets/spalte', {
+            const response = await fetch(`/tickets/${encodeURIComponent(card.dataset.ticket)}/linear`, {
                 method: 'POST',
                 body,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -209,7 +125,9 @@ const keyboard = (board, swapRegions) => {
          */
         if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]')) return;
 
-        const columns = board === null ? [] : [...board.querySelectorAll('[data-column]')].map((column) => column.dataset.column);
+        const columns = board === null
+            ? []
+            : [...board.querySelectorAll('[data-state-column]')].map((column) => column.dataset.stateColumn);
         const card = selected();
 
         if (['j', 'ArrowDown'].includes(event.key)) return event.preventDefault(), step(1);

@@ -30,9 +30,26 @@ final class LinearBoard
      * @param  array<string, array<string, array{id: string, type: string}>>  $states  team => name => state
      * @return list<array<string, mixed>>
      */
-    public function columns(Collection $rows, array $states): array
+    public function columns(Collection $rows, array $states, ?array $visible = null): array
     {
         $seen = [];
+
+        /*
+         * Every state of every team on the board, whether or not a ticket sits in it right now.
+         *
+         * An empty column is information: it says this is where things go next, and a board that
+         * only draws the states it happens to be occupying rearranges itself as you work. Which of
+         * them to show is a decision, and it is the user's — `$visible` carries it, null means all.
+         */
+        foreach ($states as $team => $workflow) {
+            foreach ($workflow as $name => $state) {
+                $seen[$name] ??= [
+                    'name' => $name,
+                    'type' => (string) ($state['type'] ?? ''),
+                    'position' => (float) ($state['position'] ?? 0),
+                ];
+            }
+        }
 
         foreach ($rows as $row) {
             $name = ($row['state'] ?? null) ?: null;
@@ -49,8 +66,21 @@ final class LinearBoard
             ];
         }
 
+        if ($visible !== null) {
+            $seen = array_filter(
+                $seen,
+                static fn (array $column): bool => in_array($column['name'] ?? '', $visible, true),
+            );
+        }
+
         usort($seen, fn (array $a, array $b): int => [$this->rank($a['type']), $a['position'], (string) $a['name']]
             <=> [$this->rank($b['type']), $b['position'], (string) $b['name']]);
+
+        $seen = array_filter(
+            $seen,
+            fn (array $column): bool => $column['name'] !== null
+                || $rows->contains(fn (array $row): bool => (($row['state'] ?? null) ?: null) === null),
+        );
 
         return array_map(function (array $column) use ($rows): array {
             $mine = $rows->filter(fn (array $row): bool => (($row['state'] ?? null) ?: null) === $column['name']);

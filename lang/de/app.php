@@ -311,8 +311,14 @@ return [
     ],
 
     'ticket' => [
+        'pick_states' => 'Spalten wählen',
+        'states_save' => 'Übernehmen',
+        'states_saved' => 'Spalten gespeichert.',
+        'states_hint' => 'Nichts angehakt heißt: alle anzeigen.',
+        'open' => 'Offen',
+        'in_progress' => 'In Arbeit',
+        'board_hint' => 'Linears Workflow, auf meine Tickets zugeschnitten.',
         'no_state' => 'Nur hier',
-        'my_day' => 'Mein Tag',
         'no_project' => 'Ohne Projekt',
         'no_states' => 'Keine Linear-Status',
         'no_states_hint' => 'Sobald Tickets aus Linear da sind, werden ihre Status zu den Spalten.',

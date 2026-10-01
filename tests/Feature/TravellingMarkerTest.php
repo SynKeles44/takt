@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Enums\TicketColumn;
 use App\Enums\Widget;
 use App\Models\DashboardWidget;
 use App\Models\Project;
-use App\Models\Ticket;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Process;
@@ -100,23 +98,6 @@ class TravellingMarkerTest extends TestCase
             ->assertOk()
             ->assertSee('data-marker-key="week-chart"', escape: false)
             ->assertSee('data-marker-at="now"', escape: false);
-    }
-
-    /**
-     * The column picker on a ticket carried the segment classes all along — what it never had is
-     * the row that draws the marker, so the classes rendered and nothing moved.
-     */
-    public function test_the_ticket_column_picker_is_a_row_and_not_just_segment_classes(): void
-    {
-        Ticket::query()->create([
-            'key' => 'TAKT-7', 'source' => 'local', 'title' => 'Lokal',
-            'column' => TicketColumn::Next, 'position' => 0,
-        ]);
-
-        $this->get(route('tickets.show', 'TAKT-7'))
-            ->assertOk()
-            ->assertSee('class="segmented mt-3" data-marker-key="ticket-column"', escape: false)
-            ->assertSee('segment-active', escape: false);
     }
 
     public function test_the_account_menu_marks_the_page_you_are_on(): void

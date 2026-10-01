@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Enums\EntryType;
 use App\Enums\TagColor;
-use App\Enums\TicketColumn;
 use App\Models\Project;
 use App\Models\Tag;
 use App\Models\Ticket;
@@ -108,7 +107,7 @@ class SidebarSectionTest extends TestCase
     {
         Tag::query()->create(['name' => 'Backend', 'color' => TagColor::Accent]);
         Todo::query()->create(['title' => 'Migration prüfen', 'due_at' => now()->addDay()]);
-        Ticket::query()->create(['key' => 'TAKT-1', 'source' => 'local', 'title' => 'Lokal', 'column' => TicketColumn::Today, 'position' => 0]);
+        Ticket::query()->create(['key' => 'TAKT-1', 'source' => 'local', 'title' => 'Lokal', 'position' => 0]);
         Project::query()->create(['name' => 'Takt', 'path' => base_path(), 'position' => 0]);
 
         TimeEntry::query()->create([

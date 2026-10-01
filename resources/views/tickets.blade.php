@@ -1,12 +1,12 @@
 @use('App\Support\Duration')
 
-<x-app-layout :title="__('app.tickets.title')" :wide="true">
+<x-app-layout :title="__('app.tickets.title')" wide="full">
     <x-card class="rise">
 
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
                 <h2 class="text-base font-semibold text-ink">{{ __('app.tickets.title') }}</h2>
-                <p class="mt-0.5 text-xs text-faint">{{ __('app.ticket.inbox_hint') }}</p>
+                <p class="mt-0.5 text-xs text-faint">{{ __('app.ticket.board_hint') }}</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
@@ -20,7 +20,6 @@
                 <div class="segmented" data-marker-key="tickets-view">
                     @foreach ([
                         'board' => __('app.ticket.board'),
-                        'tag' => __('app.ticket.my_day'),
                         'liste' => __('app.ticket.list'),
                         'sprints' => __('app.sprint.tab'),
                     ] as $value => $label)
@@ -96,11 +95,6 @@
                 </span>
             @endif
 
-            @if ($stuck->isNotEmpty())
-                <span class="pill border-danger/30 bg-danger/10 text-[10px] text-danger-text" title="{{ __('app.ticket.stuck_hint') }}">
-                    {{ __('app.ticket.stuck') }}: {{ $stuck->count() }}
-                </span>
-            @endif
         </div>
     </x-card>
 
@@ -125,72 +119,18 @@
             <p class="mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts_state') }}</p>
 
             @include('partials.linear-board')
-        @elseif ($view === 'tag')
-            <p class="mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts') }}</p>
-
-            <div class="ticket-board" data-ticket-board>
-                @foreach ($columns as $column)
-                    @php $cards = $board[$column->value]; @endphp
-
-                    <section class="ticket-column" data-column="{{ $column->value }}" style="--column-accent: {{ $column->accent() }}">
-                        <header class="ticket-column-head">
-                            <span class="flex items-center gap-1.5">
-                                <x-icon :name="$column->icon()" class="size-3.5"/>
-                                <span class="heading">{{ $column->label() }}</span>
-                            </span>
-                            <span class="metric text-[11px] text-faint">{{ $cards->count() }}</span>
-                        </header>
-
-                        <p class="px-1 pb-2 text-[10px] leading-snug text-faint">{{ $column->hint() }}</p>
-
-                        <div class="ticket-column-body" data-auto-animate>
-                            @forelse ($cards as $ticket)
-                                <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
-                            @empty
-                                <p class="rounded-[var(--radius-control)] border border-dashed border-line px-2 py-4 text-center text-[10px] text-faint">
-                                    {{ __('app.ticket.empty_column') }}
-                                </p>
-                            @endforelse
-                        </div>
-                    </section>
-                @endforeach
-            </div>
         @else
             <x-card>
                 <h2 class="heading">{{ __('app.ticket.list') }}</h2>
 
                 <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                    @foreach ($board as $cards)
-                        @foreach ($cards as $ticket)
-                            <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
-                        @endforeach
-                    @endforeach
-
-                    @foreach ($inbox as $ticket)
-                        <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
+                    @foreach ($rows as $ticket)
+                        <x-ticket-card :ticket="$ticket" :focused="$focused" :states="$states"/>
                     @endforeach
                 </div>
             </x-card>
         @endif
     </div>
-
-    @if (in_array($view, ['board', 'tag'], true) && $inbox->isNotEmpty())
-        <x-card class="mt-5">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <h2 class="heading">{{ __('app.ticket.inbox') }}</h2>
-                    <p class="mt-0.5 text-[11px] text-faint">{{ __('app.ticket.inbox_hint') }}</p>
-                </div>
-                <span class="pill text-[10px]">{{ $inbox->count() }}</span>
-            </div>
-
-            <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                @foreach ($inbox as $ticket)
-                    <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
-                @endforeach
-            </div>
-        </x-card>
-    @endif
 
     <x-card class="mt-5">
         <h2 class="heading">{{ __('app.ticket.new') }}</h2>
@@ -201,15 +141,6 @@
             <label class="min-w-48 flex-1">
                 <span class="label">{{ __('app.ticket.new_title') }}</span>
                 <input type="text" name="titel" required maxlength="200" class="control mt-1 w-full text-sm">
-            </label>
-
-            <label>
-                <span class="label">{{ __('app.ticket.column.none') }}</span>
-                <select name="spalte" class="control mt-1 text-sm">
-                    @foreach ($columns as $column)
-                        <option value="{{ $column->value }}" @selected($column->value === 'next')>{{ $column->label() }}</option>
-                    @endforeach
-                </select>
             </label>
 
             <button type="submit" class="btn btn-primary text-xs">
@@ -247,13 +178,6 @@
                             <span class="metric shrink-0 text-[10px] text-faint">{{ $ticket['last']->isoFormat('D. MMM YY') }}</span>
 
                             <span class="flex shrink-0 items-center gap-1">
-                                <form method="POST" action="{{ route('tickets.place') }}" data-live>
-                                    @csrf
-                                    <input type="hidden" name="key" value="{{ $ticket['id'] }}">
-                                    <input type="hidden" name="spalte" value="next">
-                                    <button type="submit" class="btn btn-ghost text-[10px]">{{ __('app.ticket.take_over') }}</button>
-                                </form>
-
                                 <form method="POST" action="{{ route('tickets.loose') }}" data-live>
                                     @csrf
                                     <input type="hidden" name="key" value="{{ $ticket['id'] }}">

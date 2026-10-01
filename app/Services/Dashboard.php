@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\DueState;
-use App\Enums\TicketColumn;
 use App\Enums\Widget;
 use App\Models\CommandRun;
 use App\Models\DashboardWidget;
 use App\Models\DayNote;
 use App\Models\Project;
 use App\Models\Snippet;
-use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use App\Models\User;
@@ -145,7 +143,7 @@ final class Dashboard
             Widget::Snippets => ['snippets' => Snippet::query()->inOrder()->take(6)->get()],
             Widget::TestPost => [],
             Widget::DevLinks => ['projects' => $this->projects()->filter(fn (Project $project): bool => $project->repository !== null)],
-            Widget::Tickets => $this->tickets(),
+            Widget::Tickets => $this->tickets($user),
             Widget::Packages => $this->packageHealth(),
             Widget::Docker => ['docker' => $this->docker->summary()],
             Widget::Releases => $this->latestReleases(),
@@ -154,26 +152,35 @@ final class Dashboard
     }
 
     /**
-     * The board as a tile: what is in hand, what is queued, and what has been waiting too long.
-     * Read from the local rows only — Linear is a network call and a dashboard does not make one.
+     * The board as a tile, read from the cached Linear issues.
+     *
+     * It used to count local columns, which no longer exist: the board's columns are Linear's
+     * workflow now, so a tile that still said "today, next, waiting" would be describing a board
+     * nobody can see. The read costs nothing on a dashboard — `mine` answers from the same ten
+     * minute cache the ticket page fills.
      *
      * @return array<string, mixed>
      */
-    private function tickets(): array
+    private function tickets(User $user): array
     {
-        $open = Ticket::query()
-            ->whereNull('ignored_at')
-            ->whereIn('column', [TicketColumn::Today->value, TicketColumn::Next->value, TicketColumn::Waiting->value])
-            ->orderBy('position')
-            ->get();
+        $issues = collect(app(Linear::class)->mine($user)['issues'])
+            ->reject(fn (array $issue): bool => in_array($issue['state_type'], ['completed', 'canceled'], true));
+
+        $running = $issues->first(fn (array $issue): bool => ($issue['cycle']['starts_at'] ?? '') !== ''
+            && Carbon::now()->between(
+                Carbon::parse($issue['cycle']['starts_at']),
+                Carbon::parse($issue['cycle']['ends_at'] ?: $issue['cycle']['starts_at'])->endOfDay(),
+            ))['cycle']['id'] ?? null;
 
         return [
             'focused' => $this->board->focused(),
-            'today' => $open->where('column', TicketColumn::Today)->values(),
-            'counts' => collect(TicketColumn::cases())->mapWithKeys(fn (TicketColumn $column): array => [
-                $column->value => $open->where('column', $column)->count(),
-            ]),
-            'stuck' => $open->filter(fn (Ticket $ticket): bool => ($ticket->daysInColumn() ?? 0) >= 5)->count(),
+            'open' => $issues->count(),
+            'started' => $issues->where('state_type', 'started')->count(),
+            'sprint' => $running === null ? 0 : $issues->filter(fn (array $issue): bool => ($issue['cycle']['id'] ?? null) === $running)->count(),
+            'next' => $issues
+                ->sortBy(fn (array $issue): int => $issue['priority_value'] ?: 9)
+                ->take(4)
+                ->values(),
         ];
     }
 

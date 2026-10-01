@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\TicketColumn;
 use App\Services\TicketBoard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,13 +20,11 @@ class TicketStoreController extends Controller
         $data = $request->validate([
             'titel' => ['required', 'string', 'max:200'],
             'beschreibung' => ['nullable', 'string', 'max:5000'],
-            'spalte' => ['nullable', 'string', 'in:'.implode(',', array_column(TicketColumn::cases(), 'value'))],
         ]);
 
         $ticket = $board->create(
             $data['titel'],
             filled($data['beschreibung'] ?? null) ? (string) $data['beschreibung'] : null,
-            filled($data['spalte'] ?? null) ? TicketColumn::from((string) $data['spalte']) : TicketColumn::Next,
         );
 
         return redirect()

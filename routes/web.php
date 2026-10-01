@@ -30,13 +30,13 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SnippetController;
 use App\Http\Controllers\StepTemplateController;
 use App\Http\Controllers\TagController;
-use App\Http\Controllers\TicketBoardController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketFocusController;
 use App\Http\Controllers\TicketLinearController;
 use App\Http\Controllers\TicketLooseController;
 use App\Http\Controllers\TicketRefreshController;
 use App\Http\Controllers\TicketShowController;
+use App\Http\Controllers\TicketStatesController;
 use App\Http\Controllers\TicketStoreController;
 use App\Http\Controllers\TicketTimerController;
 use App\Http\Controllers\TicketUpdateController;
@@ -79,8 +79,8 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/tickets', TicketController::class)->name('tickets');
     Route::post('/tickets/neu-laden', TicketRefreshController::class)->name('tickets.refresh');
-    Route::post('/tickets/spalte', TicketBoardController::class)->name('tickets.place');
     Route::post('/tickets/gefunden', TicketLooseController::class)->name('tickets.loose');
+    Route::post('/tickets/spalten', TicketStatesController::class)->name('tickets.states');
     Route::post('/tickets/anlegen', TicketStoreController::class)->name('tickets.store');
 
     /*

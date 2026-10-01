@@ -20,7 +20,6 @@ class TicketUpdateController extends Controller
         $data = $request->validate([
             'notizen' => ['nullable', 'string', 'max:20000'],
             'schaetzung' => ['nullable', 'string', 'max:12'],
-            'grund' => ['nullable', 'string', 'max:120'],
             'titel' => ['nullable', 'string', 'max:200'],
             'beschreibung' => ['nullable', 'string', 'max:20000'],
         ]);
@@ -34,10 +33,6 @@ class TicketUpdateController extends Controller
         if ($request->has('schaetzung')) {
             // accepts "1:30" and "90m" and "2h" — the same shapes the rest of the app takes
             $board->estimate($key, Duration::parse((string) ($data['schaetzung'] ?? '')));
-        }
-
-        if ($request->has('grund')) {
-            $board->waitingReason($key, (string) ($data['grund'] ?? ''));
         }
 
         if ($ticket->isLocal() && $request->hasAny(['titel', 'beschreibung'])) {

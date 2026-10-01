@@ -311,8 +311,14 @@ return [
     ],
 
     'ticket' => [
+        'pick_states' => 'Choose columns',
+        'states_save' => 'Apply',
+        'states_saved' => 'Columns saved.',
+        'states_hint' => 'Nothing ticked means: show all.',
+        'open' => 'Open',
+        'in_progress' => 'In progress',
+        'board_hint' => "Linear's workflow, cut down to my tickets.",
         'no_state' => 'Local only',
-        'my_day' => 'My day',
         'no_project' => 'No project',
         'no_states' => 'No Linear states',
         'no_states_hint' => 'As soon as tickets arrive from Linear, their states become the columns.',

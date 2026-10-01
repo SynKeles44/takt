@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Enums\AbsenceType;
 use App\Enums\EntryType;
-use App\Enums\TicketColumn;
 use App\Models\Absence;
 use App\Models\DayNote;
 use App\Models\Project;
@@ -86,15 +85,13 @@ class TicketFileTest extends TestCase
         Process::run(['rm', '-rf', $path]);
     }
 
-    public function test_the_timeline_merges_commits_time_notes_and_the_column_move(): void
+    public function test_the_timeline_merges_commits_time_and_notes(): void
     {
         $path = $this->repository();
         Project::query()->create(['name' => 'Testrepo', 'path' => $path]);
 
         $board = app(TicketBoard::class);
         $ticket = $board->row('COR-6839');
-        $board->place('COR-6839', TicketColumn::Waiting);
-        $board->waitingReason('COR-6839', 'Review von Weber');
 
         TimeEntry::query()->create([
             'type' => EntryType::Work,
@@ -111,7 +108,7 @@ class TicketFileTest extends TestCase
         $file = app(TicketFile::class)->for(auth()->user(), 'COR-6839');
         $kinds = $file['timeline']->pluck('kind')->unique()->sort()->values()->all();
 
-        $this->assertSame(['branch', 'column', 'commit', 'note', 'time'], $kinds);
+        $this->assertSame(['branch', 'commit', 'note', 'time'], $kinds);
         $this->assertSame(3600, $file['booked']);
         $this->assertCount(1, $file['notes']);
 
@@ -254,13 +251,11 @@ class TicketFileTest extends TestCase
         $board = app(TicketBoard::class);
         $ticket = $board->create('Serverwechsel prüfen', 'Vorher Backup');
         $board->notes($ticket->key, 'Erst Weber fragen');
-        $board->place($ticket->key, TicketColumn::Waiting);
 
         $this->get(route('tickets.show', ['key' => $ticket->key]))
             ->assertOk()
             ->assertSee('Serverwechsel prüfen')
             ->assertSee('Erst Weber fragen')
-            ->assertSee(__('app.ticket.waiting_reason'))
             ->assertSee(__('app.ticket.promote'));
     }
 }

@@ -22,7 +22,7 @@ use Illuminate\Support\Collection;
  * and far too much work for a single page. Here git is asked about one id — `git log --grep` per
  * repository, in parallel — so the file opens in the time a page is allowed to take.
  *
- * The timeline is the point of this page: commits, branches, pull requests, booked time, column
+ * The timeline is the point of this page: commits, branches, pull requests, booked time
  * moves, day notes that mention the id, and absences that overlapped, merged into one stream.
  * Answering "what happened with this ticket and when" takes three tools today.
  */
@@ -311,15 +311,6 @@ final class TicketFile
                 'kind' => 'time',
                 'title' => $entry->type->label(),
                 'meta' => Duration::human($entry->durationInSeconds()),
-            ];
-        }
-
-        if ($local?->column_changed_at !== null && $local?->column !== null) {
-            $events[] = [
-                'at' => $local->column_changed_at,
-                'kind' => 'column',
-                'title' => $local->column->label(),
-                'meta' => (string) ($local->waiting_reason ?? ''),
             ];
         }
 

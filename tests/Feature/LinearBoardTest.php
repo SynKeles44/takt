@@ -81,6 +81,53 @@ class LinearBoardTest extends TestCase
         $this->assertSame(['Todo', 'In Progress', 'In Review', 'Done'], array_column($columns, 'name'));
     }
 
+    /**
+     * Every state of the workflow is a column, including the ones nothing sits in.
+     *
+     * An empty column is information — it says where things go next — and a board that only draws
+     * the states it happens to be occupying rearranges itself as you work.
+     */
+    public function test_a_state_with_no_tickets_still_gets_a_column(): void
+    {
+        $columns = app(LinearBoard::class)->columns(
+            collect([$this->row('COR-1', 'Todo', 'unstarted')]),
+            ['COR' => [
+                'Todo' => ['id' => 's1', 'type' => 'unstarted', 'position' => 1],
+                'In Progress' => ['id' => 's2', 'type' => 'started', 'position' => 2],
+                'Done' => ['id' => 's3', 'type' => 'completed', 'position' => 3],
+            ]],
+        );
+
+        $this->assertSame(['Todo', 'In Progress', 'Done'], array_column($columns, 'name'));
+        $this->assertSame([1, 0, 0], array_column($columns, 'count'));
+    }
+
+    /** Which columns to draw is the user's decision, and an empty choice means all of them. */
+    public function test_the_visible_columns_can_be_narrowed(): void
+    {
+        $states = ['COR' => [
+            'Todo' => ['id' => 's1', 'type' => 'unstarted', 'position' => 1],
+            'Done' => ['id' => 's2', 'type' => 'completed', 'position' => 2],
+        ]];
+
+        $rows = collect([$this->row('COR-1', 'Todo', 'unstarted')]);
+
+        $this->assertSame(['Todo'], array_column(app(LinearBoard::class)->columns($rows, $states, ['Todo']), 'name'));
+        $this->assertSame(['Todo', 'Done'], array_column(app(LinearBoard::class)->columns($rows, $states, null), 'name'));
+    }
+
+    public function test_the_chosen_columns_are_stored_on_the_account(): void
+    {
+        $this->post(route('tickets.states'), ['states' => ['Todo', 'Done', 'Todo']])->assertRedirect();
+
+        $this->assertSame(['Todo', 'Done'], auth()->user()->fresh()->board_states);
+
+        // nothing ticked is "show all", which is also what a new account has
+        $this->post(route('tickets.states'), [])->assertRedirect();
+
+        $this->assertNull(auth()->user()->fresh()->board_states);
+    }
+
     /** A ticket that lives only here has no Linear state, and a board that drops it loses tickets. */
     public function test_a_local_ticket_gets_a_column_of_its_own_at_the_front(): void
     {

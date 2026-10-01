@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\TicketColumn;
 use App\Services\Linear;
 use App\Services\LinearBoard;
 use App\Services\Sprints;
@@ -27,7 +26,6 @@ class TicketController extends Controller
     public function __invoke(
         Request $request,
         Tickets $tickets,
-        TicketBoard $board,
         Sprints $sprints,
         Linear $linear,
         LinearBoard $linearBoard,
@@ -35,7 +33,7 @@ class TicketController extends Controller
         $request->validate([
             'tage' => ['nullable', 'integer', 'min:7', 'max:365'],
             'q' => ['nullable', 'string', 'max:60'],
-            'ansicht' => ['nullable', 'in:board,tag,liste,sprints'],
+            'ansicht' => ['nullable', 'in:board,liste,sprints'],
             'sprint' => ['nullable', 'string', 'max:80'],
             'projekt' => ['nullable', 'string', 'max:80'],
             'label' => ['nullable', 'string', 'max:80'],
@@ -107,10 +105,7 @@ class TicketController extends Controller
         $loose = $result['loose']->filter($matches)->values();
 
         return view('tickets', [
-            'board' => $board->group($rows),
-            'inbox' => $board->inbox($rows),
-            'stuck' => $board->stuck($rows),
-            'focused' => $board->focused(),
+            'focused' => app(TicketBoard::class)->focused(),
             /*
              * Capped, and the cap is stated in the view. Rendering all of them cost 300 KB of the
              * page in the real account — two forms with a CSRF token each, 158 times, inside a
@@ -125,7 +120,6 @@ class TicketController extends Controller
             'calibration' => $tickets->calibration($rows),
             'error' => $result['error'],
             'configured' => $result['configured'],
-            'columns' => TicketColumn::board(),
             'days' => $days,
             'term' => (string) $request->query('q', ''),
             'view' => $view,
@@ -138,7 +132,14 @@ class TicketController extends Controller
                 $rows->pluck('id')->all(),
             ),
             // the Linear-shaped board: its columns are the team's workflow, not my day
-            'stateColumns' => $view === 'board' ? $linearBoard->columns($rows, $states) : [],
+            'stateColumns' => $view === 'board'
+                ? $linearBoard->columns($rows, $states, $request->user()->board_states)
+                : [],
+            // every state there is, so the picker can offer the ones that are currently hidden
+            'allStates' => $view === 'board'
+                ? collect($states)->flatMap(fn (array $workflow): array => array_keys($workflow))->unique()->sort()->values()->all()
+                : [],
+            'visibleStates' => $request->user()->board_states,
             'sprint' => $view === 'board' ? $linearBoard->sprint($rows) : null,
             // only the sprint view pays for the sprint read; it answers from the same cached issues
             'sprints' => $view === 'sprints' ? $sprints->recent($request->user()) : null,

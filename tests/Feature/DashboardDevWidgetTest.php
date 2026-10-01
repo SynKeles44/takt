@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\RunStatus;
-use App\Enums\TicketColumn;
 use App\Enums\Widget;
 use App\Models\CommandRun;
 use App\Models\DashboardWidget;
@@ -17,6 +16,7 @@ use App\Services\Releases;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -46,7 +46,7 @@ def456\x1ftakt-db-1\x1fmariadb\x1fexited\x1fExited (0)\x1f\x1ftakt\x1fdb\x1f2 da
 
     private function show(Widget $widget): TestResponse
     {
-        DashboardWidget::query()->create(['widget' => $widget, 'position' => 0, 'span' => 4, 'rows' => 4]);
+        DashboardWidget::query()->create(['widget' => $widget, 'span' => 4, 'rows' => 4]);
 
         $this->user()->forceFill(['dashboard_arranged' => true])->save();
 
@@ -58,40 +58,46 @@ def456\x1ftakt-db-1\x1fmariadb\x1fexited\x1fExited (0)\x1f\x1ftakt\x1fdb\x1f2 da
         return auth()->user();
     }
 
-    public function test_the_ticket_tile_shows_the_focus_the_counts_and_what_is_on_for_today(): void
+    /**
+     * The ticket tile reads the cached Linear issues, because the board's columns are Linear's
+     * workflow now. It used to count local columns, and a tile still saying "today, next, waiting"
+     * would be describing a board nobody can see.
+     */
+    public function test_the_ticket_tile_counts_what_is_open_and_names_what_is_next(): void
     {
-        Ticket::query()->create([
-            'key' => 'TAKT-1', 'source' => 'local', 'title' => 'Rechnung schreiben',
-            'column' => TicketColumn::Today, 'position' => 0, 'focused_at' => now(),
-        ]);
-        Ticket::query()->create([
-            'key' => 'COR-9', 'source' => 'linear', 'title' => 'Wartet auf Review',
-            'column' => TicketColumn::Waiting, 'position' => 0,
-        ]);
+        Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => [
+            [
+                'identifier' => 'COR-1', 'title' => 'Dringend', 'url' => '', 'updatedAt' => '2026-09-30T08:00:00.000Z',
+                'priority' => 1, 'state' => ['name' => 'In Progress', 'type' => 'started'],
+                'team' => ['key' => 'COR', 'name' => 'Core'],
+            ],
+            [
+                'identifier' => 'COR-2', 'title' => 'Schon fertig', 'url' => '', 'updatedAt' => '2026-09-29T08:00:00.000Z',
+                'state' => ['name' => 'Done', 'type' => 'completed'], 'team' => ['key' => 'COR', 'name' => 'Core'],
+            ],
+        ]]]]])]);
+
+        $this->user()->forceFill(['linear_token' => 'lin_api_test'])->save();
 
         $this->show(Widget::Tickets)
-            ->assertSee('Rechnung schreiben')
-            ->assertSee('TAKT-1')
-            ->assertSee(__('app.widget.tickets.focus'))
-            ->assertDontSee('Wartet auf Review');
+            ->assertSee('Dringend')
+            ->assertSee('COR-1')
+            // a finished ticket is not open, and the tile is about what is left
+            ->assertDontSee('Schon fertig');
+
+        $data = app(Dashboard::class)->data(Widget::Tickets, $this->user());
+
+        $this->assertSame(1, $data['open']);
+        $this->assertSame(1, $data['started']);
     }
 
-    public function test_a_ticket_that_has_not_moved_for_days_is_counted_as_stuck(): void
+    public function test_an_account_without_linear_sees_an_empty_ticket_tile(): void
     {
-        Ticket::query()->create([
-            'key' => 'COR-12', 'source' => 'linear', 'title' => 'Liegt',
-            'column' => TicketColumn::Waiting, 'position' => 0,
-            'column_changed_at' => Carbon::today()->subDays(9),
-        ]);
+        Http::fake();
 
-        $this->show(Widget::Tickets)->assertSee(__('app.widget.tickets.stuck'));
-
-        $this->assertSame(1, app(Dashboard::class)->data(Widget::Tickets, $this->user())['stuck']);
-    }
-
-    public function test_an_empty_board_says_so_instead_of_showing_an_empty_list(): void
-    {
         $this->show(Widget::Tickets)->assertSee(__('app.widget.tickets.empty'));
+
+        Http::assertNothingSent();
     }
 
     public function test_the_package_tile_counts_every_declared_dependency(): void
