@@ -5,21 +5,7 @@
     $theme = $user?->theme ?? \App\Enums\Theme::Midnight;
     $style = $user?->design_style ?? \App\Enums\DesignStyle::Soft;
 
-    $sections = [
-        /*
-         * `match` is what keeps a section lit on its own sub-pages. Five of them were missing and
-         * the sidebar simply went dark there — the packages page, a ticket, an entry being edited,
-         * the absences and the checklist templates. Anything reachable under a section belongs in
-         * its list; `SidebarSectionTest` asks every page whether exactly one section claims it.
-         */
-        ['route' => 'dashboard', 'label' => __('app.nav.dashboard'), 'icon' => 'clock'],
-        ['route' => 'history', 'label' => __('app.nav.history'), 'icon' => 'calendar', 'match' => ['history', 'entries.*']],
-        ['route' => 'calendar', 'label' => __('app.nav.calendar'), 'icon' => 'calendar-days', 'match' => ['calendar', 'absences', 'absences.*']],
-        ['route' => 'insights', 'label' => __('app.nav.insights'), 'icon' => 'chart'],
-        ['route' => 'todos.index', 'label' => __('app.nav.todos'), 'icon' => 'list-check', 'match' => ['todos.*', 'tags.*', 'steps.*', 'attachments.*', 'templates', 'templates.*']],
-        ['route' => 'tickets', 'label' => __('app.nav.tickets'), 'icon' => 'tag', 'match' => ['tickets', 'tickets.*']],
-        ['route' => 'dev', 'label' => __('app.nav.dev'), 'icon' => 'terminal', 'match' => ['dev', 'dev.*', 'projects', 'projects.*', 'snippets', 'snippets.*', 'releases', 'docker', 'docker.*', 'commands', 'commands.*', 'packages', 'packages.*']],
-    ];
+    $sections = \App\Support\Sidebar::forUser($user);
 @endphp
 
 <!DOCTYPE html>
@@ -101,10 +87,10 @@
 
             <nav class="nav-list ml-auto flex items-center gap-0.5 sm:gap-1 lg:ml-0 lg:mt-1 lg:flex-col lg:items-stretch">
                 @foreach ($sections as $section)
-                    @php $current = request()->routeIs($section['match'] ?? $section['route']); @endphp
+                    @php $current = $section['current']; @endphp
 
-                    <a href="{{ route($section['route']) }}"
-                       @class(['nav-item', 'nav-item-active' => $current])
+                    <a href="{{ $section['url'] }}"
+                       @class(['nav-item', 'nav-item-active' => $current, 'nav-item-sub' => $section['depth'] === 1])
                        @if ($current) aria-current="page" @endif
                        title="{{ $section['label'] }}">
                         {{--

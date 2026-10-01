@@ -221,6 +221,63 @@
         <div class="stack">
             <x-card class="rise">
                 <div class="flex items-start gap-3">
+                    <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text"><x-icon name="panel" class="size-4"/></span>
+                    <div>
+                        <h2 class="text-sm font-semibold text-ink">{{ __('app.settings.sidebar_title') }}</h2>
+                        <p class="text-xs text-faint">{{ __('app.settings.sidebar_hint') }}</p>
+                    </div>
+                </div>
+
+                {{--
+                    The seven sections are shown and not offered: they are the shape of the app,
+                    every page lives under exactly one of them, and a sidebar whose top level can
+                    be emptied is one you can lock yourself out of. What is offered is everything
+                    underneath — pages that today need a tab row to reach.
+                --}}
+                <div class="mt-4 flex flex-wrap gap-1.5 rounded-[var(--radius-control)] border border-line bg-raised/40 p-2">
+                    @foreach (\App\Support\Sidebar::sections() as $fixed)
+                        <span class="pill text-[10px] text-dim">
+                            <x-icon :name="$fixed['icon']" class="size-3"/>
+                            {{ $fixed['label'] }}
+                        </span>
+                    @endforeach
+                </div>
+
+                <p class="mt-1.5 text-[11px] text-faint">{{ __('app.settings.sidebar_fixed') }}</p>
+
+                <form method="POST" action="{{ route('settings.sidebar') }}" class="mt-4 space-y-4">
+                    @csrf
+                    @method('PUT')
+
+                    @php $pinned = old('sidebar_extras', $user->sidebar_extras ?? []); @endphp
+
+                    @foreach (\App\Support\Sidebar::offered() as $group => $extras)
+                        <div>
+                            <p class="label">{{ $group }}</p>
+
+                            <div class="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+                                @foreach ($extras as $extra)
+                                    <label class="row flex cursor-pointer items-center gap-2.5 px-3 py-2">
+                                        <input type="checkbox" name="sidebar_extras[]" value="{{ $extra['key'] }}"
+                                               @checked(in_array($extra['key'], (array) $pinned, true))
+                                               class="size-3.5 shrink-0 accent-[var(--color-accent)]">
+                                        <x-icon :name="$extra['icon']" class="size-4 shrink-0 text-dim"/>
+                                        <span class="min-w-0 flex-1 truncate text-xs text-ink">{{ $extra['label'] }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+
+                    <button type="submit" class="btn btn-primary text-xs">
+                        <x-icon name="check" class="size-3.5"/>
+                        {{ __('app.form.save') }}
+                    </button>
+                </form>
+            </x-card>
+
+            <x-card class="rise">
+                <div class="flex items-start gap-3">
                     <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text"><x-icon name="swatch" class="size-4"/></span>
                     <div>
                         <h2 class="text-sm font-semibold text-ink">{{ __('app.settings.theme_title') }}</h2>

@@ -202,6 +202,9 @@ return [
         'current_password' => 'Aktuelles Passwort',
         'new_password' => 'Neues Passwort',
         'change_password' => 'Passwort ändern',
+        'sidebar_title' => 'Seitenleiste',
+        'sidebar_hint' => 'Hefte Unterbereiche als eigene Menüpunkte an.',
+        'sidebar_fixed' => 'Diese Bereiche sind fest und lassen sich nicht entfernen.',
         'theme_title' => 'Farbschema',
         'theme_hint' => 'Wird sofort übernommen, nur für Dich.',
         'theme_choose' => 'Farbschema übernehmen',
@@ -795,6 +798,7 @@ return [
     ],
 
     'flash' => [
+        'sidebar_saved' => 'Seitenleiste gespeichert.',
         'developer_saved' => 'Entwickler-Einstellungen gespeichert.',
         'notify_saved' => 'Benachrichtigungen gespeichert.',
         'todo_created_dated' => 'Aufgabe für :date angelegt.',

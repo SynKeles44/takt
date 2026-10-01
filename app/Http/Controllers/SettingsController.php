@@ -15,6 +15,7 @@ use App\Services\Holidays;
 use App\Services\NetworkAccess;
 use App\Services\Reviews;
 use App\Support\Duration;
+use App\Support\Sidebar;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -98,6 +99,24 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('status', __('app.flash.notify_saved'));
+    }
+
+    /**
+     * Which sub-areas get a row of their own in the sidebar.
+     *
+     * Validated against the registry rather than against a free list: a key nobody offers would
+     * be a route nobody can build, and the sidebar is rendered on every page in the app.
+     */
+    public function updateSidebar(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'sidebar_extras' => ['nullable', 'array'],
+            'sidebar_extras.*' => ['string', Rule::in(array_column(Sidebar::extras(), 'key'))],
+        ]);
+
+        $request->user()->update(['sidebar_extras' => array_values($data['sidebar_extras'] ?? [])]);
+
+        return back()->with('status', __('app.flash.sidebar_saved'));
     }
 
     public function updateDeveloper(Request $request): RedirectResponse

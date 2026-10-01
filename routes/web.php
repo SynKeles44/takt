@@ -209,6 +209,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/einstellungen/netzwerk', NetworkAccessController::class)->name('settings.network');
     Route::put('/einstellungen/passwort', [SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::put('/einstellungen/design', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+    Route::put('/einstellungen/seitenleiste', [SettingsController::class, 'updateSidebar'])->name('settings.sidebar');
     Route::put('/einstellungen/kalender-token', [SettingsController::class, 'regenerateIcalToken'])->name('settings.ical');
     Route::put('/einstellungen/muster', [SettingsController::class, 'updateDesignStyle'])->name('settings.style');
 

@@ -202,6 +202,9 @@ return [
         'current_password' => 'Current password',
         'new_password' => 'New password',
         'change_password' => 'Change password',
+        'sidebar_title' => 'Sidebar',
+        'sidebar_hint' => 'Pin sub-areas as menu entries of their own.',
+        'sidebar_fixed' => 'These sections are fixed and cannot be removed.',
         'theme_title' => 'Colour theme',
         'theme_hint' => 'Applied immediately, for you only.',
         'theme_choose' => 'Use this scheme',
@@ -795,6 +798,7 @@ return [
     ],
 
     'flash' => [
+        'sidebar_saved' => 'Sidebar saved.',
         'developer_saved' => 'Developer settings saved.',
         'notify_saved' => 'Notification settings saved.',
         'todo_created_dated' => 'Task created for :date.',

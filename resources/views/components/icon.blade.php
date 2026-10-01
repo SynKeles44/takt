@@ -305,4 +305,45 @@
             <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.1a2 2 0 0 1 1.6.8l.9 1.2h7.4A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
         </svg>
         @break
+    @case('sun')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>
+        </svg>
+        @break
+
+    @case('tags')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3.5 11.2V5.5A2 2 0 0 1 5.5 3.5h5.7a2 2 0 0 1 1.4.6l6.3 6.3a2 2 0 0 1 0 2.8l-5.7 5.7a2 2 0 0 1-2.8 0L4.1 12.6a2 2 0 0 1-.6-1.4Z"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/>
+        </svg>
+        @break
+
+    @case('list')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/>
+        </svg>
+        @break
+
+    @case('columns')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3.5" y="4.5" width="5" height="15" rx="1.4"/><rect x="9.8" y="4.5" width="5" height="10" rx="1.4"/><rect x="16.1" y="4.5" width="4.4" height="15" rx="1.4"/>
+        </svg>
+        @break
+
+    @case('whale')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 13.5c0 3 2.6 5 6.5 5h5c4 0 6.5-2.4 6.5-6v-1.6l-3.4 1.8V9.2a1 1 0 0 0-1.5-.9L3 13.5Z"/><path d="M7.5 9.5c0-2 1.3-3.4 3.3-3.6"/><circle cx="7" cy="14.5" r=".9" fill="currentColor" stroke="none"/>
+        </svg>
+        @break
+
+    @case('package')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3.2 20 7.4v9.2L12 20.8 4 16.6V7.4Z"/><path d="m4 7.4 8 4.2 8-4.2M12 11.6v9.2M8 5.3l8 4.2"/>
+        </svg>
+        @break
+
+    @case('rocket')
+        <svg {{ $attributes }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.5 4.2c3 1.2 5 4 5.3 7.3l-5.4 5.4-5.3-5.3 5.4-5.4Z"/><path d="M9.1 11.6 6 12.8l-1.4 3.3 3.2-1.3M12.4 14.9l-1.2 3.1 3.3-1.4 1.2-3"/><circle cx="14.6" cy="9.4" r="1.4"/>
+        </svg>
+        @break
 @endswitch
