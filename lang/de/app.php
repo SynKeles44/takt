@@ -311,6 +311,11 @@ return [
     ],
 
     'ticket' => [
+        'duplicate' => 'Ticket duplizieren',
+        'copy_of' => 'Kopie von :title',
+        'copied' => 'Kopie angelegt: :id',
+        'copy_missing' => 'Das Ticket ist in Linear nicht auffindbar.',
+        'copy_confirm' => 'Eine Kopie dieses Tickets in Linear anlegen? Das Team sieht sie.',
         'description' => 'Beschreibung',
         'children' => 'Unteraufgaben',
         'comments' => 'Kommentare',

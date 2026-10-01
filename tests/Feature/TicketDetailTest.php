@@ -98,6 +98,46 @@ class TicketDetailTest extends TestCase
             ->assertSee('data-copy="https://linear.app/acme/issue/COR-4242"', escape: false);
     }
 
+    /**
+     * Duplicating reads the original from Linear rather than from the page, so a copy made from a
+     * tab opened yesterday is still a copy of what the ticket says now.
+     */
+    public function test_duplicating_creates_a_new_issue_from_the_originals_own_text(): void
+    {
+        /*
+         * Answered by what is asked rather than in a fixed order: creating a copy makes four
+         * requests — read the original, look up the team, look up me, write — and an order is a
+         * detail of the service, not of the behaviour being tested.
+         */
+        Http::fake(function ($request) {
+            $body = (string) $request->body();
+
+            return match (true) {
+                str_contains($body, 'query Issues') => Http::response(['data' => ['issues' => ['nodes' => [[
+                    'identifier' => 'COR-4242',
+                    'title' => 'Buchung korrigieren',
+                    'description' => 'Der Hergang',
+                    'state' => ['name' => 'In Progress', 'type' => 'started'],
+                    'team' => ['key' => 'COR', 'name' => 'Core'],
+                ]]]]]),
+                // the team is looked for twice: first among my own issues, then any team at all
+                str_contains($body, 'query Teams') => Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => []]]]]),
+                str_contains($body, 'query AnyTeam') => Http::response(['data' => ['teams' => ['nodes' => [['id' => 't1']]]]]),
+                str_contains($body, 'query Me') => Http::response(['data' => ['viewer' => ['id' => 'u1']]]),
+                default => Http::response(['data' => ['issueCreate' => [
+                    'success' => true,
+                    'issue' => ['identifier' => 'COR-5000', 'url' => 'https://linear.app/acme/issue/COR-5000'],
+                ]]]),
+            };
+        });
+
+        $this->post(route('tickets.linear', 'COR-4242'), ['aktion' => 'duplizieren'])
+            ->assertRedirect(route('tickets.show', 'COR-5000'));
+
+        Http::assertSent(fn ($request): bool => str_contains((string) $request->body(), 'Kopie von Buchung korrigieren')
+            && str_contains((string) $request->body(), 'Der Hergang'));
+    }
+
     /** An issue without a description must not render an empty block where one would be. */
     public function test_an_issue_without_a_description_renders_no_description_block(): void
     {

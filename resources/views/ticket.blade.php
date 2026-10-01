@@ -374,6 +374,20 @@
                         programs: the key goes in a commit message, the branch name in a terminal,
                         the link in a chat. Linear puts these behind a menu for the same reason.
                     --}}
+                    {{--
+                        Duplicating creates a real issue in Linear that the team will see, so it
+                        asks first. Everything above it only writes to the clipboard.
+                    --}}
+                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}"
+                          class="mt-3 border-t border-line pt-3" data-confirm="{{ __('app.ticket.copy_confirm') }}">
+                        @csrf
+                        <input type="hidden" name="aktion" value="duplizieren">
+                        <button type="submit" class="btn btn-ghost w-full text-xs">
+                            <x-icon name="clipboard" class="size-3.5"/>
+                            {{ __('app.ticket.duplicate') }}
+                        </button>
+                    </form>
+
                     <div class="mt-3 flex flex-wrap gap-1 border-t border-line pt-3">
                         @foreach (array_filter([
                             [__('app.ticket.copy_key'), $file['key']],

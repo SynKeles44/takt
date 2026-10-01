@@ -21,7 +21,7 @@ class TicketLinearController extends Controller
     public function __invoke(Request $request, string $key, Linear $linear, TicketBoard $board): RedirectResponse
     {
         $data = $request->validate([
-            'aktion' => ['required', 'in:felder,kommentar,zuweisen,abgeben,anlegen'],
+            'aktion' => ['required', 'in:felder,kommentar,zuweisen,abgeben,anlegen,duplizieren'],
             'titel' => ['nullable', 'string', 'max:200'],
             'beschreibung' => ['nullable', 'string', 'max:20000'],
             'status' => ['nullable', 'string', 'max:60'],
@@ -33,6 +33,10 @@ class TicketLinearController extends Controller
 
         if ($data['aktion'] === 'anlegen') {
             return $this->promote($key, $linear, $board);
+        }
+
+        if ($data['aktion'] === 'duplizieren') {
+            return $this->duplicate($key, $linear);
         }
 
         $result = match ($data['aktion']) {
@@ -52,6 +56,37 @@ class TicketLinearController extends Controller
         return back()->with('status', $result['error'] ?? ($result['ok']
             ? __('app.ticket.linear_saved')
             : __('app.ticket.linear_failed')));
+    }
+
+    /**
+     * A copy of the issue, in Linear, assigned to me.
+     *
+     * The title and the description come from the original rather than from the page, so a copy
+     * made from a stale tab is still a copy of what the ticket says now. It lands as a new issue
+     * and the browser follows it — a duplicate nobody can find is worse than no duplicate.
+     */
+    private function duplicate(string $key, Linear $linear): RedirectResponse
+    {
+        $user = auth()->user();
+        $issue = $linear->forIds($user, [$key])['issues'][$key] ?? null;
+
+        if (! is_array($issue)) {
+            return back()->with('status', __('app.ticket.copy_missing'));
+        }
+
+        $result = $linear->create(
+            $user,
+            __('app.ticket.copy_of', ['title' => (string) $issue['title']]),
+            $issue['description'] ?? null,
+        );
+
+        if (! $result['ok'] || $result['identifier'] === null) {
+            return back()->with('status', $result['error'] ?? __('app.ticket.linear_failed'));
+        }
+
+        return redirect()
+            ->route('tickets.show', ['key' => $result['identifier']])
+            ->with('status', __('app.ticket.copied', ['id' => $result['identifier']]));
     }
 
     /** A local ticket graduates: it becomes a Linear issue and keeps its notes and its time. */

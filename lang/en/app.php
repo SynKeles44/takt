@@ -311,6 +311,11 @@ return [
     ],
 
     'ticket' => [
+        'duplicate' => 'Duplicate ticket',
+        'copy_of' => 'Copy of :title',
+        'copied' => 'Copy created: :id',
+        'copy_missing' => 'Linear does not know this ticket.',
+        'copy_confirm' => 'Create a copy of this ticket in Linear? The team will see it.',
         'description' => 'Description',
         'children' => 'Sub-issues',
         'comments' => 'Comments',
