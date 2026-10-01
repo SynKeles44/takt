@@ -1973,6 +1973,68 @@ body::before {
 }
 
 /*
+ * MARK: pending — Takti, while you wait
+ *
+ * Bottom centre rather than a centred overlay: the page you are leaving stays readable, and a
+ * modal for a one-second wait is a bigger interruption than the wait. It arrives from below with
+ * the mascot already in motion, because a marker that fades in looks like part of the page and a
+ * marker that moves looks like something happening.
+ */
+.pending {
+    position: fixed;
+    z-index: 80;
+    inset-inline: 0;
+    inset-block-end: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    pointer-events: none;
+    opacity: 0;
+    translate: 0 0.75rem;
+    transition:
+        opacity var(--dur-fast) var(--ease),
+        translate var(--dur-fast) var(--ease);
+}
+
+.pending-on {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.pending-label {
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-raised);
+    padding-inline: 0.625rem;
+    padding-block: 0.1875rem;
+    color: var(--color-dim);
+    font-size: 0.6875rem;
+    box-shadow: var(--shadow-raised, 0 8px 24px rgb(0 0 0 / 0.35));
+}
+
+/* the mascot bobs while it runs — stillness under a "loading" label reads as a freeze */
+.pending [data-mascot] {
+    animation: pending-bob 0.65s var(--ease) infinite;
+}
+
+@keyframes pending-bob {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -0.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pending {
+        transition: opacity var(--dur-fast) var(--ease);
+        translate: none;
+    }
+
+    .pending [data-mascot] {
+        animation: none;
+    }
+}
+
+/*
  * MARK: skeletons — the shape of what is coming
  *
  * A skeleton is only honest when it has the proportions of the real thing: a shimmer in the

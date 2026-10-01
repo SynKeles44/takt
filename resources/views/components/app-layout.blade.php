@@ -214,6 +214,18 @@
     <x-palette/>
     <x-confirm-dialog/>
 
+    {{--
+        The wait. A ticket page reads Linear, GitHub and the local repositories before it can
+        render, and on a cold cache that is a second or two in which a click looks like it did
+        nothing. The marker is rendered here rather than built in JS so it is Takti himself and
+        not a second drawing of him — it shows only once a navigation has already taken longer
+        than a navigation normally does.
+    --}}
+    <div data-pending class="pending" hidden>
+        <x-mascot pose="run" class="size-16"/>
+        <span class="pending-label">{{ __('app.nav.loading') }}</span>
+    </div>
+
     @if (! empty($dueWatch ?? []))
         <script type="application/json" data-due-watch>@json($dueWatch)</script>
     @endif

@@ -5,6 +5,7 @@ import { docker } from './docker';
 import { folderPicker } from './folder-picker';
 import { ticketBoard } from './ticket-board';
 import { motionLayer } from './motion';
+import { pendingMarker } from './pending';
 import { prefetchLinks } from './prefetch';
 import { slidingMarkers } from './marker';
 
@@ -1193,6 +1194,7 @@ docker({ swapRegions, toast });
 ticketBoard({ swapRegions, toast });
 motionLayer();
 prefetchLinks();
+pendingMarker();
 slidingMarkers();
 
 /*

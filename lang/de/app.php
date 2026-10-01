@@ -8,6 +8,7 @@ return [
     'tagline_short' => 'Zeit & Aufgaben',
 
     'nav' => [
+        'loading' => 'Lädt …',
         'step_back' => 'Zurück',
         'step_forward' => 'Weiter',
         'tickets' => 'Tickets',
