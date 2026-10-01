@@ -39,6 +39,9 @@ const move = (host, target, animated) => {
 
     if (box.width === 0) return;
 
+    // read before the new size is written, or the travel starts from the size it is going to
+    const was = marker.getBoundingClientRect();
+
     marker.style.width = `${box.width}px`;
     marker.style.height = `${box.height}px`;
 
@@ -72,8 +75,24 @@ const move = (host, target, animated) => {
 
     marker.style.transform = to;
 
+    /*
+     * The size travels with the position.
+     *
+     * It used to be written outright while only the position glided, which is correct and looks
+     * wrong: between the back arrow and the middle button of a date navigator the box jumps from 26
+     * to 109 pixels and then sets off, so what you see is a block that swells and then moves. The
+     * frames were never the problem — measured at 10 ms apart with no dropped frame, before and
+     * after this — the discontinuity was.
+     *
+     * Width and height do lay out, which is why they were left out at first. They lay out this one
+     * element: the marker is absolutely positioned and childless, so no sibling moves and nothing
+     * reflows around it. The earlier stutter came from a marker that sat in the flow.
+     */
     marker.animate(
-        [{ transform: from }, { transform: to }],
+        [
+            { transform: from, width: `${was.width}px`, height: `${was.height}px` },
+            { transform: to, width: `${box.width}px`, height: `${box.height}px` },
+        ],
         { duration: 340, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)', fill: 'none' },
     );
 };
@@ -134,8 +153,16 @@ const wire = (host, selector, markerClass, key) => {
 
         marker.animate(
             [
-                { transform: `translate(${at.x + (from.left - now.left)}px, ${at.y + (from.top - now.top)}px)` },
-                { transform: `translate(${at.x}px, ${at.y}px)` },
+                {
+                    transform: `translate(${at.x + (from.left - now.left)}px, ${at.y + (from.top - now.top)}px)`,
+                    width: `${from.width}px`,
+                    height: `${from.height}px`,
+                },
+                {
+                    transform: `translate(${at.x}px, ${at.y}px)`,
+                    width: `${now.width}px`,
+                    height: `${now.height}px`,
+                },
             ],
             { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)', fill: 'none' },
         );
