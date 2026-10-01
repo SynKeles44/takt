@@ -18,7 +18,12 @@
                 </form>
 
                 <div class="segmented" data-marker-key="tickets-view">
-                    @foreach (['board' => __('app.ticket.board'), 'liste' => __('app.ticket.list'), 'sprints' => __('app.sprint.tab')] as $value => $label)
+                    @foreach ([
+                        'board' => __('app.ticket.board'),
+                        'tag' => __('app.ticket.my_day'),
+                        'liste' => __('app.ticket.list'),
+                        'sprints' => __('app.sprint.tab'),
+                    ] as $value => $label)
                         <a href="{{ route('tickets', ['ansicht' => $value, 'tage' => $days, 'q' => $term]) }}"
                            @class(['segment', 'segment-active' => $view === $value])>{{ $label }}</a>
                     @endforeach
@@ -117,6 +122,10 @@
         @if ($view === 'sprints')
             @include('partials.sprints')
         @elseif ($view === 'board')
+            <p class="mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts_state') }}</p>
+
+            @include('partials.linear-board')
+        @elseif ($view === 'tag')
             <p class="mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts') }}</p>
 
             <div class="ticket-board" data-ticket-board>
@@ -165,7 +174,7 @@
         @endif
     </div>
 
-    @if ($view === 'board' && $inbox->isNotEmpty())
+    @if (in_array($view, ['board', 'tag'], true) && $inbox->isNotEmpty())
         <x-card class="mt-5">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>

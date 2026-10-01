@@ -515,7 +515,12 @@ final class Linear
 
         foreach ($response['data']['issue']['team']['states']['nodes'] ?? [] as $node) {
             if (is_array($node) && is_string($node['name'] ?? null) && is_string($node['id'] ?? null)) {
-                $states[(string) $node['name']] = ['id' => $node['id'], 'type' => (string) ($node['type'] ?? '')];
+                $states[(string) $node['name']] = [
+                    'id' => $node['id'],
+                    'type' => (string) ($node['type'] ?? ''),
+                    // kept because the board orders two states of one type by the workflow's own order
+                    'position' => (float) ($node['position'] ?? 0),
+                ];
             }
         }
 

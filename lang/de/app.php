@@ -311,6 +311,12 @@ return [
     ],
 
     'ticket' => [
+        'no_state' => 'Nur hier',
+        'my_day' => 'Mein Tag',
+        'no_project' => 'Ohne Projekt',
+        'no_states' => 'Keine Linear-Status',
+        'no_states_hint' => 'Sobald Tickets aus Linear da sind, werden ihre Status zu den Spalten.',
+        'shortcuts_state' => 'Spalten sind Linears Status — Ziehen schreibt ihn zurück · j/k wählen · Enter öffnen · t Timer',
         'set_state' => 'Status in Linear setzen',
         'shortcuts' => 'j/k wählen · 1–5 verschieben · Enter öffnen · t Timer',
         'labels' => 'Labels',

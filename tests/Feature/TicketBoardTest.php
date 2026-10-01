@@ -228,7 +228,8 @@ class TicketBoardTest extends TestCase
     {
         app(TicketBoard::class)->create('Eigenes Ticket', column: TicketColumn::Today);
 
-        $this->get(route('tickets'))
+        // the day board, which is its own view now that the default one carries Linear's states
+        $this->get(route('tickets', ['ansicht' => 'tag']))
             ->assertOk()
             ->assertSee(__('app.ticket.column.today'))
             ->assertSee(__('app.ticket.column.waiting'))

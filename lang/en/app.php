@@ -311,6 +311,12 @@ return [
     ],
 
     'ticket' => [
+        'no_state' => 'Local only',
+        'my_day' => 'My day',
+        'no_project' => 'No project',
+        'no_states' => 'No Linear states',
+        'no_states_hint' => 'As soon as tickets arrive from Linear, their states become the columns.',
+        'shortcuts_state' => "The columns are Linear's states — dropping writes one back · j/k select · Enter open · t timer",
         'set_state' => 'Set the state in Linear',
         'shortcuts' => 'j/k select · 1–5 move · Enter open · t timer',
         'labels' => 'Labels',

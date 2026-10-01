@@ -16,6 +16,7 @@ export function ticketBoard({ swapRegions, toast }) {
     // the state picker and the shortcuts belong to the cards, which the list view has as well
     stateSelects(swapRegions, toast);
     keyboard(board, swapRegions);
+    stateBoard(swapRegions, toast);
 
     if (! board) return;
 
@@ -235,6 +236,96 @@ const keyboard = (board, swapRegions) => {
         if (slot >= 1 && slot <= columns.length) {
             event.preventDefault();
             place(card, columns[slot - 1]);
+        }
+    });
+};
+
+/**
+ * Dragging between the columns of the Linear-shaped board.
+ *
+ * Same mechanics as the day board next to it and a different destination: there a drop writes a
+ * column of mine into this app's own table, here it writes a state into Linear, where the team
+ * will see it. So this one does not move the card first. An optimistic move is right when the
+ * write is local and certain; against someone else's API it means showing a state the team does
+ * not have yet, and a card that springs back is worse than a card that waits a moment.
+ */
+const stateBoard = (swapRegions, toast) => {
+    const board = document.querySelector('[data-state-board]');
+
+    if (! board) return;
+
+    let dragged = null;
+
+    board.addEventListener('dragstart', (event) => {
+        const card = event.target.closest('[data-ticket]');
+
+        if (! card) return;
+
+        dragged = card;
+        card.dataset.dragging = '';
+        event.dataTransfer?.setData('text/plain', card.dataset.ticket);
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    });
+
+    board.addEventListener('dragend', () => {
+        if (dragged) delete dragged.dataset.dragging;
+        dragged = null;
+        board.querySelectorAll('[data-over]').forEach((column) => delete column.dataset.over);
+    });
+
+    board.addEventListener('dragover', (event) => {
+        const column = event.target.closest('[data-state-column]');
+
+        if (! column || ! dragged) return;
+
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+
+        if (column.dataset.over === undefined) {
+            board.querySelectorAll('[data-over]').forEach((other) => delete other.dataset.over);
+            column.dataset.over = '';
+        }
+    });
+
+    board.addEventListener('drop', async (event) => {
+        const column = event.target.closest('[data-state-column]');
+
+        if (! column || ! dragged) return;
+
+        event.preventDefault();
+        delete column.dataset.over;
+
+        const key = dragged.dataset.ticket;
+        const state = column.dataset.stateColumn;
+
+        if (dragged.closest('[data-state-column]') === column) return;
+
+        dragged.dataset.pending = '';
+
+        const body = new FormData();
+
+        body.append('aktion', 'felder');
+        body.append('status', state);
+        body.append('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
+
+        try {
+            const response = await fetch(`/tickets/${encodeURIComponent(key)}/linear`, {
+                method: 'POST',
+                body,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            if (response.ok) {
+                const html = await response.text();
+                const flash = new DOMParser().parseFromString(html, 'text/html')
+                    .querySelector('[data-flash]')?.textContent?.trim();
+
+                if (flash) toast?.(flash);
+
+                swapRegions(html, ['ticket-board']);
+            }
+        } catch {
+            // offline or refused: the next load shows the truth
         }
     });
 };

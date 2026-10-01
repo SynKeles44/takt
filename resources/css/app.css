@@ -1902,6 +1902,83 @@ body::before {
     }
 }
 
+/*
+ * The Linear-shaped board. Columns of a fixed width that scroll sideways, each one scrolling on
+ * its own — the same shape as the board it is modelled on, and the reason is the same: a column
+ * that grows the page makes the other columns unreachable without scrolling past it.
+ */
+.linear-board {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.linear-column {
+    display: flex;
+    flex-direction: column;
+    inline-size: 20rem;
+    flex: 0 0 20rem;
+    max-block-size: calc(100dvh - 20rem);
+    border-radius: var(--radius-card);
+    border: var(--border-w) solid var(--color-line);
+    background-color: color-mix(in oklab, var(--color-surface) 55%, transparent);
+}
+
+.linear-column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-block-end: var(--border-w) solid var(--color-line);
+}
+
+.linear-column-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.linear-group-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding: 0.2rem 0.1rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    list-style: none;
+}
+
+.linear-group-head::-webkit-details-marker {
+    display: none;
+}
+
+.linear-group-head:hover {
+    color: var(--color-ink);
+}
+
+/* the chevron points down when open and right when closed, like every disclosure in this app */
+.linear-group:not([open]) .linear-group-head svg {
+    transform: rotate(-90deg);
+}
+
+.linear-column[data-over] {
+    border-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+    background-color: color-mix(in oklab, var(--color-accent) 7%, transparent);
+}
+
+/* a card waiting for Linear to confirm: visibly in flight rather than visibly moved */
+.ticket-card[data-pending] {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .ticket-column {
     display: flex;
     flex-direction: column;
