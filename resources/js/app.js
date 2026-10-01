@@ -689,11 +689,17 @@ const swapRegions = (html, only = null) => {
             pairs.forEach(([node, fresh]) => {
                 node.replaceWith(fresh);
 
-                // the entrance animation belongs to a page load; an in-place update only fades
+                /*
+                 * The entrance animation belongs to a page load; an in-place update only fades.
+                 * Direct children are cleared inline, everything deeper by the `[data-entered]`
+                 * rules — a card two levels down replayed its lift on every swap otherwise.
+                 */
                 fresh.querySelectorAll(':scope > *').forEach((child) => {
                     child.style.animation = 'none';
                 });
 
+                // stays: this region has entered, and will not enter again on a later swap either
+                fresh.dataset.entered = '';
                 fresh.dataset.swapped = '';
                 requestAnimationFrame(() => requestAnimationFrame(() => delete fresh.dataset.swapped));
             });

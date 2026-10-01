@@ -2533,6 +2533,32 @@ body::before {
 }
 
 /*
+ * And nothing inside it replays its entrance.
+ *
+ * The JS cleared the animation on the region's DIRECT children only, which on a page whose cards
+ * sit one level deeper — the settings page, since its columns became one flow — meant all eleven
+ * cards ran `wb-rise` again on every save: a staggered 6px lift of the whole page, which reads as
+ * flicker and a jump upward. Measured: 11 of 11 cards animating after a save, moving 6px over 200
+ * frames.
+ *
+ * `data-entered` and not `data-swapped`: that one is removed after two frames to end the fade, and
+ * a 450ms animation suppressed for two frames simply carries on. This marks the region for good —
+ * a region swapped in place has entered once and does not enter again.
+ *
+ * Named selectors rather than `*`, because the page still has animations worth keeping: Takti
+ * moves, a skeleton shimmers, a spinner turns. Only the arrivals are cancelled.
+ */
+[data-entered] .rise,
+[data-entered] .stack > .surface,
+[data-entered] .stack > .surface-plain,
+[data-entered] .stack-grid > .surface,
+[data-entered] .stack-grid > .stack,
+[data-entered] .settings-columns > *,
+[data-entered] .dashboard-grid > .widget-slot {
+    animation: none;
+}
+
+/*
  * The flip-through picker keeps every slide in the layout, stacked in one grid cell: the
  * tallest one sets the height, so paging through them never resizes the card.
  */
