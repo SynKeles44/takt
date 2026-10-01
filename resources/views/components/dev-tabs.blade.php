@@ -32,18 +32,24 @@
 @endphp
 
 <div class="flex flex-col items-end gap-1.5">
-    <div class="tile flex flex-wrap items-center gap-1 p-1">
+    <div class="tile flex flex-wrap items-center gap-1 p-1" data-tab-row>
         @foreach ($tabs as $route => $label)
+            @php $here = $active === $route || $parent === $route; @endphp
+
             <a href="{{ route($route) }}" data-nav
                @class([
-                   'rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition',
-                   'bg-hover text-ink' => $active === $route || $parent === $route,
-                   'text-muted hover:text-ink' => $active !== $route && $parent !== $route,
+                   'relative rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition',
+                   'text-ink' => $here,
+                   'text-muted hover:text-ink' => ! $here,
                ])>
-                {{ $label }}
+                @if ($here)
+                    <span class="tab-marker" aria-hidden="true"></span>
+                @endif
+
+                <span class="relative">{{ $label }}</span>
 
                 @if (isset($children[$route]))
-                    <x-icon name="chevron-down" class="ms-0.5 inline size-3 opacity-60"/>
+                    <x-icon name="chevron-down" class="relative ms-0.5 inline size-3 opacity-60"/>
                 @endif
             </a>
         @endforeach
@@ -52,15 +58,19 @@
     @if ($parent !== null)
         {{-- the second row only exists while you are inside that branch --}}
         <div class="flex flex-wrap items-center gap-1 rounded-[var(--radius-control)] border border-line/60 bg-raised/40 p-1"
-             data-subnav>
+             data-subnav data-subtab-row>
             @foreach ($children[$parent] as $route => $label)
                 <a href="{{ route($route) }}" data-nav
                    @class([
-                       'rounded-[var(--radius-control)] px-2.5 py-1 text-[11px] font-medium transition',
-                       'bg-hover text-ink' => $active === $route,
+                       'relative rounded-[var(--radius-control)] px-2.5 py-1 text-[11px] font-medium transition',
+                       'text-ink' => $active === $route,
                        'text-faint hover:text-ink' => $active !== $route,
                    ])>
-                    {{ $label }}
+                    @if ($active === $route)
+                        <span class="subtab-marker" aria-hidden="true"></span>
+                    @endif
+
+                    <span class="relative">{{ $label }}</span>
                 </a>
             @endforeach
         </div>

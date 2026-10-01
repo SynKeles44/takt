@@ -657,6 +657,7 @@ body {
     }
 
     .nav-item {
+        position: relative;
         display: flex;
         align-items: center;
         gap: 0.6rem;
@@ -675,10 +676,11 @@ body {
     }
 
     .nav-item-active {
-        background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
-        border-color: color-mix(in oklab, var(--color-accent) 30%, transparent);
+        /* the colour stays on the link; the surface behind it moved to .nav-marker */
         color: var(--color-accent-text);
     }
+
+
 
     .avatar {
         display: grid;
@@ -3135,6 +3137,101 @@ input[type='time'] {
 
 @keyframes vt-in-left {
     from { opacity: 0; transform: translateX(-3%); }
+}
+
+/*
+ * MARK: the back-date panel
+ *
+ * Floating, not expanding. Inline it grew the button row and pushed the start buttons upward,
+ * out from under the pointer that was reaching for them — and on the dashboard it shoved the
+ * mascot across the clock. A panel that overlays takes no space, so nothing around it moves.
+ */
+.backdate-panel {
+    position: absolute;
+    inset-block-start: calc(100% + 0.5rem);
+    inset-inline-start: 0;
+    z-index: 20;
+    inline-size: 15rem;
+    max-inline-size: calc(100vw - 2rem);
+    border: var(--border-w) solid var(--color-line);
+    border-radius: var(--radius-card);
+    background-color: var(--color-popover);
+    box-shadow: 0 24px 48px -20px var(--shadow-color);
+    padding: 0.85rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    details[open] > .backdate-panel {
+        animation: wb-rise var(--dur) var(--ease) both;
+    }
+}
+
+/* on a narrow window the row wraps anyway, so the panel aligns to the other edge */
+@media (width < 40rem) {
+    .backdate-panel {
+        inset-inline-start: auto;
+        inset-inline-end: 0;
+    }
+}
+
+/*
+ * MARK: the highlight travels
+ *
+ * First attempt gave the marker a view-transition-name so the browser would morph it between
+ * pages. Measured: it aborted the page transition entirely — pageswap reported no transition at
+ * all, with every name unique. Trading the whole page fade for one sliding block is a bad deal,
+ * so the marker moves under its own power instead.
+ *
+ * It is also the better behaviour: this way it starts travelling the moment you click, not when
+ * the next document arrives. The click is when you want the feedback.
+ */
+.nav-marker,
+.tab-marker,
+.subtab-marker {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    /*
+     * transform only. Animating width and height alongside it relayouts the row on every frame,
+     * which is exactly the stutter this was reported for — the marker moved, and the whole
+     * navigation recalculated under it sixty times a second. The size is set without transition
+     * and the travel is composited.
+     */
+    transition: transform 0.34s var(--spring);
+    will-change: transform;
+}
+
+.nav-marker {
+    background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
+    border: var(--border-w) solid color-mix(in oklab, var(--color-accent) 30%, transparent);
+}
+
+.tab-marker,
+.subtab-marker {
+    background-color: var(--color-hover);
+}
+
+/* while it travels it is positioned absolutely against the row, not against its own item */
+[data-marker-host] {
+    position: relative;
+}
+
+[data-marker-host] .nav-marker,
+[data-marker-host] .tab-marker,
+[data-marker-host] .subtab-marker {
+    inset: auto;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-marker,
+    .tab-marker,
+    .subtab-marker {
+        transition: none;
+    }
 }
 
 /*

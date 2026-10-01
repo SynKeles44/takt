@@ -134,12 +134,17 @@
                     forgot to press it" is one field away instead of a booking after the fact.
                     The field is hidden until it is asked for — the common case is "now".
                 --}}
-                <details class="backdate">
+                <details class="backdate relative">
                     <summary class="btn btn-ghost btn-lg w-full cursor-pointer">
                         <x-icon name="clock" class="size-4"/>
                         {{ __('app.timer.backdate') }}
                     </summary>
 
+                    {{--
+                        The panel floats instead of expanding in place. Expanded inline it grew the
+                        row, and a growing row pushes "Arbeit starten" and "Pause starten" upward —
+                        the buttons moved out from under the pointer that was about to press them.
+                    --}}
                     <div class="backdate-panel">
                         <label class="block">
                             <span class="label">{{ __('app.timer.backdate_from') }}</span>

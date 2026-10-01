@@ -95,11 +95,24 @@
 
             <nav class="nav-list ml-auto flex items-center gap-0.5 sm:gap-1 lg:ml-0 lg:mt-1 lg:flex-col lg:items-stretch">
                 @foreach ($sections as $section)
+                    @php $current = request()->routeIs($section['match'] ?? $section['route']); @endphp
+
                     <a href="{{ route($section['route']) }}"
-                       @class(['nav-item', 'nav-item-active' => request()->routeIs($section['match'] ?? $section['route'])])
+                       @class(['nav-item', 'nav-item-active' => $current])
+                       @if ($current) aria-current="page" @endif
                        title="{{ $section['label'] }}">
-                        <x-icon :name="$section['icon']" class="size-[1.15rem] shrink-0"/>
-                        <span class="nav-label hidden sm:inline">{{ $section['label'] }}</span>
+                        {{--
+                            The highlight is its own element, not a background on the link, because
+                            only an element can carry a view-transition-name — and that name is what
+                            makes it travel to the next section instead of blinking off here and on
+                            over there. It exists once per page, on whichever item is current.
+                        --}}
+                        @if ($current)
+                            <span class="nav-marker" aria-hidden="true"></span>
+                        @endif
+
+                        <x-icon :name="$section['icon']" class="relative size-[1.15rem] shrink-0"/>
+                        <span class="nav-label relative hidden sm:inline">{{ $section['label'] }}</span>
                     </a>
                 @endforeach
             </nav>

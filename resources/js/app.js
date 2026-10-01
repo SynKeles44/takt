@@ -6,6 +6,7 @@ import { folderPicker } from './folder-picker';
 import { ticketBoard } from './ticket-board';
 import { motionLayer, segmentedIndicator } from './motion';
 import { prefetchLinks } from './prefetch';
+import { slidingMarkers } from './marker';
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -1138,6 +1139,7 @@ ticketBoard({ swapRegions });
 motionLayer();
 segmentedIndicator();
 prefetchLinks();
+slidingMarkers();
 
 /*
  * The back-dated start time belongs to both start buttons. The work form owns the field (via

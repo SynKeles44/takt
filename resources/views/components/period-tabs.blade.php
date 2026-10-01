@@ -8,15 +8,19 @@
     ];
 @endphp
 
-<div class="tile flex items-center gap-1 p-1">
+<div class="tile flex items-center gap-1 p-1" data-period-row>
     @foreach ($tabs as $period => $label)
         <a href="{{ route('insights', array_filter(['zeitraum' => $period, 'stand' => $anchor])) }}"
            @class([
-               'rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition',
-               'bg-hover text-ink' => $active === $period,
+               'relative rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition',
+               'text-ink' => $active === $period,
                'text-muted hover:text-ink' => $active !== $period,
            ])>
-            {{ $label }}
+            @if ($active === $period)
+                <span class="tab-marker" aria-hidden="true"></span>
+            @endif
+
+            <span class="relative">{{ $label }}</span>
         </a>
     @endforeach
 </div>
