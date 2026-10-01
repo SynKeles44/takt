@@ -430,6 +430,7 @@ return [
     'mascot' => [
         'name' => 'Takti',
         'pose' => [
+            'focus' => 'Takti is in the zone',
             'idle' => 'Takti is waiting',
             'working' => 'Takti is working',
             'break' => 'Takti is on a break',

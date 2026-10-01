@@ -55,6 +55,13 @@
         'read' =>        ['rest',     'book',   'closed', 'soft',    'accent'],
         'wait' =>        ['right',    'hips',   'squint', 'flat',    'accent'],
         'trophy' =>      ['up-right', 'hold',   'happy',  'grin',    'work'],
+
+        /*
+         * The running timer. Everything in it moves: the hand sweeps like a second hand, the arms
+         * type, the ring pulses, sparks come off. It is the one pose a person looks at for minutes
+         * at a time rather than in passing, so standing still was the wrong answer for it.
+         */
+        'focus' =>       ['up',       'type',   'open',   'grin',    'work'],
     ];
 
     [$hand, $arms, $eyes, $mouth, $toneName] = $poses[$pose] ?? $poses['idle'];
@@ -231,6 +238,15 @@
                 <text x="50" y="20" font-size="10" fill="var(--color-accent-2)" opacity=".8">z</text>
                 <text x="56" y="13" font-size="7" fill="var(--color-accent-2)" opacity=".6">z</text>
                 @break
+            @case('focus')
+                {{-- the ring he works inside: it breathes, and the three sparks come off it in turn --}}
+                <circle cx="32" cy="34" r="27" fill="none" stroke="var(--color-work)" stroke-width="1.6"
+                        stroke-dasharray="6 9" opacity=".55" class="mascot-ring"/>
+                <circle cx="9" cy="20" r="2.2" fill="var(--color-work)"/>
+                <circle cx="56" cy="16" r="1.8" fill="var(--color-work)"/>
+                <circle cx="52" cy="47" r="1.5" fill="var(--color-work)"/>
+                @break
+
             @case('cheer')
                 <circle cx="10" cy="16" r="2" fill="var(--color-work)"/>
                 <circle cx="54" cy="14" r="1.6" fill="var(--color-work)"/>

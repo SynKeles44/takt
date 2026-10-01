@@ -1332,6 +1332,43 @@ body::before {
         transform-origin: 50% 100%;
     }
 
+    /*
+     * Focus — the running timer's pose, and the busiest one in the set.
+     *
+     * Five things move at once and none of them costs a layout: the figure keeps a working rhythm,
+     * the hand sweeps a full turn like a second hand, the arms type, the ring around him breathes,
+     * and the three sparks come off it one after another rather than together — simultaneous
+     * blinking reads as a fault, a sequence reads as activity.
+     */
+    [data-mascot='focus'] {
+        animation: takti-focus-bob 1.9s ease-in-out infinite;
+    }
+
+    [data-mascot='focus'] .mascot-hand {
+        animation: takti-sweep-hand 3s linear infinite;
+        transform-origin: 50% 100%;
+    }
+
+    [data-mascot='focus'] .mascot-arms {
+        animation: takti-type 0.42s ease-in-out infinite;
+    }
+
+    [data-mascot='focus'] .mascot-ring {
+        animation: takti-focus-ring 3.6s ease-in-out infinite;
+        transform-origin: 50% 53%;
+    }
+
+    [data-mascot='focus'] .mascot-prop circle:not(.mascot-ring) {
+        animation: takti-sparkle 2.1s ease-in-out infinite;
+    }
+
+    [data-mascot='focus'] .mascot-prop circle:nth-of-type(3) { animation-delay: 0.7s; }
+    [data-mascot='focus'] .mascot-prop circle:nth-of-type(4) { animation-delay: 1.4s; }
+
+    [data-mascot='focus'] .mascot-spark {
+        animation: takti-gleam 2.4s ease-in-out infinite;
+    }
+
     /* steam rises off the cup and fades */
     [data-mascot='break'] .mascot-prop {
         animation: takti-steam 2.4s ease-in-out infinite;
@@ -1608,6 +1645,21 @@ body::before {
 @keyframes takti-breathe {
     0%, 100% { transform: translateY(0) scaleY(1); }
     50% { transform: translateY(-1.5%) scaleY(1.015); }
+}
+
+@keyframes takti-focus-bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    30% { transform: translateY(-5%) rotate(-1.5deg); }
+    65% { transform: translateY(-1%) rotate(1.5deg); }
+}
+
+@keyframes takti-sweep-hand {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes takti-focus-ring {
+    0%, 100% { transform: scale(0.96); opacity: 0.35; }
+    50% { transform: scale(1.04); opacity: 0.75; }
 }
 
 @keyframes takti-blink {
@@ -3292,8 +3344,18 @@ main[data-region='main'] {
      * The shell does not animate; it is simply still. That is the half that sells the whole
      * effect — a sidebar that stays put while the content moves reads as one application, and
      * a sidebar that cross-fades with itself reads as a reload wearing a fade.
+     *
+     * The old snapshot is not drawn at all, and that is not a detail: a cross-document transition
+     * paints the outgoing capture over the incoming document, so for the length of the transition
+     * there were two sidebars stacked — the old one with its highlight still on the section you
+     * came from, the new one with the highlight travelling. Two marks at once, which is exactly
+     * how it was reported. Dropping the outgoing capture leaves one sidebar on screen, and the
+     * travel is visible from its first frame instead of from behind a stale copy of itself.
      */
-    ::view-transition-old(takt-nav),
+    ::view-transition-old(takt-nav) {
+        display: none;
+    }
+
     ::view-transition-new(takt-nav) {
         animation: none;
         mix-blend-mode: normal;

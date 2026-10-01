@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\EntryType;
 use App\Enums\Widget;
 use App\Enums\WidgetGroup;
 use App\Models\DashboardWidget;
+use App\Models\TimeEntry;
 use App\Models\User;
 use App\Services\Dashboard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -217,6 +219,29 @@ class DashboardWidgetTest extends TestCase
             ->assertSee('data-widget-url', escape: false)
             ->assertSee('data-board-cancel', escape: false)
             ->assertSee(__('app.widget.discard'));
+    }
+
+    /**
+     * Takti is in the timer, and he is doing something.
+     *
+     * He was removed from this card twice — once he covered a button, once he was cropped by it —
+     * and what came back has to be in the row rather than on top of it. The pose matters as much
+     * as the presence: a running timer is the one card a person watches for minutes, so it gets
+     * the pose with the sweeping hand and the pulsing ring rather than the one that stands still.
+     */
+    public function test_the_running_timer_carries_a_moving_takti(): void
+    {
+        TimeEntry::query()->create([
+            'type' => EntryType::Work,
+            'started_at' => now()->startOfDay()->addHours(9),
+        ]);
+
+        $this->arrange([Widget::Timer]);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-mascot="focus"', escape: false)
+            ->assertSee('class="mascot-ring"', escape: false);
     }
 
     public function test_every_widget_renders_on_its_own(): void

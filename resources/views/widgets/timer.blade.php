@@ -22,7 +22,7 @@
      * "asleep" — nothing running at eleven in the morning is waiting, not finished.
      */
     $pose = match (true) {
-        $running !== null && $isWork => 'working',
+        $running !== null && $isWork => 'focus',
         $running !== null => 'break',
         ($overtime ?? false) === true => 'over',
         ($reached ?? false) === true => 'done',
@@ -128,13 +128,18 @@
         </div>
 
         {{--
-            No mascot in this widget. It was tried in the corner, where it covered "Pause starten",
-            and then between the columns, where the card is too short and it was cut in half. The
-            timer is the densest card on the board; the dashboard already carries a waving one in
-            the page corner, which is where there is actually room.
-        --}}
+            Takti, in the row rather than on top of it.
 
-        <div class="flex shrink-0 flex-col gap-2.5 sm:flex-row sm:items-start">
+            Twice before this was an absolutely positioned figure: in the corner it covered "Pause
+            starten", and between the columns it was cut in half by a card that is shorter than the
+            mascot when nothing is running. A real flex child cannot do either — it takes its own
+            space, so there is nothing to overlap, and the card grows around it instead of cropping
+            it. `self-start` lifts it out of the row's bottom alignment, which is what puts it at
+            the top; the z-index is what puts it in front of the glow behind the card.
+        --}}
+        <x-mascot :pose="$pose" class="relative z-10 size-24 shrink-0 self-center sm:self-center"/>
+
+        <div class="relative z-10 flex shrink-0 flex-col gap-2.5 sm:flex-row sm:items-start">
             @if ($running === null)
                 {{--
                     Both buttons post the same optional start time, so "I started at nine and

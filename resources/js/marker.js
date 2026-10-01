@@ -83,6 +83,67 @@ const take = (key) => {
 /** The rows wired on this page, so a region swap can drop the ones that left the document. */
 const rows = new Set();
 
+/** Names whose transition rules are already written; the rules outlive the rows that needed them. */
+const ruled = new Set();
+
+/**
+ * Take a row out of the page transition, so it stays put while the content changes.
+ *
+ * This is what makes the travel visible at all. Without it a navigation row is part of the page
+ * capture: the old page flies out carrying the old highlight, the new page flies in carrying the
+ * new one, and the marker's own travel happens inside a card that is moving — so what you see is a
+ * page change, not a highlight moving. Named, the row is its own transition group, stays where it
+ * is, and the only thing that moves in it is the marker.
+ *
+ * The outgoing capture is dropped rather than cross-faded. A cross-document transition paints the
+ * old capture over the new document, so for its length there were two rows stacked — the old one
+ * still marking where you came from. Two marks at once, which is exactly how it was reported.
+ */
+const standStill = (host, key) => {
+    if (! ('startViewTransition' in document)) return;
+
+    // the sidebar's own wrapper is already named and already stands still; two nested names fight
+    if (host.closest('.nav-aside')) return;
+
+    const name = `takt-row-${key.replace(/[^a-z0-9-]/gi, '-')}`;
+
+    /*
+     * Two elements under one name abort the transition for the whole document, so a clash means
+     * this row simply goes without. Asked of the rows still in the document rather than of a list
+     * of names ever handed out — a region swap replaces a row with a fresh one, and that one needs
+     * the name its predecessor just took with it.
+     */
+    if ([...rows].some((other) => other.isConnected && other.style.viewTransitionName === name)) return;
+
+    host.style.viewTransitionName = name;
+
+    /*
+     * The rule is written per name rather than through `view-transition-class`. The class exists
+     * and is the obvious tool, and the measurement said it does not apply here — the outgoing
+     * capture still computed to `display: block` under a `::view-transition-old(.takt-still)`
+     * rule. A rule naming the group directly is not in doubt, and the names are generated here
+     * anyway, so this is where it belongs.
+     */
+    if (ruled.has(name)) return;
+
+    ruled.add(name);
+
+    sheet().insertRule(`::view-transition-old(${name}) { display: none }`);
+    sheet().insertRule(`::view-transition-new(${name}) { animation: none; mix-blend-mode: normal }`);
+};
+
+/** One stylesheet for the generated transition rules, created the first time one is needed. */
+let generated = null;
+
+const sheet = () => {
+    if (! generated) {
+        generated = new CSSStyleSheet();
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, generated];
+    }
+
+    return generated;
+};
+
 const wire = (host, selector, markerClass, key) => {
     if (host.dataset.markerHost !== undefined) return;
 
@@ -128,6 +189,8 @@ const wire = (host, selector, markerClass, key) => {
     if (getComputedStyle(host).position === 'static') {
         host.style.position = 'relative';
     }
+
+    standStill(host, key);
 
     /** Where the marker is right now — mid-animation included, which is what makes interrupts work. */
     const read = () => {

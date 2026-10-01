@@ -430,6 +430,7 @@ return [
     'mascot' => [
         'name' => 'Takti',
         'pose' => [
+            'focus' => 'Takti ist im Fokus',
             'idle' => 'Takti wartet',
             'working' => 'Takti arbeitet',
             'break' => 'Takti macht Pause',
