@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\EntryType;
 use App\Models\TimeEntry;
 use App\Models\User;
+use App\Support\SprintCurve;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -93,7 +94,7 @@ final class Sprints
             // on this sprint's tickets, and during this sprint's days: two measurements, not one
             'seconds_on_issues' => $this->secondsOnTickets($keys),
             'seconds_in_window' => $this->secondsBetween($from, $to),
-            'days' => $this->days($from, $to, $done),
+            'days' => $this->days($from, $to, $issues),
         ];
     }
 
@@ -138,16 +139,16 @@ final class Sprints
     }
 
     /**
-     * One row per day of the sprint: hours worked, and tickets finished that day.
+     * One row per day of the sprint: the curves, plus the hours this app knows about.
      *
-     * This is what the chart draws, and it is deliberately not a burndown. A burndown needs the
-     * scope as it stood on each day, and Linear's API gives the scope as it stands now — drawing
-     * one from today's numbers would be a straight line pretending to be a measurement.
+     * The shape itself is built by `SprintCurve`, which the board's side panel draws from too — the
+     * same sprint rendered in two places had two implementations of one curve until this, and two
+     * would have drifted the first time either was corrected.
      *
-     * @param  list<array<string, mixed>>  $done
+     * @param  list<array<string, mixed>>  $issues
      * @return list<array<string, mixed>>
      */
-    private function days(Carbon $from, Carbon $to, array $done): array
+    private function days(Carbon $from, Carbon $to, array $issues): array
     {
         $end = $to->copy()->min(Carbon::now()->endOfDay());
 
@@ -157,27 +158,17 @@ final class Sprints
             ->between($from, $end)
             ->get()
             ->groupBy(fn (TimeEntry $entry): string => $entry->started_at->toDateString())
-            ->map(fn (Collection $entries): int => (int) $entries->sum(fn (TimeEntry $entry): int => $entry->durationInSeconds()));
+            ->map(fn (Collection $entries): int => (int) $entries->sum(fn (TimeEntry $entry): int => $entry->durationInSeconds()))
+            ->all();
 
-        $closed = collect($done)
-            ->filter(static fn (array $issue): bool => ($issue['completed_at'] ?? '') !== '')
-            ->groupBy(static fn (array $issue): string => Carbon::parse($issue['completed_at'])->toDateString())
-            ->map(static fn (Collection $group): int => $group->count());
-
-        $days = [];
-
-        for ($day = $from->copy(); $day->lte($to); $day->addDay()) {
-            $key = $day->toDateString();
-
-            $days[] = [
-                'date' => $day->copy(),
-                'seconds' => $worked[$key] ?? 0,
-                'closed' => $closed[$key] ?? 0,
-                'future' => $day->isFuture(),
-                'weekend' => $day->isWeekend(),
-            ];
-        }
-
-        return $days;
+        return SprintCurve::days(
+            $from,
+            $to,
+            array_map(static fn (array $issue): array => [
+                'started_at' => ($issue['started_at'] ?? '') === '' ? null : Carbon::parse($issue['started_at']),
+                'completed_at' => ($issue['completed_at'] ?? '') === '' ? null : Carbon::parse($issue['completed_at']),
+            ], $issues),
+            $worked,
+        );
     }
 }

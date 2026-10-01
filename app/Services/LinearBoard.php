@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Support\SprintCurve;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -150,25 +151,6 @@ final class LinearBoard
         $to = Carbon::parse($current['ends_at'] ?: $current['starts_at'])->endOfDay();
 
         $done = $mine->filter(fn (array $row): bool => ($row['state_type'] ?? '') === 'completed');
-        $closedPerDay = $done
-            ->filter(fn (array $row): bool => $row['completed_at'] !== null)
-            ->groupBy(fn (array $row): string => $row['completed_at']->toDateString())
-            ->map(fn (Collection $group): int => $group->count());
-
-        $days = [];
-        $running = 0;
-        $length = max(1, (int) $from->diffInDays($to));
-
-        for ($day = $from->copy(), $i = 0; $day->lte($to); $day->addDay(), $i++) {
-            $running += $closedPerDay[$day->toDateString()] ?? 0;
-
-            $days[] = [
-                'date' => $day->copy(),
-                'done' => $running,
-                'ideal' => round($mine->count() * ($i / $length), 2),
-                'future' => $day->isFuture(),
-            ];
-        }
 
         return [
             'cycle' => $current,
@@ -179,7 +161,10 @@ final class LinearBoard
             'done' => $done->count(),
             'points' => round($mine->sum(fn (array $row): float => (float) ($row['points'] ?? 0)), 1),
             'seconds' => $mine->sum(fn (array $row): int => (int) ($row['booked'] ?? 0)),
-            'days' => $days,
+            'days' => SprintCurve::days($from, $to, $mine->map(fn (array $row): array => [
+                'started_at' => $row['started_at'] ?? null,
+                'completed_at' => $row['completed_at'] ?? null,
+            ])->all()),
             // the projects this sprint touches, biggest first — what the assignee list is for a team
             'projects' => $mine
                 ->groupBy(fn (array $row): string => (string) ($row['project'] ?? ''))

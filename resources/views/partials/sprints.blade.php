@@ -24,10 +24,7 @@
         </x-card>
     @else
         @foreach ($sprints['sprints'] as $sprint)
-            @php
-                $peak = max(1, collect($sprint['days'])->max('seconds'));
-                $share = $sprint['scope'] > 0 ? round($sprint['done'] / $sprint['scope'] * 100) : 0;
-            @endphp
+            @php $share = $sprint['scope'] > 0 ? round($sprint['done'] / $sprint['scope'] * 100) : 0; @endphp
 
             <x-card @class(['rise', 'border-accent/40' => $sprint['current']])>
                 <div class="flex flex-wrap items-start justify-between gap-4">
@@ -46,67 +43,49 @@
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {{--
+                        The legend is the figures, the way Linear's is: the dot in front of a number
+                        is the same colour as the curve it belongs to, so the chart needs no key of
+                        its own and the numbers are not a second, separate thing to read.
+                    --}}
+                    <div class="flex flex-wrap items-start gap-5">
                         @foreach ([
-                            [__('app.sprint.scope'), (string) $sprint['scope'], 'text-ink'],
-                            [__('app.sprint.started'), (string) $sprint['started'], 'text-accent-text'],
-                            [__('app.sprint.done'), (string) $sprint['done'], 'text-work-text'],
-                            [__('app.sprint.booked'), Duration::human($sprint['seconds_in_window']), 'text-ink'],
-                        ] as [$label, $value, $tone])
-                            <div class="tile px-3 py-2 text-center">
-                                <p class="metric text-lg font-bold {{ $tone }}">{{ $value }}</p>
-                                <p class="mt-0.5 truncate text-[10px] uppercase tracking-wide text-faint">{{ $label }}</p>
+                            [__('app.sprint.scope'), $sprint['scope'], 'bg-line-strong', null],
+                            [__('app.sprint.started'), $sprint['started'], 'bg-accent', $sprint['scope'] > 0 ? round($sprint['started'] / $sprint['scope'] * 100) : 0],
+                            [__('app.sprint.done'), $sprint['done'], 'bg-work', $share],
+                            [__('app.sprint.booked'), Duration::human($sprint['seconds_in_window']), null, null],
+                        ] as [$label, $value, $dot, $percent])
+                            <div class="min-w-16">
+                                <p class="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-faint">
+                                    @if ($dot)<span class="size-1.5 rounded-[2px] {{ $dot }}"></span>@endif
+                                    {{ $label }}
+                                </p>
+                                <p class="metric mt-0.5 flex items-baseline gap-1.5">
+                                    <span class="text-lg font-bold text-ink">{{ $value }}</span>
+                                    @if ($percent !== null)<span class="text-[11px] text-dim">{{ $percent }}%</span>@endif
+                                </p>
                             </div>
                         @endforeach
                     </div>
                 </div>
 
-                <div class="mt-4 flex flex-wrap items-center gap-3">
-                    <div class="h-1.5 min-w-40 flex-1 overflow-hidden rounded-[var(--radius-pill)] bg-raised">
-                        <div class="h-full rounded-[var(--radius-pill)] bg-gradient-to-r from-work to-work-2"
-                             style="width: {{ $share }}%"></div>
-                    </div>
-
-                    <span class="metric text-[11px] text-faint">{{ $share }}%</span>
-
-                    @if ($sprint['points'] > 0)
-                        <span class="pill text-[10px]" title="{{ __('app.sprint.points_hint') }}">
-                            {{ __('app.sprint.points', ['done' => $sprint['points_done'], 'total' => $sprint['points']]) }}
-                        </span>
-                    @endif
-
-                    {{-- two measurements, not one: the gap between them is where the sprint's time actually went --}}
-                    <span class="pill text-[10px]" title="{{ __('app.sprint.on_issues_hint') }}">
-                        {{ __('app.sprint.on_issues', ['duration' => Duration::human($sprint['seconds_on_issues'])]) }}
-                    </span>
-                </div>
-
-                {{-- one bar per day: hours worked, with a dot for every ticket closed that day --}}
-                <div class="mt-5 flex items-end gap-[3px]" style="block-size: 7rem">
-                    @foreach ($sprint['days'] as $day)
-                        <div class="group relative flex h-full flex-1 flex-col justify-end"
-                             title="{{ $day['date']->isoFormat('dd, D. MMM') }} · {{ Duration::human($day['seconds']) }}{{ $day['closed'] > 0 ? ' · '.trans_choice('app.sprint.closed_count', $day['closed']) : '' }}">
-                            @if ($day['closed'] > 0)
-                                <span class="mx-auto mb-1 flex flex-col items-center gap-0.5">
-                                    @for ($i = 0; $i < min($day['closed'], 3); $i++)
-                                        <span class="block size-1 rounded-full bg-work"></span>
-                                    @endfor
-                                </span>
-                            @endif
-
-                            <div @class([
-                                    'w-full rounded-[3px] transition',
-                                    'bg-gradient-to-t from-work to-work-2' => $day['seconds'] > 0,
-                                    'bg-line/60' => $day['seconds'] === 0 && ! $day['weekend'] && ! $day['future'],
-                                    'bg-raised' => $day['seconds'] === 0 && ($day['weekend'] || $day['future']),
-                                 ])
-                                 style="block-size: {{ $day['seconds'] > 0 ? max(4, round($day['seconds'] / $peak * 100)) : 3 }}%"></div>
-                        </div>
-                    @endforeach
-                </div>
+                <x-sprint-chart :days="$sprint['days']" class="mt-5"/>
 
                 <div class="mt-1.5 flex items-center justify-between text-[10px] text-faint">
                     <span>{{ $sprint['from']->isoFormat('D. MMM') }}</span>
+
+                    <span class="flex items-center gap-3">
+                        @if ($sprint['points'] > 0)
+                            <span class="pill text-[10px]" title="{{ __('app.sprint.points_hint') }}">
+                                {{ __('app.sprint.points', ['done' => $sprint['points_done'], 'total' => $sprint['points']]) }}
+                            </span>
+                        @endif
+
+                        <span class="pill text-[10px]" title="{{ __('app.sprint.on_issues_hint') }}">
+                            {{ __('app.sprint.on_issues', ['duration' => Duration::human($sprint['seconds_on_issues'])]) }}
+                        </span>
+                    </span>
+
                     <span>{{ $sprint['to']->isoFormat('D. MMM') }}</span>
                 </div>
 

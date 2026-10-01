@@ -101,50 +101,27 @@
                 <span class="pill shrink-0 text-[10px]">{{ $sprint['from']->isoFormat('D. MMM') }} → {{ $sprint['to']->isoFormat('D. MMM') }}</span>
             </div>
 
-            <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+            {{-- the dot in front of a number is the colour of its curve, so the chart needs no key --}}
+            <div class="mt-4 flex flex-wrap gap-4">
                 @foreach ([
-                    [__('app.sprint.scope'), $sprint['scope'], 'text-ink', 100],
-                    [__('app.sprint.started'), $sprint['started'], 'text-accent-text', $sprint['scope'] > 0 ? round($sprint['started'] / $sprint['scope'] * 100) : 0],
-                    [__('app.sprint.done'), $sprint['done'], 'text-work-text', $sprint['scope'] > 0 ? round($sprint['done'] / $sprint['scope'] * 100) : 0],
-                ] as [$label, $value, $tone, $percent])
-                    <div class="tile px-2 py-2">
-                        <p class="metric text-lg font-bold {{ $tone }}">{{ $value }}</p>
-                        <p class="truncate text-[10px] uppercase tracking-wide text-faint">{{ $label }}</p>
-                        @if ($label !== __('app.sprint.scope'))
-                            <p class="metric text-[10px] text-dim">{{ $percent }}%</p>
-                        @endif
+                    [__('app.sprint.scope'), $sprint['scope'], 'bg-line-strong', null],
+                    [__('app.sprint.started'), $sprint['started'], 'bg-accent', $sprint['scope'] > 0 ? round($sprint['started'] / $sprint['scope'] * 100) : 0],
+                    [__('app.sprint.done'), $sprint['done'], 'bg-work', $sprint['scope'] > 0 ? round($sprint['done'] / $sprint['scope'] * 100) : 0],
+                ] as [$label, $value, $dot, $percent])
+                    <div>
+                        <p class="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-faint">
+                            <span class="size-1.5 rounded-[2px] {{ $dot }}"></span>
+                            {{ $label }}
+                        </p>
+                        <p class="metric mt-0.5 flex items-baseline gap-1">
+                            <span class="text-base font-bold text-ink">{{ $value }}</span>
+                            @if ($percent !== null)<span class="text-[10px] text-dim">{{ $percent }}%</span>@endif
+                        </p>
                     </div>
                 @endforeach
             </div>
 
-            {{--
-                A burn-up, drawn from completion timestamps: every point is a ticket that actually
-                closed that day. The scope is a flat line because the API gives it as it stands now
-                and not as it stood on each day — a sloping one would be invention. The dashed line
-                is the only construction here, and it is drawn as one.
-            --}}
-            @php
-                $peak = max(1, $sprint['scope']);
-                $points = collect($sprint['days']);
-                $step = $points->count() > 1 ? 100 / ($points->count() - 1) : 100;
-                $path = $points
-                    ->reject(fn (array $day): bool => $day['future'])
-                    ->map(fn (array $day, int $i): string => round($i * $step, 2).','.round(100 - $day['done'] / $peak * 100, 2))
-                    ->implode(' ');
-                $ideal = $points
-                    ->map(fn (array $day, int $i): string => round($i * $step, 2).','.round(100 - $day['ideal'] / $peak * 100, 2))
-                    ->implode(' ');
-            @endphp
-
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="mt-4 h-28 w-full" aria-hidden="true">
-                <line x1="0" y1="0" x2="100" y2="0" stroke="var(--color-line-strong)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
-                <polyline points="{{ $ideal }}" fill="none" stroke="var(--color-accent)" stroke-width="1"
-                          stroke-dasharray="3 3" opacity=".5" vector-effect="non-scaling-stroke"/>
-                @if ($path !== '')
-                    <polyline points="{{ $path }}" fill="none" stroke="var(--color-work)" stroke-width="2"
-                              stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-                @endif
-            </svg>
+            <x-sprint-chart :days="$sprint['days']" class="mt-4" height="h-28"/>
 
             <div class="flex items-center justify-between text-[10px] text-faint">
                 <span>{{ $sprint['from']->isoFormat('D. MMM') }}</span>
