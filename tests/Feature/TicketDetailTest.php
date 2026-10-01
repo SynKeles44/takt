@@ -76,7 +76,7 @@ class TicketDetailTest extends TestCase
             'Cycle 11',                 // sprint
             'Oberticket',               // parent
             'bug',                      // label
-            '2026-10-15',               // due date
+            '15. Okt 2026',             // due date, in the reader's format rather than the API's
             'High',                     // priority
         ] as $fact) {
             $response->assertSee($fact);
@@ -151,9 +151,11 @@ class TicketDetailTest extends TestCase
     }
 
     /**
-     * The description is Linear's Markdown and is shown as text. Rendering it would mean emitting
-     * HTML for content this app does not own, and a hand-written Markdown subset that emits HTML
-     * is an XSS surface — so a description that contains a tag must arrive escaped.
+     * The description is Linear's Markdown and is rendered. The guarantee is therefore stronger
+     * than escaping and not weaker: CommonMark runs with `html_input: strip`, so a tag in a
+     * description does not reach the page as markup NOR as visible text — it is gone before the
+     * HTML is built. Both halves are asserted, because passing only the first would also be true
+     * of a page that printed the tag out in full.
      */
     public function test_a_description_cannot_bring_markup_with_it(): void
     {
@@ -162,6 +164,6 @@ class TicketDetailTest extends TestCase
         $this->get(route('tickets.show', 'COR-4242'))
             ->assertOk()
             ->assertDontSee('<script>alert(1)</script>', escape: false)
-            ->assertSee('&lt;script&gt;', escape: false);
+            ->assertDontSee('&lt;script&gt;', escape: false);
     }
 }

@@ -84,14 +84,7 @@
                 <x-card>
                     <h2 class="heading">{{ __('app.ticket.description') }}</h2>
 
-                    {{--
-                        Linear's description is Markdown, and it is shown as the text it is rather
-                        than rendered. Rendering it means either a Markdown library in the request
-                        path or a hand-written subset, and a hand-written subset of Markdown that
-                        emits HTML is an XSS surface for text this app does not own. Pre-wrapped
-                        text is readable, keeps the author's line breaks, and cannot execute.
-                    --}}
-                    <p class="mt-3 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-muted">{{ $issue['description'] }}</p>
+                    <x-markdown :text="$issue['description']" class="mt-3 max-h-[32rem] overflow-y-auto pe-1"/>
                 </x-card>
             @endif
 
@@ -150,7 +143,7 @@
                                             <span class="metric text-faint">{{ \Illuminate\Support\Carbon::parse($comment['at'])->isoFormat('D. MMM, HH:mm') }}</span>
                                         @endif
                                     </p>
-                                    <p class="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted">{{ $comment['body'] }}</p>
+                                    <x-markdown :text="$comment['body']" class="mt-1.5"/>
                                 </div>
                             </li>
                         @endforeach
@@ -318,24 +311,97 @@
                 <x-card>
                     <h2 class="heading">{{ __('app.ticket.properties') }}</h2>
 
-                    <dl class="mt-3 space-y-2 text-xs">
+                    @php
+                        /*
+                         * A property row carries its value the way the value is shaped: a person
+                         * as a face, a priority as the colour of its urgency, a sprint or a team
+                         * as the chip it is in Linear. A column of grey label-and-string pairs is
+                         * the same information and none of the recognition.
+                         */
+                        $cycle = ($issue['cycle']['name'] ?? null) ?: (($issue['cycle']['number'] ?? null) !== null
+                            ? __('app.sprint.number', ['number' => $issue['cycle']['number']])
+                            : null);
+
+                        $priority = $issue['priority'] ?? null;
+                        $priorityTone = match ($priority) {
+                            'Urgent' => 'border-danger/40 bg-danger/15 text-danger-text',
+                            'High' => 'border-rest/40 bg-rest/15 text-rest-text',
+                            'Medium' => 'border-accent/35 bg-accent/12 text-accent-text',
+                            default => 'text-dim',
+                        };
+
+                        $due = ($issue['due_on'] ?? null) !== null
+                            ? \Illuminate\Support\Carbon::parse($issue['due_on'])
+                            : null;
+                    @endphp
+
+                    <dl class="mt-3 space-y-2.5 text-xs">
+                        @if (($issue['state'] ?? null) !== null)
+                            <div class="flex items-baseline justify-between gap-3">
+                                <dt class="shrink-0 text-faint">{{ __('app.ticket.prop_state') }}</dt>
+                                <dd class="flex min-w-0 items-center gap-1.5">
+                                    <span @class([
+                                            'size-2 shrink-0 rounded-full',
+                                            'bg-work' => ($issue['state_type'] ?? '') === 'completed',
+                                            'bg-accent' => ($issue['state_type'] ?? '') === 'started',
+                                            'bg-line-strong' => ! in_array($issue['state_type'] ?? '', ['completed', 'started'], true),
+                                         ])></span>
+                                    <span class="truncate font-medium text-ink">{{ $issue['state'] }}</span>
+                                </dd>
+                            </div>
+                        @endif
+
+                        @if ($priority !== null)
+                            <div class="flex items-baseline justify-between gap-3">
+                                <dt class="shrink-0 text-faint">{{ __('app.ticket.prop_priority') }}</dt>
+                                <dd><span @class(['pill text-[10px]', $priorityTone])>{{ $priority }}</span></dd>
+                            </div>
+                        @endif
+
                         @foreach ([
-                            [__('app.ticket.prop_project'), $issue['project'] ?? null],
-                            [__('app.ticket.prop_sprint'), ($issue['cycle']['name'] ?? null) ?: (($issue['cycle']['number'] ?? null) !== null ? __('app.sprint.number', ['number' => $issue['cycle']['number']]) : null)],
-                            [__('app.ticket.prop_points'), ($issue['estimate'] ?? null) !== null ? rtrim(rtrim(number_format((float) $issue['estimate'], 1, ',', ''), '0'), ',') : null],
-                            [__('app.ticket.prop_priority'), $issue['priority'] ?? null],
-                            [__('app.ticket.prop_due'), $issue['due_on'] ?? null],
                             [__('app.ticket.prop_assignee'), $issue['assignee'] ?? null],
                             [__('app.ticket.prop_creator'), $issue['creator'] ?? null],
-                            [__('app.ticket.prop_team'), $issue['team'] ?? null],
-                        ] as [$label, $value])
-                            @if ($value !== null && $value !== '')
-                                <div class="flex items-baseline justify-between gap-3">
+                        ] as [$label, $person])
+                            @if ($person !== null && $person !== '')
+                                <div class="flex items-center justify-between gap-3">
                                     <dt class="shrink-0 text-faint">{{ $label }}</dt>
-                                    <dd class="min-w-0 truncate text-end text-ink">{{ $value }}</dd>
+                                    <dd class="flex min-w-0 items-center gap-1.5">
+                                        <x-avatar :name="$person" size="size-5"/>
+                                        <span class="truncate text-ink">{{ $person }}</span>
+                                    </dd>
                                 </div>
                             @endif
                         @endforeach
+
+                        @foreach ([
+                            [__('app.ticket.prop_sprint'), $cycle],
+                            [__('app.ticket.prop_project'), $issue['project'] ?? null],
+                            [__('app.ticket.prop_team'), $issue['team'] ?? null],
+                        ] as [$label, $value])
+                            @if ($value !== null && $value !== '')
+                                <div class="flex items-center justify-between gap-3">
+                                    <dt class="shrink-0 text-faint">{{ $label }}</dt>
+                                    <dd class="min-w-0"><span class="pill max-w-full truncate text-[10px] text-dim">{{ $value }}</span></dd>
+                                </div>
+                            @endif
+                        @endforeach
+
+                        @if (($issue['estimate'] ?? null) !== null)
+                            <div class="flex items-baseline justify-between gap-3">
+                                <dt class="shrink-0 text-faint">{{ __('app.ticket.prop_points') }}</dt>
+                                <dd class="metric font-semibold text-accent-text">{{ rtrim(rtrim(number_format((float) $issue['estimate'], 1, ',', ''), '0'), ',') }}</dd>
+                            </div>
+                        @endif
+
+                        @if ($due !== null)
+                            {{-- a due date that has passed is the one property on this panel that is news --}}
+                            <div class="flex items-baseline justify-between gap-3">
+                                <dt class="shrink-0 text-faint">{{ __('app.ticket.prop_due') }}</dt>
+                                <dd @class(['metric', 'text-danger-text' => $due->isPast(), 'text-ink' => ! $due->isPast()])>
+                                    {{ $due->isoFormat('D. MMM YYYY') }}
+                                </dd>
+                            </div>
+                        @endif
                     </dl>
 
                     @if (($issue['labels'] ?? []) !== [])

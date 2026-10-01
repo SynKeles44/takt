@@ -1794,6 +1794,185 @@ body::before {
  * page does not extend there — and hidden on narrow windows, where that corner IS content.
  */
 /*
+ * MARK: md — rendered Markdown
+ *
+ * Linear's text carries headings, emphasis, lists, quotes and code, and all of it used to arrive
+ * as the characters that encode them. The rules below are deliberately few: a ticket description
+ * is a column of prose, not a document, so it gets rhythm and weight and nothing else.
+ */
+.md {
+    color: var(--color-muted);
+    font-size: 0.875rem;
+    line-height: 1.65;
+}
+
+.md > * + * {
+    margin-block-start: 0.75rem;
+}
+
+.md :is(h1, h2, h3, h4, h5, h6) {
+    color: var(--color-ink);
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.md :is(h1, h2) {
+    font-size: 1rem;
+}
+
+.md :is(h3, h4, h5, h6) {
+    font-size: 0.875rem;
+}
+
+/* a heading belongs to what follows it, so it keeps its distance from what came before */
+.md :is(h1, h2, h3, h4, h5, h6) + * {
+    margin-block-start: 0.375rem;
+}
+
+.md > :is(h1, h2, h3, h4, h5, h6) + * {
+    margin-block-start: 0.375rem;
+}
+
+.md :is(strong, b) {
+    color: var(--color-ink);
+    font-weight: 600;
+}
+
+.md em {
+    color: var(--color-ink);
+}
+
+/* struck-through text in a ticket is a decision that was reversed — readable, clearly retired */
+.md del {
+    color: var(--color-faint);
+    text-decoration-color: var(--color-line-strong);
+    text-decoration-thickness: 1px;
+}
+
+.md a {
+    color: var(--color-accent-text);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--color-accent) 45%, transparent);
+    text-underline-offset: 2px;
+    transition: color var(--dur-fast) var(--ease);
+}
+
+.md a:hover {
+    color: var(--color-ink);
+    text-decoration-color: currentcolor;
+}
+
+/* an upload is a file, so it looks like one rather than like a sentence that happens to be blue */
+.md a.md-attachment {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-control);
+    background: var(--color-raised);
+    padding-inline: 0.5rem;
+    padding-block: 0.25rem;
+    color: var(--color-dim);
+    font-size: 0.75rem;
+    text-decoration: none;
+}
+
+.md a.md-attachment::before {
+    content: '';
+    flex-shrink: 0;
+    inline-size: 0.75rem;
+    block-size: 0.75rem;
+    background: currentcolor;
+    opacity: 0.7;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16.5 6.5 8.7 14.3a2.6 2.6 0 0 0 3.7 3.7l7.1-7.1a4.5 4.5 0 0 0-6.4-6.4l-7.3 7.3a6.4 6.4 0 0 0 9 9l4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.md a.md-attachment:hover {
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+}
+
+.md :is(ul, ol) {
+    padding-inline-start: 1.125rem;
+}
+
+.md ul {
+    list-style: disc;
+}
+
+.md ol {
+    list-style: decimal;
+}
+
+.md li::marker {
+    color: var(--color-faint);
+}
+
+.md li + li {
+    margin-block-start: 0.25rem;
+}
+
+.md :is(code, kbd) {
+    border-radius: 0.25rem;
+    background: var(--color-raised);
+    padding-inline: 0.3em;
+    padding-block: 0.1em;
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-size: 0.8125em;
+}
+
+.md pre {
+    overflow-x: auto;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-control);
+    background: var(--color-raised);
+    padding: 0.75rem;
+}
+
+.md pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1.6;
+}
+
+.md blockquote {
+    border-inline-start: 2px solid var(--color-line-strong);
+    padding-inline-start: 0.75rem;
+    color: var(--color-dim);
+}
+
+.md hr {
+    border: 0;
+    border-block-start: 1px solid var(--color-line);
+}
+
+.md table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.md :is(th, td) {
+    border: 1px solid var(--color-line);
+    padding-inline: 0.5rem;
+    padding-block: 0.25rem;
+    text-align: start;
+}
+
+.md th {
+    color: var(--color-ink);
+    font-weight: 600;
+}
+
+.md input[type='checkbox'] {
+    margin-inline-end: 0.375rem;
+    accent-color: var(--color-accent);
+}
+
+/*
  * MARK: skeletons — the shape of what is coming
  *
  * A skeleton is only honest when it has the proportions of the real thing: a shimmer in the

@@ -336,6 +336,8 @@ return [
         'comments' => 'Kommentare',
         'unknown_author' => 'Unbekannt',
         'properties' => 'Eigenschaften',
+        'prop_state' => 'Status',
+        'attachment' => 'Anhang',
         'prop_project' => 'Projekt',
         'prop_sprint' => 'Sprint',
         'prop_points' => 'Punkte',
