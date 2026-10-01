@@ -613,6 +613,18 @@ const swapRegions = (html, only = null) => {
                 fresh.dataset.swapped = '';
                 requestAnimationFrame(() => requestAnimationFrame(() => delete fresh.dataset.swapped));
             });
+
+            /*
+             * Inside the mutation, not after it: `startViewTransition` runs its callback
+             * asynchronously, so anything standing after the `withTransition` call still sees the
+             * old DOM. A swapped-in row wired from out there is the row that is about to be
+             * replaced — measured: the fresh row came back unwired and its marker never moved
+             * again. Both passes skip what they already wired, so running them here is cheap, and
+             * the handover entry the click left behind lets the fresh row animate in from the old
+             * position exactly as a page load does.
+             */
+            slidingMarkers();
+            segmentedIndicator();
         });
 
         // a swapped-in region brings new collapsible blocks with it

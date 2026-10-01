@@ -6,7 +6,9 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -30,6 +32,21 @@ class TravellingMarkerTest extends TestCase
         Process::preventStrayProcesses();
 
         $this->login();
+
+        Carbon::setTestNow('2026-08-25 10:00:00');
+    }
+
+    /**
+     * Which of the three steps carries the marker, 1-based.
+     *
+     * Counted rather than matched, because the attribute that names the position is the component's
+     * own claim about itself — this reads where the marker element actually sits.
+     */
+    private function markedStep(string $html): int
+    {
+        $head = Str::before(Str::after($html, 'data-marker-item="[data-date-step]"'), 'tab-marker');
+
+        return substr_count($head, 'data-date-step');
     }
 
     public function test_the_sidebar_carries_the_marker_on_the_page_you_are_on(): void
@@ -68,6 +85,52 @@ class TravellingMarkerTest extends TestCase
             ->assertSee('data-marker-row', escape: false)
             ->assertSee('data-marker-key="todo-filter"', escape: false)
             ->assertSee('class="tab-marker"', escape: false);
+    }
+
+    /**
+     * A date navigator marks where you stand relative to today, not what you last pressed: back in
+     * the past, forward in the future, the middle button on the current period. Anything else is
+     * wrong the moment a step forward out of the past lands in the past again.
+     */
+    public function test_the_date_navigators_mark_where_you_stand(): void
+    {
+        $cases = [
+            'history' => [route('history'), route('history', ['from' => '2026-08-17']), route('history', ['from' => '2026-09-07'])],
+            'calendar' => [route('calendar'), route('calendar', ['monat' => '2026-07']), route('calendar', ['monat' => '2026-10'])],
+            'insights' => [route('insights'), route('insights', ['stand' => '2026-08-17']), route('insights', ['stand' => '2026-09-07'])],
+            'dev' => [route('dev'), route('dev', ['tag' => '2026-08-17']), route('dev', ['tag' => '2026-09-07'])],
+        ];
+
+        foreach ($cases as $page => [$now, $past, $future]) {
+            foreach (['now' => 2, 'past' => 1, 'future' => 3] as $position => $step) {
+                $html = (string) $this->get(['now' => $now, 'past' => $past, 'future' => $future][$position])
+                    ->assertOk()
+                    ->getContent();
+
+                $this->assertStringContainsString(
+                    'data-marker-at="'.$position.'"',
+                    $html,
+                    "{$page} does not know it is in the {$position}",
+                );
+
+                $this->assertSame(
+                    $step,
+                    $this->markedStep($html),
+                    "{$page} marks the wrong step in the {$position}",
+                );
+            }
+        }
+    }
+
+    /**
+     * Stepping forward out of the past can land in the past again, so the marker must not follow
+     * the press — it waits for the page that actually arrives.
+     */
+    public function test_a_date_navigator_does_not_move_on_the_press(): void
+    {
+        $this->get(route('history'))
+            ->assertOk()
+            ->assertSee('data-marker-optimistic="false"', escape: false);
     }
 
     /**

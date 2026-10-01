@@ -23,20 +23,14 @@
                     {{ __('app.insights.title') }}
                 </a>
 
-                <a href="{{ route('history', ['from' => $previousWeek]) }}" class="{{ $navLink }}" aria-label="{{ __('app.week.previous') }}">
-                    <x-icon name="chevron-left" class="size-4"/>
-                </a>
-
-                {{-- always here, only inactive: a button that appears moves its neighbours --}}
-                @if ($isCurrentWeek)
-                    <span class="{{ $navLink }} is-current">{{ __('app.week.current') }}</span>
-                @else
-                    <a href="{{ route('history') }}" class="{{ $navLink }}">{{ __('app.week.current') }}</a>
-                @endif
-
-                <a href="{{ route('history', ['from' => $nextWeek]) }}" class="{{ $navLink }}" aria-label="{{ __('app.week.next') }}">
-                    <x-icon name="chevron-right" class="size-4"/>
-                </a>
+                <x-date-nav marker-key="history-week"
+                            :position="$isCurrentWeek ? 'now' : ($weekStart->isBefore(today()->startOfWeek()) ? 'past' : 'future')"
+                            :previous="route('history', ['from' => $previousWeek])"
+                            :current="route('history')"
+                            :next="route('history', ['from' => $nextWeek])"
+                            :label="__('app.week.current')"
+                            :previous-label="__('app.week.previous')"
+                            :next-label="__('app.week.next')"/>
             </div>
         </div>
 

@@ -12,22 +12,12 @@
             <div class="flex flex-wrap items-center gap-2">
                 <x-period-tabs :active="$period" :anchor="$from->toDateString()"/>
 
-                <div class="tile flex items-center gap-1 p-1">
-                    <a href="{{ route('insights', ['zeitraum' => $period, 'stand' => $previous]) }}"
-                       class="icon-action" aria-label="{{ __('app.calendar.previous') }}">
-                        <x-icon name="chevron-left" class="size-4"/>
-                    </a>
-
-                    <a href="{{ route('insights', ['zeitraum' => $period]) }}"
-                       @class(['rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition', 'text-dim' => $isCurrent, 'text-muted hover:text-ink' => ! $isCurrent])>
-                        {{ __('app.insights.now') }}
-                    </a>
-
-                    <a href="{{ route('insights', ['zeitraum' => $period, 'stand' => $next]) }}"
-                       class="icon-action" aria-label="{{ __('app.calendar.next') }}">
-                        <x-icon name="chevron-right" class="size-4"/>
-                    </a>
-                </div>
+                <x-date-nav marker-key="insights"
+                            :position="$isCurrent ? 'now' : ($from->isBefore(today()) ? 'past' : 'future')"
+                            :previous="route('insights', ['zeitraum' => $period, 'stand' => $previous])"
+                            :current="route('insights', ['zeitraum' => $period])"
+                            :next="route('insights', ['zeitraum' => $period, 'stand' => $next])"
+                            :label="__('app.insights.now')"/>
 
                 <x-menu :label="__('app.insights.export')" icon="download">
                     <x-menu-item :href="route('insights.report', ['zeitraum' => $period, 'stand' => $from->toDateString()])"

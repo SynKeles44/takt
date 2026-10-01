@@ -21,19 +21,14 @@
                     {{ __('app.absence.title') }}
                 </a>
 
-                <a href="{{ route('calendar', ['monat' => $previousMonth]) }}" class="btn btn-icon" aria-label="{{ __('app.calendar.previous') }}">
-                    <x-icon name="chevron-left" class="size-4"/>
-                </a>
-
-                @if ($isCurrentMonth)
-                    <span class="btn btn-ghost is-current text-xs">{{ __('app.calendar.today') }}</span>
-                @else
-                    <a href="{{ route('calendar') }}" class="btn btn-ghost text-xs">{{ __('app.calendar.today') }}</a>
-                @endif
-
-                <a href="{{ route('calendar', ['monat' => $nextMonth]) }}" class="btn btn-icon" aria-label="{{ __('app.calendar.next') }}">
-                    <x-icon name="chevron-right" class="size-4"/>
-                </a>
+                <x-date-nav marker-key="calendar-month"
+                            :position="$isCurrentMonth ? 'now' : ($month->isBefore(today()->startOfMonth()) ? 'past' : 'future')"
+                            :previous="route('calendar', ['monat' => $previousMonth])"
+                            :current="route('calendar')"
+                            :next="route('calendar', ['monat' => $nextMonth])"
+                            :label="__('app.calendar.today')"
+                            :previous-label="__('app.calendar.previous')"
+                            :next-label="__('app.calendar.next')"/>
             </div>
         </div>
 

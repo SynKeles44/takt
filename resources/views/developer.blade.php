@@ -12,20 +12,12 @@
 
             {{-- the day navigation sits left of the tabs, so the tabs keep their place on every page --}}
             <div class="flex flex-wrap items-center justify-end gap-2">
-                <div class="tile flex items-center gap-1 p-1">
-                    <a href="{{ route('dev', ['tag' => $previousDay]) }}" class="icon-action"
-                       data-partial="dev-head dev-commits" aria-label="{{ __('app.calendar.previous') }}">
-                        <x-icon name="chevron-left" class="size-4"/>
-                    </a>
-                    <a href="{{ route('dev') }}" data-partial="dev-head dev-commits"
-                       @class(['rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition', 'text-dim' => $isToday, 'text-muted hover:text-ink' => ! $isToday])>
-                        {{ __('app.insights.now') }}
-                    </a>
-                    <a href="{{ route('dev', ['tag' => $nextDay]) }}" class="icon-action"
-                       data-partial="dev-head dev-commits" aria-label="{{ __('app.calendar.next') }}">
-                        <x-icon name="chevron-right" class="size-4"/>
-                    </a>
-                </div>
+                <x-date-nav marker-key="dev-day" partial="dev-head dev-commits"
+                            :position="$isToday ? 'now' : ($day->isBefore(today()) ? 'past' : 'future')"
+                            :previous="route('dev', ['tag' => $previousDay])"
+                            :current="route('dev')"
+                            :next="route('dev', ['tag' => $nextDay])"
+                            :label="__('app.insights.now')"/>
 
                 <x-dev-tabs active="dev"/>
             </div>

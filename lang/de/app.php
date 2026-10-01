@@ -8,6 +8,8 @@ return [
     'tagline_short' => 'Zeit & Aufgaben',
 
     'nav' => [
+        'step_back' => 'Zurück',
+        'step_forward' => 'Weiter',
         'tickets' => 'Tickets',
         'dev' => 'Entwicklung',
         'account' => 'Mein Konto',

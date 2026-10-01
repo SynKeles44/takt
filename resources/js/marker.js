@@ -159,7 +159,20 @@ const wire = (host, selector, markerClass, key) => {
 
     observer.observe(host);
 
-    rows.push({ host, selector });
+    /*
+     * A date navigator is the case where the item you click is not reliably the item that ends up
+     * marked: stepping forward out of the past can land in the past again. Moving the marker on
+     * the press would then send it right and the next page would send it back — so these rows opt
+     * out of the optimistic move and only hand their position over. The pages answer in tens of
+     * milliseconds; the travel starts on the next document instead of this one, and it is always
+     * the travel that actually happened.
+     */
+    // a region swap replaces whole rows; the ones that left the document are no longer anybody's
+    for (let i = rows.length - 1; i >= 0; i--) {
+        if (! rows[i].host.isConnected) rows.splice(i, 1);
+    }
+
+    rows.push({ host, selector, optimistic: host.dataset.markerOptimistic !== 'false' });
 };
 
 /** Every wired row, so one delegated listener can serve all of them. */
@@ -258,13 +271,14 @@ document.addEventListener('click', (event) => {
 
     if (! target?.closest) return;
 
-    rows.forEach(({ host, selector }) => {
+    rows.forEach(({ host, selector, optimistic }) => {
         const item = target.closest(selector);
 
         if (item && host.contains(item)) {
             // hand the position to the next document first, then move for the same-page case
             remember(host);
-            move(host, item, true);
+
+            if (optimistic) move(host, item, true);
         }
     });
 }, true);
