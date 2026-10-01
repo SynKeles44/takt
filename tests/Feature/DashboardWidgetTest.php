@@ -10,6 +10,7 @@ use App\Models\DashboardWidget;
 use App\Models\User;
 use App\Services\Dashboard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -22,6 +23,10 @@ class DashboardWidgetTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The Docker widget asks the daemon for its container list; a test must never reach it.
+        Process::fake();
+        Process::preventStrayProcesses();
 
         $this->user = $this->login();
     }

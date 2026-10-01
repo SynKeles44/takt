@@ -933,6 +933,11 @@ return [
         'snippets' => ['label' => 'Snippets', 'description' => 'Commands and text straight to the clipboard.'],
         'test_post' => ['label' => 'Test post', 'description' => 'Ticket, PR and instance in, three lines out.'],
         'dev_links' => ['label' => 'Repositories', 'description' => "Straight to your projects' GitHub repositories.", 'empty' => 'No project with a repository yet.'],
+        'tickets' => ['label' => 'Tickets', 'description' => 'The focused ticket, the column counts, and what is on for today.', 'board' => 'Board', 'focus' => 'In focus', 'stuck' => 'stuck', 'empty' => 'Nothing on the board for today.'],
+        'packages' => ['label' => 'Packages', 'description' => 'Dependencies across every project: behind, vulnerable, unchecked.', 'total' => 'Packages', 'major' => 'Major', 'minor' => 'Minor', 'vulnerable' => 'Advisories', 'clean' => 'No known advisories.', 'unchecked' => ':count project(s) not checked yet.'],
+        'docker' => ['label' => 'Docker', 'description' => 'What is running right now, grouped the way compose groups it.', 'running' => 'containers running', 'empty' => 'No containers at all.'],
+        'releases' => ['label' => 'Releases', 'description' => 'The newest tag per project — since when is what live.', 'empty' => 'No project carries tags.', 'cold' => 'Not read yet — open the releases page once.'],
+        'runs' => ['label' => 'Runs', 'description' => 'The last commands and how they ended.', 'empty' => 'No command has run yet.'],
     ],
 
     'hint' => [

@@ -933,6 +933,11 @@ return [
         'snippets' => ['label' => 'Bausteine', 'description' => 'Befehle und Textbausteine in die Zwischenablage.'],
         'test_post' => ['label' => 'Testpost', 'description' => 'Ticket, PR und Instanz eingeben, Dreizeiler bauen.'],
         'dev_links' => ['label' => 'Repositories', 'description' => 'Direkt zu den GitHub-Repositories Deiner Projekte.', 'empty' => 'Kein Projekt mit Repository hinterlegt.'],
+        'tickets' => ['label' => 'Tickets', 'description' => 'Fokus-Ticket, Spaltenstand und was heute ansteht.', 'board' => 'Board', 'focus' => 'Im Fokus', 'stuck' => 'liegt', 'empty' => 'Heute steht kein Ticket auf dem Board.'],
+        'packages' => ['label' => 'Pakete', 'description' => 'Abhängigkeiten aller Projekte: veraltet, verwundbar, ungeprüft.', 'total' => 'Pakete', 'major' => 'Major', 'minor' => 'Minor', 'vulnerable' => 'Lücken', 'clean' => 'Keine bekannten Sicherheitslücken.', 'unchecked' => ':count Projekt(e) noch nicht geprüft.'],
+        'docker' => ['label' => 'Docker', 'description' => 'Welche Container gerade laufen, nach Compose-Projekt.', 'running' => 'Container laufen', 'empty' => 'Keine Container vorhanden.'],
+        'releases' => ['label' => 'Releases', 'description' => 'Der jüngste Tag je Projekt – seit wann ist was live.', 'empty' => 'Kein Projekt hat Tags.', 'cold' => 'Noch nicht gelesen – öffne einmal die Releases-Seite.'],
+        'runs' => ['label' => 'Läufe', 'description' => 'Die letzten Befehle und ihr Ausgang.', 'empty' => 'Noch kein Befehl gelaufen.'],
     ],
 
     'hint' => [

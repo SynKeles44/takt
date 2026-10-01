@@ -39,6 +39,11 @@ enum Widget: string
     case Snippets = 'snippets';
     case TestPost = 'test_post';
     case DevLinks = 'dev_links';
+    case Tickets = 'tickets';
+    case Packages = 'packages';
+    case Docker = 'docker';
+    case Releases = 'releases';
+    case Runs = 'runs';
 
     public function label(): string
     {
@@ -73,7 +78,8 @@ enum Widget: string
             self::Timer, self::Stats, self::YearHeatmap => 6,
             self::Activity => 4,
             self::WeekChart, self::Todos, self::Entries, self::CommitsToday,
-            self::ProjectLauncher, self::ReviewQueue, self::MyPullRequests => 4,
+            self::ProjectLauncher, self::ReviewQueue, self::MyPullRequests,
+            self::Tickets, self::Packages, self::Docker, self::Runs => 4,
             default => 2,
         };
     }
@@ -85,7 +91,8 @@ enum Widget: string
             self::Timer, self::Stats, self::TodoTags, self::TodoProgress => 2,
             self::Booking => 8,
             self::WeekChart, self::Todos, self::CommitsToday, self::ReviewQueue,
-            self::MyPullRequests, self::Snippets, self::TestPost => 4,
+            self::MyPullRequests, self::Snippets, self::TestPost,
+            self::Tickets, self::Packages, self::Docker, self::Runs => 4,
             default => 3,
         };
     }
@@ -109,6 +116,7 @@ enum Widget: string
             self::Note => 'text',
             self::TodoTags, self::DevLinks => 'pills',
             self::ProjectLauncher => 'buttons',
+            self::Tickets, self::Packages, self::Docker, self::Releases, self::Runs => 'list',
         };
     }
 

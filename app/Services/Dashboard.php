@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\DueState;
+use App\Enums\TicketColumn;
 use App\Enums\Widget;
+use App\Models\CommandRun;
 use App\Models\DashboardWidget;
 use App\Models\DayNote;
 use App\Models\Project;
 use App\Models\Snippet;
+use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\Todo;
 use App\Models\User;
@@ -34,6 +37,10 @@ final class Dashboard
         private readonly Commits $commits,
         private readonly Reviews $reviews,
         private readonly ProjectRunner $runner,
+        private readonly TicketBoard $board,
+        private readonly Packages $packages,
+        private readonly Docker $docker,
+        private readonly Releases $releases,
     ) {}
 
     /**
@@ -138,7 +145,76 @@ final class Dashboard
             Widget::Snippets => ['snippets' => Snippet::query()->inOrder()->take(6)->get()],
             Widget::TestPost => [],
             Widget::DevLinks => ['projects' => $this->projects()->filter(fn (Project $project): bool => $project->repository !== null)],
+            Widget::Tickets => $this->tickets(),
+            Widget::Packages => $this->packageHealth(),
+            Widget::Docker => ['docker' => $this->docker->summary()],
+            Widget::Releases => $this->latestReleases(),
+            Widget::Runs => ['runs' => CommandRun::query()->with('project')->recent()->take(6)->get()],
         };
+    }
+
+    /**
+     * The board as a tile: what is in hand, what is queued, and what has been waiting too long.
+     * Read from the local rows only — Linear is a network call and a dashboard does not make one.
+     *
+     * @return array<string, mixed>
+     */
+    private function tickets(): array
+    {
+        $open = Ticket::query()
+            ->whereNull('ignored_at')
+            ->whereIn('column', [TicketColumn::Today->value, TicketColumn::Next->value, TicketColumn::Waiting->value])
+            ->orderBy('position')
+            ->get();
+
+        return [
+            'focused' => $this->board->focused(),
+            'today' => $open->where('column', TicketColumn::Today)->values(),
+            'counts' => collect(TicketColumn::cases())->mapWithKeys(fn (TicketColumn $column): array => [
+                $column->value => $open->where('column', $column)->count(),
+            ]),
+            'stuck' => $open->filter(fn (Ticket $ticket): bool => ($ticket->daysInColumn() ?? 0) >= 5)->count(),
+        ];
+    }
+
+    /**
+     * Dependency health across every project. The manifests come off disk and cost nothing; what
+     * is behind and what is vulnerable is whatever the last check left in the cache, so this tile
+     * never starts a network call of its own.
+     *
+     * @return array<string, mixed>
+     */
+    private function packageHealth(): array
+    {
+        $rows = $this->packages->overview();
+
+        return [
+            'summary' => $this->packages->summary($rows),
+            'advisories' => array_slice($this->packages->advisories($rows), 0, 4),
+        ];
+    }
+
+    /**
+     * The newest tag per project, from the cache the releases page fills. Reading tags is a git
+     * call per project; an empty tile that says so is worth more than a slow dashboard.
+     *
+     * @return array<string, mixed>
+     */
+    private function latestReleases(): array
+    {
+        $groups = $this->releases->cached();
+
+        return [
+            'releases' => $groups === null ? null : $groups
+                ->filter(fn (array $group): bool => $group['releases'] !== [])
+                ->map(fn (array $group): array => [
+                    'project' => $group['project'],
+                    'release' => $group['releases'][0],
+                ])
+                ->sortByDesc(fn (array $row): string => $row['release']['at']->toIso8601String())
+                ->take(5)
+                ->values(),
+        ];
     }
 
     // MARK: shared pieces, each read once per request

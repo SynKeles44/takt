@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Support\ShellEnvironment;
 use App\Support\TerminalText;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 use Throwable;
 
@@ -24,6 +25,11 @@ final class Docker
     private const int LIST_TIMEOUT = 8;
 
     public const int LOG_LINES = 300;
+
+    /** Twenty seconds: a dashboard tile must not pay a quarter second of `docker ps` per reload. */
+    public const int SUMMARY_SECONDS = 20;
+
+    private const string SUMMARY_KEY = 'docker.summary';
 
     /** A real 0x1f between the fields — a literal "\x1f" would just be printed. */
     private const string FORMAT = "{{.ID}}\x1f{{.Names}}\x1f{{.Image}}\x1f{{.State}}\x1f{{.Status}}\x1f{{.Ports}}\x1f{{.Label \"com.docker.compose.project\"}}\x1f{{.Label \"com.docker.compose.service\"}}\x1f{{.RunningFor}}";
@@ -59,6 +65,50 @@ final class Docker
             'running' => $containers->where('running', true)->count(),
             'total' => $containers->count(),
         ];
+    }
+
+    /**
+     * The same picture as `overview`, reduced to what a dashboard tile shows and cached, because
+     * `docker ps` costs about a fifth of a second and the tile renders on every page load.
+     *
+     * Only scalars go into the store — this app runs with `serializable_classes` off, so a cached
+     * Collection or Carbon comes back as an incomplete object and takes the page with it.
+     *
+     * @return array{ok: bool, error: ?string, running: int, total: int, groups: list<array{label: string, running: int, total: int}>}
+     */
+    public function summary(): array
+    {
+        $cached = Cache::get(self::SUMMARY_KEY);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $overview = $this->overview();
+
+        $summary = [
+            'ok' => $overview['ok'],
+            'error' => $overview['error'],
+            'running' => $overview['running'],
+            'total' => $overview['total'],
+            'groups' => $overview['groups']
+                ->map(static fn (array $group): array => [
+                    'label' => $group['label'],
+                    'running' => $group['running'],
+                    'total' => $group['total'],
+                ])
+                ->all(),
+        ];
+
+        Cache::put(self::SUMMARY_KEY, $summary, self::SUMMARY_SECONDS);
+
+        return $summary;
+    }
+
+    /** After an action the counts are stale by definition, so the tile must not keep showing them. */
+    public function forgetSummary(): void
+    {
+        Cache::forget(self::SUMMARY_KEY);
     }
 
     /** @return array{id: string, name: string, running: bool}|null */
@@ -99,6 +149,8 @@ final class Docker
         if ($result === null || ! $result->successful()) {
             return ['ok' => false, 'error' => $this->explain($result?->errorOutput() ?? '')];
         }
+
+        $this->forgetSummary();
 
         return ['ok' => true, 'error' => null];
     }
