@@ -13,55 +13,95 @@
     $isFocused = $focused !== null && $focused->key === $ticket['id'];
     $drafts = collect($ticket['pulls'] ?? [])->filter(fn (array $pull): bool => ($pull['draft'] ?? false) === true)->count();
     $ready = count($ticket['pulls'] ?? []) - $drafts;
+
+    /*
+     * Priority as four bars, the way Linear draws it — urgent and high are worth seeing from
+     * across the board, and a word in a pill is not. Linear counts 1 as urgent down to 4 as low,
+     * with 0 meaning nobody said.
+     */
+    $priority = $ticket['priority_value'] ?? null;
+    $bars = $priority === null || $priority === 0 ? 0 : 5 - $priority;
 @endphp
 
-<article @class(['ticket-card', 'ticket-card-focus' => $isFocused]) data-ticket="{{ $ticket['id'] }}" draggable="true">
-    <div class="flex items-start gap-2">
+<article @class(['ticket-card group', 'ticket-card-focus' => $isFocused]) data-ticket="{{ $ticket['id'] }}" draggable="true">
+    <div class="flex items-center gap-2">
         <a href="{{ route('tickets.show', ['key' => $ticket['id']]) }}"
-           class="metric shrink-0 text-xs font-semibold text-accent-text hover:underline">{{ $ticket['id'] }}</a>
+           class="metric shrink-0 text-[11px] text-dim hover:text-accent-text">{{ $ticket['id'] }}</a>
+
+        @if ($bars > 0)
+            <span class="flex shrink-0 items-end gap-[2px]" title="{{ __('app.ticket.priority') }}: {{ $ticket['priority'] }}">
+                @for ($i = 1; $i <= 3; $i++)
+                    <span @class([
+                            'block w-[3px] rounded-[1px]',
+                            'bg-danger' => $bars >= 4 && $i <= $bars - 1,
+                            'bg-muted' => $bars < 4 && $i <= $bars - 1,
+                            'bg-line-strong' => $i > $bars - 1,
+                         ])
+                         style="block-size: {{ 3 + $i * 2 }}px"></span>
+                @endfor
+            </span>
+        @endif
 
         @if ($isFocused)
             <span class="pill shrink-0 border-work/40 bg-work/15 text-[9px] text-work-text">{{ __('app.ticket.focus_now') }}</span>
         @endif
 
-        <span class="ms-auto flex shrink-0 items-center gap-1">
-            @if ($previous !== null)
-                <form method="POST" action="{{ route('tickets.place') }}" data-live>
-                    @csrf
-                    <input type="hidden" name="key" value="{{ $ticket['id'] }}">
-                    <input type="hidden" name="spalte" value="{{ $previous->value }}">
-                    <button type="submit" class="icon-action size-6" title="{{ __('app.ticket.move_to', ['column' => $previous->label()]) }}">
-                        <x-icon name="chevron-left" class="size-3"/>
-                    </button>
-                </form>
-            @endif
+        {{-- the move buttons are a fallback for dragging, so they stay out of the way until asked for --}}
+        <span class="ms-auto flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+            @foreach ([['previous', $previous, 'chevron-left'], ['next', $next, 'chevron-right']] as [$which, $target, $icon])
+                @if ($target !== null)
+                    <form method="POST" action="{{ route('tickets.place') }}" data-live>
+                        @csrf
+                        <input type="hidden" name="key" value="{{ $ticket['id'] }}">
+                        <input type="hidden" name="spalte" value="{{ $target->value }}">
+                        <button type="submit" class="icon-action size-5" title="{{ __('app.ticket.move_to', ['column' => $target->label()]) }}">
+                            <x-icon :name="$icon" class="size-3"/>
+                        </button>
+                    </form>
+                @endif
+            @endforeach
 
-            @if ($next !== null)
-                <form method="POST" action="{{ route('tickets.place') }}" data-live>
-                    @csrf
-                    <input type="hidden" name="key" value="{{ $ticket['id'] }}">
-                    <input type="hidden" name="spalte" value="{{ $next->value }}">
-                    <button type="submit" class="icon-action size-6" title="{{ __('app.ticket.move_to', ['column' => $next->label()]) }}">
-                        <x-icon name="chevron-right" class="size-3"/>
-                    </button>
-                </form>
-            @endif
+            <form method="POST" action="{{ route('tickets.timer', ['key' => $ticket['id']]) }}" data-live>
+                @csrf
+                <button type="submit" class="icon-action size-5" title="{{ __('app.ticket.timer_start') }}">
+                    <x-icon name="play" class="size-3"/>
+                </button>
+            </form>
         </span>
     </div>
 
-    <a href="{{ route('tickets.show', ['key' => $ticket['id']]) }}" class="mt-1.5 block">
+    <a href="{{ route('tickets.show', ['key' => $ticket['id']]) }}" class="mt-1.5 flex items-start gap-2">
+        {{-- the state as a ring, filled by how far along it is: the one glyph that says it at card size --}}
+        <span @class([
+                'mt-[3px] size-3 shrink-0 rounded-full border-2',
+                'border-work bg-work' => ($ticket['state_type'] ?? null) === 'completed',
+                'border-accent' => ($ticket['state_type'] ?? null) === 'started',
+                'border-line-strong' => ! in_array($ticket['state_type'] ?? null, ['completed', 'started'], true),
+             ])></span>
+
         <span class="line-clamp-2 text-sm leading-snug text-ink">{{ $ticket['title'] ?: __('app.ticket.not_found', ['id' => $ticket['id']]) }}</span>
     </a>
 
     <div class="mt-2 flex flex-wrap items-center gap-1">
+        {{--
+            Linear's state, on the card, next to a column that is mine. Linear's board puts the
+            state in the column header and leaves it off the card, because there it is the same
+            thing; here the columns describe my day and the state describes the team's workflow, so
+            the two can disagree — and this pill is where that disagreement is visible.
+        --}}
         @if (($ticket['state'] ?? null) !== null)
             <span @class([
                     'pill text-[9px]',
                     'border-work/30 bg-work/10 text-work-text' => $ticket['state_type'] === 'completed',
                     'border-accent/30 bg-accent/10 text-accent-text' => $ticket['state_type'] === 'started',
                 ])>{{ $ticket['state'] }}</span>
-        @elseif (($ticket['source'] ?? null) === 'local')
-            <span class="pill text-[9px] text-dim">{{ __('app.ticket.local') }}</span>
+        @endif
+
+        @if (($ticket['points'] ?? null) !== null)
+            <span class="pill text-[9px] text-dim" title="{{ __('app.ticket.points') }}">
+                <x-icon name="chart" class="size-2.5"/>
+                {{ rtrim(rtrim(number_format((float) $ticket['points'], 1, ',', ''), '0'), ',') }}
+            </span>
         @endif
 
         @if (($ticket['booked'] ?? 0) > 0)
@@ -75,6 +115,17 @@
             <span class="pill text-[9px] text-faint">/ {{ Duration::human($ticket['estimate']) }}</span>
         @endif
 
+        @foreach (array_slice($ticket['labels'] ?? [], 0, 2) as $label)
+            <span class="pill text-[9px] text-dim">
+                <span class="size-1.5 rounded-full" style="background: {{ $label['color'] ?? 'var(--color-accent)' }}"></span>
+                {{ $label['name'] }}
+            </span>
+        @endforeach
+
+        @if (($ticket['project'] ?? null) !== null)
+            <span class="pill max-w-32 truncate text-[9px] text-dim" title="{{ $ticket['project'] }}">{{ $ticket['project'] }}</span>
+        @endif
+
         @if ($ready > 0)
             <span class="pill border-accent/30 bg-accent/10 text-[9px] text-accent-text">{{ trans_choice('app.tickets.pulls', $ready) }}</span>
         @elseif ($drafts > 0)
@@ -84,26 +135,21 @@
         @if (count($ticket['commits'] ?? []) > 0)
             <span class="pill text-[9px] text-faint">{{ trans_choice('app.tickets.commits', count($ticket['commits'])) }}</span>
         @endif
+
+        @if (($ticket['state'] ?? null) === null && ($ticket['source'] ?? null) === 'local')
+            <span class="pill text-[9px] text-dim">{{ __('app.ticket.local') }}</span>
+        @endif
     </div>
 
     @if ($column === TicketColumn::Waiting && filled($local?->waiting_reason))
         <p class="mt-2 line-clamp-1 text-[10px] text-rest-text">{{ $local->waiting_reason }}</p>
     @endif
 
-    <div class="mt-2 flex items-center justify-between gap-2">
+    <p class="mt-2 text-[10px] text-faint">
         @if ($days !== null && $days > 0)
-            <span @class(['metric text-[10px]', 'text-danger-text' => $days >= 5, 'text-faint' => $days < 5])>
-                {{ __('app.ticket.waiting_since', ['days' => $days]) }}
-            </span>
+            <span @class(['metric', 'text-danger-text' => $days >= 5])>{{ __('app.ticket.waiting_since', ['days' => $days]) }}</span>
         @else
-            <span class="metric text-[10px] text-faint">{{ $ticket['last']->isoFormat('D. MMM') }}</span>
+            <span class="metric">{{ __('app.ticket.updated', ['when' => $ticket['last']->diffForHumans(short: true)]) }}</span>
         @endif
-
-        <form method="POST" action="{{ route('tickets.timer', ['key' => $ticket['id']]) }}" data-live>
-            @csrf
-            <button type="submit" class="icon-action size-6" title="{{ __('app.ticket.timer_start') }}">
-                <x-icon name="play" class="size-3"/>
-            </button>
-        </form>
-    </div>
+    </p>
 </article>

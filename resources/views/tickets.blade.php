@@ -18,7 +18,7 @@
                 </form>
 
                 <div class="segmented" data-marker-key="tickets-view">
-                    @foreach (['board' => __('app.ticket.board'), 'liste' => __('app.ticket.list')] as $value => $label)
+                    @foreach (['board' => __('app.ticket.board'), 'liste' => __('app.ticket.list'), 'sprints' => __('app.sprint.tab')] as $value => $label)
                         <a href="{{ route('tickets', ['ansicht' => $value, 'tage' => $days, 'q' => $term]) }}"
                            @class(['segment', 'segment-active' => $view === $value])>{{ $label }}</a>
                     @endforeach
@@ -79,7 +79,9 @@
     @endif
 
     <div data-region="ticket-board" class="mt-5">
-        @if ($view === 'board')
+        @if ($view === 'sprints')
+            @include('partials.sprints')
+        @elseif ($view === 'board')
             <div class="ticket-board" data-ticket-board>
                 @foreach ($columns as $column)
                     @php $cards = $board[$column->value]; @endphp

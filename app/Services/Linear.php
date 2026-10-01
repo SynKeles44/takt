@@ -68,7 +68,7 @@ final class Linear
     public function forget(User $user): void
     {
         Cache::forget('linear.'.$user->getKey());
-        Cache::forget('linear.mine.'.$user->getKey());
+        Cache::forget('linear.mine.v2.'.$user->getKey());
     }
 
     /**
@@ -85,7 +85,9 @@ final class Linear
             return ['issues' => [], 'error' => null];
         }
 
-        $key = 'linear.mine.'.$user->getKey();
+        // the key carries the shape: a cache written before these fields existed would be read
+        // back as a board with no estimates, no labels and no sprint, and look like Linear lost them
+        $key = 'linear.mine.v2.'.$user->getKey();
         $cached = Cache::get($key);
 
         if (is_array($cached) && is_array($cached['issues'] ?? null)) {
@@ -113,10 +115,18 @@ final class Linear
                     title
                     url
                     updatedAt
+                    startedAt
+                    completedAt
+                    estimate
+                    branchName
+                    priority
+                    priorityLabel
                     state { name type }
                     team { key name }
                     assignee { displayName }
-                    priorityLabel
+                    project { name }
+                    cycle { id number name startsAt endsAt }
+                    labels(first: 6) { nodes { name color } }
                   }
                 }
               }
@@ -140,9 +150,20 @@ final class Linear
         return ['issues' => $issues, 'error' => null];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * One issue, flattened.
+     *
+     * Everything a card or a sprint needs is read in the one query rather than fetched per issue:
+     * estimate, labels, project and cycle are what turn a list of titles into a board, and the
+     * cycle is the only place the sprint view can get its shape from — Linear owns the sprint, this
+     * app owns what was actually done in it.
+     *
+     * @return array<string, mixed>
+     */
     private function issue(array $node): array
     {
+        $cycle = is_array($node['cycle'] ?? null) ? $node['cycle'] : null;
+
         return [
             'id' => (string) $node['identifier'],
             'title' => (string) ($node['title'] ?? ''),
@@ -152,7 +173,26 @@ final class Linear
             'team' => $node['team']['name'] ?? null,
             'assignee' => $node['assignee']['displayName'] ?? null,
             'priority' => $node['priorityLabel'] ?? null,
+            'priority_value' => is_numeric($node['priority'] ?? null) ? (int) $node['priority'] : null,
+            'estimate' => is_numeric($node['estimate'] ?? null) ? (float) $node['estimate'] : null,
+            'branch' => $node['branchName'] ?? null,
+            'project' => $node['project']['name'] ?? null,
+            'labels' => array_values(array_filter(array_map(
+                static fn (mixed $label): ?array => is_array($label) && is_string($label['name'] ?? null)
+                    ? ['name' => $label['name'], 'color' => is_string($label['color'] ?? null) ? $label['color'] : null]
+                    : null,
+                $node['labels']['nodes'] ?? [],
+            ))),
+            'cycle' => $cycle === null ? null : [
+                'id' => (string) ($cycle['id'] ?? ''),
+                'number' => is_numeric($cycle['number'] ?? null) ? (int) $cycle['number'] : null,
+                'name' => $cycle['name'] ?? null,
+                'starts_at' => (string) ($cycle['startsAt'] ?? ''),
+                'ends_at' => (string) ($cycle['endsAt'] ?? ''),
+            ],
             'updated_at' => (string) ($node['updatedAt'] ?? ''),
+            'started_at' => (string) ($node['startedAt'] ?? ''),
+            'completed_at' => (string) ($node['completedAt'] ?? ''),
         ];
     }
 

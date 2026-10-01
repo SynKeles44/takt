@@ -311,6 +311,9 @@ return [
     ],
 
     'ticket' => [
+        'points' => 'Schätzpunkte',
+        'updated' => 'Aktualisiert :when',
+        'priority' => 'Priorität',
         'column' => [
             'today' => 'Heute',
             'next' => 'Als nächstes',
@@ -1127,4 +1130,22 @@ return [
         'missing_fields' => 'Es fehlt noch: :fields',
         'templates_note' => 'Vorlagen (anpassbar in den Einstellungen):',
     ],
+    'sprint' => [
+        'tab' => 'Sprints',
+        'current' => 'Läuft',
+        'number' => 'Sprint :number',
+        'scope' => 'Umfang',
+        'started' => 'Angefangen',
+        'done' => 'Fertig',
+        'booked' => 'Gebucht',
+        'points' => ':done / :total Punkte',
+        'points_hint' => 'Schätzpunkte aus Linear — erledigte gegen geplante.',
+        'on_issues' => 'davon auf Sprint-Tickets: :duration',
+        'on_issues_hint' => 'Zeit, die direkt auf Tickets dieses Sprints gebucht ist — unabhängig davon, wann sie gebucht wurde.',
+        'closed_count' => '{1} 1 Ticket fertig|[2,*] :count Tickets fertig',
+        'issue_count' => '{0} Keine Tickets|{1} 1 Ticket|[2,*] :count Tickets',
+        'empty' => 'Noch kein Sprint',
+        'empty_hint' => 'Sobald Deine Linear-Tickets einem Cycle zugeordnet sind, taucht er hier auf.',
+    ],
+
 ];

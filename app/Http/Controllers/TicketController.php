@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\TicketColumn;
+use App\Services\Sprints;
 use App\Services\TicketBoard;
 use App\Services\Tickets;
 use Illuminate\Http\Request;
@@ -19,12 +20,12 @@ class TicketController extends Controller
     /** How many found-in-the-code ids the footnote renders at once. */
     private const int LOOSE_LIMIT = 40;
 
-    public function __invoke(Request $request, Tickets $tickets, TicketBoard $board): View
+    public function __invoke(Request $request, Tickets $tickets, TicketBoard $board, Sprints $sprints): View
     {
         $request->validate([
             'tage' => ['nullable', 'integer', 'min:7', 'max:365'],
             'q' => ['nullable', 'string', 'max:60'],
-            'ansicht' => ['nullable', 'in:board,liste'],
+            'ansicht' => ['nullable', 'in:board,liste,sprints'],
         ]);
 
         $days = (int) ($request->integer('tage') ?: Tickets::DEFAULT_DAYS);
@@ -64,6 +65,8 @@ class TicketController extends Controller
             'term' => (string) $request->query('q', ''),
             'view' => $view,
             'windows' => [30, 90, 180],
+            // only the sprint view pays for the sprint read; it answers from the same cached issues
+            'sprints' => $view === 'sprints' ? $sprints->recent($request->user()) : null,
         ]);
     }
 }

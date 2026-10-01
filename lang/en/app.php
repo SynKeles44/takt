@@ -311,6 +311,9 @@ return [
     ],
 
     'ticket' => [
+        'points' => 'Estimate points',
+        'updated' => 'Updated :when',
+        'priority' => 'Priority',
         'column' => [
             'today' => 'Today',
             'next' => 'Up next',
@@ -1127,4 +1130,22 @@ return [
         'missing_fields' => 'Still missing: :fields',
         'templates_note' => 'Templates (adjustable in the settings):',
     ],
+    'sprint' => [
+        'tab' => 'Sprints',
+        'current' => 'Running',
+        'number' => 'Sprint :number',
+        'scope' => 'Scope',
+        'started' => 'Started',
+        'done' => 'Done',
+        'booked' => 'Booked',
+        'points' => ':done / :total points',
+        'points_hint' => "Linear's estimate points — finished against planned.",
+        'on_issues' => 'of that on sprint tickets: :duration',
+        'on_issues_hint' => "Time booked directly on this sprint's tickets, whenever it was booked.",
+        'closed_count' => '{1} 1 ticket done|[2,*] :count tickets done',
+        'issue_count' => '{0} No tickets|{1} 1 ticket|[2,*] :count tickets',
+        'empty' => 'No sprint yet',
+        'empty_hint' => 'As soon as your Linear tickets belong to a cycle, it shows up here.',
+    ],
+
 ];
