@@ -146,7 +146,12 @@
             'max-w-none' => $wide === 'full',
         ])>
             @if ($title)
-                <h1 class="mb-5 text-xl font-bold tracking-tight text-ink">{{ $title }}</h1>
+                {{--
+                    On a full-bleed page the heading keeps the normal page width, so it does not
+                    walk out to the window edge while every other page's heading stays put. The
+                    page itself opts the rest in with .page-width.
+                --}}
+                <h1 @class(['mb-5 text-xl font-bold tracking-tight text-ink', 'page-width' => $wide === 'full'])>{{ $title }}</h1>
             @endif
 
             @if ($errors->any())

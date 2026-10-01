@@ -2016,6 +2016,28 @@ body::before {
 }
 
 /*
+ * MARK: page-width — the reading width, on a page that is not one
+ *
+ * The ticket board takes the window because nine columns are not a column of prose. Everything
+ * above it is: the heading, the header card, the hint. They opt back in here rather than the page
+ * opting out, so a header does not change size when a tab does.
+ *
+ * The two values are the ones .nav-main uses for wide pages; they are duplicated rather than
+ * shared because the layout writes them as utilities and a token would be read by one of them.
+ */
+.page-width {
+    margin-inline: auto;
+    inline-size: 100%;
+    max-inline-size: 72rem;
+}
+
+@media (min-width: 1280px) {
+    .page-width {
+        max-inline-size: 92rem;
+    }
+}
+
+/*
  * MARK: pending — Takti, while you wait
  *
  * Bottom centre rather than a centred overlay: the page you are leaving stays readable, and a

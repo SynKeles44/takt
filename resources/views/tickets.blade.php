@@ -2,7 +2,12 @@
 
 {{-- only the board earns the full window: it scrolls sideways. The list and the sprints read like every other page. --}}
 <x-app-layout :title="__('app.tickets.title')" :wide="$view === 'board' ? 'full' : true">
-    <x-card class="rise">
+    {{--
+        The header is the same width on all three views. Only the board's columns take the window,
+        because nine of them have nothing to do with a reading width — everything above them does,
+        and a header that changes size when the tab changes is the thing this avoids.
+    --}}
+    <x-card class="rise page-width">
 
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -115,11 +120,11 @@
         </x-card>
     @endif
 
-    <div data-region="ticket-board" class="mt-5">
+    <div data-region="ticket-board" @class(['mt-5', 'page-width' => $view !== 'board'])>
         @if ($view === 'sprints')
             @include('partials.sprints')
         @elseif ($view === 'board')
-            <p class="mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts_state') }}</p>
+            <p class="page-width mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts_state') }}</p>
 
             @include('partials.linear-board')
         @else
