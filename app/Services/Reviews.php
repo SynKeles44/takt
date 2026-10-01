@@ -274,6 +274,35 @@ final class Reviews
         ];
     }
 
+    /**
+     * Everything written on a pull request: its description and the comments under it.
+     *
+     * Not cached and not part of the list fetch, because nothing on a board needs it — it is read
+     * on a click that asked for exactly this. The review instance is announced by whatever deploys
+     * it, in a comment, which is the one place it is written down at all.
+     */
+    public function conversation(User $user, string $repository, int $number): string
+    {
+        if (! $this->configured($user) || $repository === '' || $number <= 0) {
+            return '';
+        }
+
+        $base = 'https://api.github.com/repos/'.$repository;
+
+        $responses = Http::pool(fn (Pool $pool): array => [
+            $pool->withToken($user->github_token)->acceptJson()->get($base.'/pulls/'.$number),
+            $pool->withToken($user->github_token)->acceptJson()->get($base.'/issues/'.$number.'/comments'),
+        ]);
+
+        $parts = [$responses[0] instanceof Response ? (string) ($responses[0]->json('body') ?? '') : ''];
+
+        foreach ($responses[1] instanceof Response ? $responses[1]->json() ?? [] : [] as $comment) {
+            $parts[] = (string) ($comment['body'] ?? '');
+        }
+
+        return implode("\n", $parts);
+    }
+
     /** @return list<array> */
     private function sorted(array $pulls): array
     {

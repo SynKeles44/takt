@@ -33,14 +33,43 @@ class TestPostSuggestTest extends TestCase
         $this->assertSame(['instance'], $filled['missing']);
     }
 
-    public function test_it_finds_the_instance_the_deploy_posted_into_the_ticket(): void
+    /**
+     * The pull request is where the instance actually is: whatever deploys a review app announces
+     * it in a comment there. This is the case the first version got wrong — it read the ticket
+     * only, and the ticket carries the URL only if somebody copied it across by hand.
+     */
+    public function test_it_finds_the_instance_announced_on_the_pull_request(): void
     {
-        $filled = $this->suggest('COR-7100', [], [
+        $filled = $this->suggest('COR-7100', self::PULLS, null,
+            fn (): string => 'Deployed: https://a64d8fda-web.galawork.dev — bitte testen.');
+
+        $this->assertSame('https://a64d8fda-web.galawork.dev', $filled['instance']);
+        $this->assertSame('2456', $filled['pr']);
+    }
+
+    /** The ticket is the fallback, for the case where somebody did copy it across. */
+    public function test_it_falls_back_to_the_ticket_when_the_pull_request_is_silent(): void
+    {
+        $filled = $this->suggest('COR-7100', self::PULLS, [
             'description' => 'Siehe Beschreibung.',
             'comments' => [['body' => 'Review liegt auf https://b63d4865-web.galawork.dev/mod/zeiterfassung — bitte testen.']],
-        ]);
+        ], fn (): string => 'Nichts dazu hier.');
 
         $this->assertSame('https://b63d4865-web.galawork.dev/mod/zeiterfassung', $filled['instance']);
+    }
+
+    /** No pull request means nothing to read, so the reader must not be called at all. */
+    public function test_a_key_without_a_pull_request_reads_no_conversation(): void
+    {
+        $read = false;
+
+        $this->suggest('COR-1234', self::PULLS, null, function () use (&$read): string {
+            $read = true;
+
+            return '';
+        });
+
+        $this->assertFalse($read);
     }
 
     /** A URL on some other host is somebody else's link, not this user's review instance. */
@@ -62,8 +91,8 @@ class TestPostSuggestTest extends TestCase
     }
 
     /** @param list<array<string, mixed>> $pulls */
-    private function suggest(string $key, array $pulls, ?array $issue): array
+    private function suggest(string $key, array $pulls, ?array $issue, ?callable $conversation = null): array
     {
-        return app(TestPost::class)->suggest(User::factory()->create(), $key, $pulls, $issue);
+        return app(TestPost::class)->suggest(User::factory()->create(), $key, $pulls, $issue, $conversation);
     }
 }

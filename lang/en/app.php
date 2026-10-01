@@ -1178,8 +1178,8 @@ return [
         'copy_post' => 'Copy the post',
         'missing_fields' => 'Still missing: :fields',
         'fill_from_ticket' => 'Fill from ticket',
-        'filled_found' => 'Taken from the ticket: :fields.',
-        'filled_missing' => 'Not found in the ticket: :fields — please enter it yourself.',
+        'filled_found' => 'Filled in automatically: :fields.',
+        'filled_missing' => 'Not found: :fields — please enter it yourself.',
         'templates_note' => 'Templates (adjustable in the settings):',
     ],
     'sprint' => [

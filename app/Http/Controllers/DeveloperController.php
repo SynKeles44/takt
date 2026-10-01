@@ -168,6 +168,7 @@ class DeveloperController extends Controller
                 $key,
                 [...$all['mine'], ...$all['incoming']],
                 $linear->forIds($user, [$key])['issues'][$key] ?? null,
+                fn (string $repository, int $number): string => $reviews->conversation($user, $repository, $number),
             );
 
             // what was found wins over what was in the field; what was not found leaves it alone

@@ -1178,8 +1178,8 @@ return [
         'copy_post' => 'Post kopieren',
         'missing_fields' => 'Es fehlt noch: :fields',
         'fill_from_ticket' => 'Aus Ticket füllen',
-        'filled_found' => 'Aus dem Ticket übernommen: :fields.',
-        'filled_missing' => 'Im Ticket nicht gefunden: :fields — bitte selbst eintragen.',
+        'filled_found' => 'Automatisch übernommen: :fields.',
+        'filled_missing' => 'Nicht gefunden: :fields — bitte selbst eintragen.',
         'templates_note' => 'Vorlagen (anpassbar in den Einstellungen):',
     ],
     'sprint' => [

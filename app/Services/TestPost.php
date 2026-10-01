@@ -127,24 +127,36 @@ final class TestPost
      * instance has been posted into the ticket by whoever deployed it. Neither is guessed — a
      * value is only offered when it was found, and the caller is told which half came up empty.
      *
+     * The pull request is searched FIRST and the ticket second, because that is where the instance
+     * actually is: whatever deploys a review app announces it in a comment on the pull request,
+     * and the ticket only ever carries it if somebody copied it across by hand.
+     *
      * @param  list<array<string, mixed>>  $pulls  the user's pull requests, already fetched
-     * @return array{pr: string, instance: string, found: list<string>, missing: list<string>}
+     * @param  ?callable(string, int): string  $conversation  reads one pull request's text, called
+     *                                                        only once a pull request was matched
+     * @return array{pr: string, instance: string, repository: string, found: list<string>, missing: list<string>}
      */
-    public function suggest(User $user, string $key, array $pulls, ?array $issue): array
+    public function suggest(User $user, string $key, array $pulls, ?array $issue, ?callable $conversation = null): array
     {
         $key = mb_strtoupper(trim($key));
 
         $pr = '';
+        $repository = '';
         $instance = '';
 
         foreach ($pulls as $pull) {
             if ($key !== '' && mb_stripos((string) $pull['title'], $key) !== false) {
                 $pr = (string) $pull['number'];
+                $repository = (string) ($pull['repository'] ?? '');
                 break;
             }
         }
 
-        if ($issue !== null) {
+        if ($pr !== '' && $conversation !== null) {
+            $instance = $this->instanceIn($user, $conversation($repository, (int) $pr));
+        }
+
+        if ($instance === '' && $issue !== null) {
             $instance = $this->instanceIn($user, implode("\n", [
                 (string) ($issue['description'] ?? ''),
                 ...array_map(static fn (array $c): string => (string) ($c['body'] ?? ''), $issue['comments'] ?? []),
@@ -156,6 +168,7 @@ final class TestPost
         return [
             'pr' => $pr,
             'instance' => $instance,
+            'repository' => $repository,
             'found' => array_keys(array_filter($fields)),
             'missing' => array_keys(array_filter($fields, static fn (string $v): bool => $v === '')),
         ];
