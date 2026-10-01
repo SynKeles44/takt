@@ -185,6 +185,28 @@ class LinearBoardTest extends TestCase
     }
 
     /**
+     * Every view of this page, asked for by name.
+     *
+     * The page-wide test only ever opened the default view, so the list view shipped reading a
+     * variable the controller had stopped passing and threw on the first click. One route with
+     * four views is four pages; a test that visits one of them is testing a quarter of it.
+     */
+    public function test_every_view_of_the_ticket_page_renders(): void
+    {
+        Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => [[
+            'identifier' => 'COR-1', 'title' => 'Ein Ticket', 'url' => '', 'updatedAt' => '2026-09-30T08:00:00.000Z',
+            'state' => ['name' => 'Todo', 'type' => 'unstarted'], 'team' => ['key' => 'COR', 'name' => 'Core'],
+            'cycle' => ['id' => 'c11', 'number' => 11, 'name' => 'Cycle 11', 'startsAt' => '2026-09-28T00:00:00.000Z', 'endsAt' => '2026-10-11T00:00:00.000Z'],
+        ]]]]]])]);
+
+        foreach (['board', 'liste', 'sprints'] as $view) {
+            $this->get(route('tickets', ['ansicht' => $view]))
+                ->assertOk()
+                ->assertSee('Ein Ticket');
+        }
+    }
+
+    /**
      * The board opens on the running sprint, the way Linear's cycle board does — without it the
      * Done column carries every ticket closed in the window and buries the four that still need a
      * decision. It is a preselection, so the select shows it and an empty one asks for all.

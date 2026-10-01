@@ -105,6 +105,8 @@ class TicketController extends Controller
         $loose = $result['loose']->filter($matches)->values();
 
         return view('tickets', [
+            // the list view renders these straight through; the board groups them first
+            'rows' => $rows,
             'focused' => app(TicketBoard::class)->focused(),
             /*
              * Capped, and the cap is stated in the view. Rendering all of them cost 300 KB of the
