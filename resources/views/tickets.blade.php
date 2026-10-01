@@ -40,6 +40,41 @@
             </div>
         </div>
 
+        {{--
+            The filters, from the tickets rather than from Linear: with eighty-eight assigned
+            tickets this is what makes the board usable, and offering every project and label of
+            every team would offer values that match nothing here. Each one submits on change —
+            a filter you have to confirm is a filter nobody uses twice.
+        --}}
+        @if ($view !== 'sprints')
+            <form method="GET" action="{{ route('tickets') }}"
+                  class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3" data-filter-form>
+                <input type="hidden" name="ansicht" value="{{ $view }}">
+                <input type="hidden" name="tage" value="{{ $days }}">
+                <input type="hidden" name="q" value="{{ $term }}">
+
+                @foreach ([
+                    ['sprint', __('app.sprint.tab')],
+                    ['projekt', __('app.ticket.prop_project')],
+                    ['label', __('app.ticket.labels')],
+                ] as [$name, $label])
+                    @if ($facets[$name] !== [])
+                        <select name="{{ $name }}" class="control w-auto min-w-28 text-xs" onchange="this.form.requestSubmit()">
+                            <option value="">{{ $label }}: {{ __('app.tickets.filter_all') }}</option>
+                            @foreach ($facets[$name] as $value)
+                                <option value="{{ $value }}" @selected($picked[$name] === $value)>{{ $value }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+                @endforeach
+
+                @if (array_filter($picked) !== [])
+                    <a href="{{ route('tickets', ['ansicht' => $view, 'tage' => $days, 'q' => $term]) }}"
+                       class="pill hover:text-ink">{{ __('app.tickets.filter_clear') }}</a>
+                @endif
+            </form>
+        @endif
+
         <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
             <span class="pill text-[10px]">{{ __('app.tickets.shown', ['shown' => $shown, 'total' => $total]) }}</span>
 
@@ -82,6 +117,8 @@
         @if ($view === 'sprints')
             @include('partials.sprints')
         @elseif ($view === 'board')
+            <p class="mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts') }}</p>
+
             <div class="ticket-board" data-ticket-board>
                 @foreach ($columns as $column)
                     @php $cards = $board[$column->value]; @endphp
@@ -99,7 +136,7 @@
 
                         <div class="ticket-column-body" data-auto-animate>
                             @forelse ($cards as $ticket)
-                                <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused"/>
+                                <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
                             @empty
                                 <p class="rounded-[var(--radius-control)] border border-dashed border-line px-2 py-4 text-center text-[10px] text-faint">
                                     {{ __('app.ticket.empty_column') }}
@@ -116,12 +153,12 @@
                 <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($board as $cards)
                         @foreach ($cards as $ticket)
-                            <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused"/>
+                            <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
                         @endforeach
                     @endforeach
 
                     @foreach ($inbox as $ticket)
-                        <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused"/>
+                        <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
                     @endforeach
                 </div>
             </x-card>
@@ -140,7 +177,7 @@
 
             <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($inbox as $ticket)
-                    <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused"/>
+                    <x-ticket-card :ticket="$ticket" :columns="$columns" :focused="$focused" :states="$states"/>
                 @endforeach
             </div>
         </x-card>

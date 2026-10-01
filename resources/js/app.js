@@ -1190,7 +1190,7 @@ commandRunner({ toast });
 
 // the container list, its actions and its logs
 docker({ swapRegions, toast });
-ticketBoard({ swapRegions });
+ticketBoard({ swapRegions, toast });
 motionLayer();
 prefetchLinks();
 slidingMarkers();

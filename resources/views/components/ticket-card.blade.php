@@ -1,7 +1,7 @@
 @use('App\Support\Duration')
 @use('App\Enums\TicketColumn')
 
-@props(['ticket', 'columns' => [], 'focused' => null])
+@props(['ticket', 'columns' => [], 'focused' => null, 'states' => []])
 
 @php
     $local = $ticket['local'] ?? null;
@@ -21,6 +21,9 @@
      */
     $priority = $ticket['priority_value'] ?? null;
     $bars = $priority === null || $priority === 0 ? 0 : 5 - $priority;
+
+    // the workflow of this ticket's own team, empty for a local ticket or an unknown team
+    $workflow = $states[explode('-', $ticket['id'], 2)[0]] ?? [];
 @endphp
 
 <article @class(['ticket-card group', 'ticket-card-focus' => $isFocused]) data-ticket="{{ $ticket['id'] }}" draggable="true">
@@ -90,11 +93,32 @@
             the two can disagree — and this pill is where that disagreement is visible.
         --}}
         @if (($ticket['state'] ?? null) !== null)
-            <span @class([
-                    'pill text-[9px]',
-                    'border-work/30 bg-work/10 text-work-text' => $ticket['state_type'] === 'completed',
-                    'border-accent/30 bg-accent/10 text-accent-text' => $ticket['state_type'] === 'started',
-                ])>{{ $ticket['state'] }}</span>
+            @if ($workflow !== [])
+                {{--
+                    A select rather than a menu, and no form around it. Eighty-eight menus is a lot
+                    of markup for something opened once; eighty-eight forms was measured at 300 KB
+                    of CSRF fields the last time this page carried one per card. The browser builds
+                    the options when the select is opened, and the write goes out from one
+                    delegated listener with the token from the page's own meta tag.
+                --}}
+                <select data-state-select data-key="{{ $ticket['id'] }}"
+                        @class([
+                            'pill cursor-pointer appearance-none text-[9px]',
+                            'border-work/30 bg-work/10 text-work-text' => $ticket['state_type'] === 'completed',
+                            'border-accent/30 bg-accent/10 text-accent-text' => $ticket['state_type'] === 'started',
+                        ])
+                        title="{{ __('app.ticket.set_state') }}">
+                    @foreach ($workflow as $name => $state)
+                        <option value="{{ $name }}" @selected($name === $ticket['state'])>{{ $name }}</option>
+                    @endforeach
+                </select>
+            @else
+                <span @class([
+                        'pill text-[9px]',
+                        'border-work/30 bg-work/10 text-work-text' => $ticket['state_type'] === 'completed',
+                        'border-accent/30 bg-accent/10 text-accent-text' => $ticket['state_type'] === 'started',
+                    ])>{{ $ticket['state'] }}</span>
+            @endif
         @endif
 
         @if (($ticket['points'] ?? null) !== null)

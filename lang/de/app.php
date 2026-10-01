@@ -311,6 +311,9 @@ return [
     ],
 
     'ticket' => [
+        'set_state' => 'Status in Linear setzen',
+        'shortcuts' => 'j/k wählen · 1–5 verschieben · Enter öffnen · t Timer',
+        'labels' => 'Labels',
         'duplicate' => 'Ticket duplizieren',
         'copy_of' => 'Kopie von :title',
         'copied' => 'Kopie angelegt: :id',
@@ -548,6 +551,8 @@ return [
     ],
 
     'tickets' => [
+        'filter_all' => 'alle',
+        'filter_clear' => 'Filter zurücksetzen',
         'refreshed' => 'Tickets neu geladen.',
         'no_token' => 'Kein Linear-Schlüssel hinterlegt — die Liste kommt nur aus Git.',
         'only_git' => 'Nur in Git',

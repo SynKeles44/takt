@@ -1957,6 +1957,12 @@ body::before {
 }
 
 /* the card being carried, and the hole it left behind */
+/* the keyboard selection, which is not focus — focus lands inside the card, on its links */
+.ticket-card[data-selected] {
+    border-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 45%, transparent);
+}
+
 .ticket-card[data-dragging] {
     opacity: 0.4;
     cursor: grabbing;

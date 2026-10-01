@@ -23,6 +23,9 @@ final class Linear
     /** Ten minutes, like the reviews: the rate limit is real and a ticket list is not live data. */
     public const int CACHE_SECONDS = 600;
 
+    /** A workflow changes about as often as a team is renamed, so an hour is generous. */
+    public const int STATES_CACHE_SECONDS = 3600;
+
     public function configured(User $user): bool
     {
         return filled($user->linear_token);
@@ -514,6 +517,45 @@ final class Linear
             if (is_array($node) && is_string($node['name'] ?? null) && is_string($node['id'] ?? null)) {
                 $states[(string) $node['name']] = ['id' => $node['id'], 'type' => (string) ($node['type'] ?? '')];
             }
+        }
+
+        return $states;
+    }
+
+    /**
+     * The workflow states of every team the given issues belong to, team key => name => state.
+     *
+     * One request per team rather than per issue, and cached for an hour: a board of eighty-eight
+     * tickets usually spans two teams, and a workflow changes about as often as a team is renamed.
+     * Without this a status picker on a card would cost one request per card to render.
+     *
+     * @param  list<string>  $identifiers
+     * @return array<string, array<string, array{id: string, type: string}>>
+     */
+    public function statesForTeams(User $user, array $identifiers): array
+    {
+        if (! $this->configured($user)) {
+            return [];
+        }
+
+        $byTeam = [];
+
+        foreach ($identifiers as $identifier) {
+            [$team, $number] = array_pad(explode('-', $identifier, 2), 2, '');
+
+            if ($team !== '' && ctype_digit($number) && ! isset($byTeam[$team])) {
+                $byTeam[$team] = $identifier;
+            }
+        }
+
+        $states = [];
+
+        foreach ($byTeam as $team => $identifier) {
+            $states[$team] = Cache::remember(
+                'linear.states.'.$user->getKey().'.'.$team,
+                self::STATES_CACHE_SECONDS,
+                fn (): array => $this->states($user, $identifier),
+            );
         }
 
         return $states;

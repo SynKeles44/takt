@@ -311,6 +311,9 @@ return [
     ],
 
     'ticket' => [
+        'set_state' => 'Set the state in Linear',
+        'shortcuts' => 'j/k select · 1–5 move · Enter open · t timer',
+        'labels' => 'Labels',
         'duplicate' => 'Duplicate ticket',
         'copy_of' => 'Copy of :title',
         'copied' => 'Copy created: :id',
@@ -548,6 +551,8 @@ return [
     ],
 
     'tickets' => [
+        'filter_all' => 'all',
+        'filter_clear' => 'Clear filters',
         'refreshed' => 'Tickets reloaded.',
         'no_token' => 'No Linear key stored — the list comes from git alone.',
         'only_git' => 'Git only',
