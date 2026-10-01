@@ -46,17 +46,19 @@ const isCurrent = (item) => item.getAttribute('aria-current') === 'page'
     || item.dataset.marked !== undefined;
 
 /**
- * A name for an item that survives a page load.
+ * Which item was current, in a form the next page can find again.
  *
- * The handover used to store viewport coordinates, which are wrong the moment the next page lays
- * its row out differently — the development pages do exactly that, since only some of them carry
- * a date stepper to the left of the tabs. An item's own link is stable across both.
+ * Its position in the row, with the row's length beside it. Two earlier answers were wrong in the
+ * same way — both encoded something that is allowed to differ between two pages. Viewport
+ * coordinates failed because the development pages lay the same tab row out differently depending
+ * on whether they carry a date stepper; the item's own link failed because the period links carry
+ * the anchor date, and picking a different period changes it, so nothing on the next page matched.
+ * A position is the one thing these rows agree on — and the length is the guard, because a row
+ * that gained or lost an item would make a position mean something else.
  */
-const identify = (item) => item.getAttribute('href') ?? item.textContent.trim().slice(0, 40);
-
-const store = (key, id) => {
+const store = (key, index, count) => {
     try {
-        sessionStorage.setItem(HANDOVER, JSON.stringify({ key, id, at: Date.now() }));
+        sessionStorage.setItem(HANDOVER, JSON.stringify({ key, index, count, at: Date.now() }));
     } catch {
         // private browsing, blocked storage: the marker simply appears in place
     }
@@ -77,7 +79,7 @@ const take = (key) => {
         sessionStorage.removeItem(HANDOVER);
     } catch { /* nothing to clean up */ }
 
-    return Date.now() - saved.at > HANDOVER_MAX_AGE ? null : saved.id;
+    return Date.now() - saved.at > HANDOVER_MAX_AGE ? null : saved;
 };
 
 /** The rows wired on this page, so a region swap can drop the ones that left the document. */
@@ -281,7 +283,8 @@ const wire = (host, selector, markerClass, key) => {
     const handover = take(key);
 
     if (handover !== null && ! calm()) {
-        const previous = items().find((item) => identify(item) === handover);
+        const list = items();
+        const previous = list.length === handover.count ? list[handover.index] : null;
         const now = current();
 
         if (previous && now && previous !== now && now.offsetWidth > 0) {
@@ -304,12 +307,21 @@ const wire = (host, selector, markerClass, key) => {
     }
 
     host.addEventListener('click', (event) => {
-        const item = event.target.closest(selector);
+        /*
+         * Asked of the row's own items rather than with `closest(selector)`.
+         *
+         * Most of these selectors are `:scope > a`, and `:scope` means nothing to `closest` — it
+         * matched nothing, so for every row that used it no handover was ever stored and the
+         * marker arrived already in place. The rows that did work were the two whose selector
+         * happens to be a plain class, which is why the sidebar travelled and the tab rows did not.
+         */
+        const list = items();
+        const item = list.find((candidate) => candidate.contains(event.target));
         const now = current();
 
-        if (! item || ! host.contains(item) || ! now || item === now) return;
+        if (! item || ! now || item === now) return;
 
-        store(key, identify(now));
+        store(key, list.indexOf(now), list.length);
     }, true);
 
     /*
