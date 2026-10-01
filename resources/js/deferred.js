@@ -19,6 +19,14 @@ export function deferredRegions({ swapRegions }) {
         fetch(url, { headers: { 'X-Defer': '1', 'X-Requested-With': 'XMLHttpRequest' } })
             .then((response) => (response.ok ? response.text() : Promise.reject(response.status)))
             .then((html) => {
+                /*
+                 * Set BEFORE the swap: the page is already standing, so the entry animations have
+                 * played. Without this the swapped-in cards run `wb-rise` a second time and the
+                 * header visibly hops 6px the moment the content lands — which reads as a bug,
+                 * because from the reader's side it is one.
+                 */
+                document.documentElement.dataset.settled = '';
+
                 swapRegions(html, ['main']);
                 document.dispatchEvent(new CustomEvent('takt:deferred'));
             })

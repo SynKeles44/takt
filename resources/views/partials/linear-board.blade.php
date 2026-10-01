@@ -21,7 +21,7 @@
             <span class="pill text-[10px]">{{ $visibleStates === null ? __('app.tickets.filter_all') : count($visibleStates) }}</span>
         </summary>
 
-        <form method="POST" action="{{ route('tickets.states') }}" class="mt-2 flex flex-wrap items-center gap-2">
+        <form method="POST" action="{{ route('tickets.states') }}" class="mt-2 flex flex-wrap items-center gap-2" data-live>
             @csrf
 
             @foreach ($allStates as $state)

@@ -1313,6 +1313,20 @@ body::before {
 }
 
 /*
+ * A page whose deferred half has landed does not introduce itself again. The entry animations are
+ * for a page arriving; after the swap it has already arrived, and replaying them moves content
+ * that the reader is looking at.
+ */
+:root[data-settled] .rise,
+:root[data-settled] .stack > .surface,
+:root[data-settled] .stack > .surface-plain,
+:root[data-settled] .stack-grid > .surface,
+:root[data-settled] .stack-grid > .stack,
+:root[data-settled] .dashboard-grid > .widget-slot {
+    animation: none;
+}
+
+/*
  * MARK: Takti
  *
  * The figure moves, and every movement is transform or opacity only — a mascot that costs a

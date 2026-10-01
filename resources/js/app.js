@@ -603,8 +603,21 @@ const calmed = () => window.matchMedia('(prefers-reduced-motion: reduce)').match
  * the swap happens exactly as it did before. The names are set per region, so only the parts
  * that actually changed animate — the rest of the page stays still.
  */
+/*
+ * One transition at a time.
+ *
+ * `startViewTransition` throws `InvalidStateError` when one is already running, and the mutation
+ * then never happens — the swap is simply lost. That became visible once a page could swap twice
+ * in quick succession (the deferred content landing while a live form's response arrives): 47 of
+ * those errors in one session, and a header that moved to the wrong place and stayed there.
+ *
+ * A swap that arrives mid-transition is applied WITHOUT one rather than queued. It is already the
+ * newer state; animating it after the fact would animate from a frame nobody saw.
+ */
+let transitioning = false;
+
 const withTransition = (mutate) => {
-    if (! document.startViewTransition || calmed()) {
+    if (! document.startViewTransition || calmed() || transitioning) {
         mutate();
 
         return;
@@ -614,11 +627,24 @@ const withTransition = (mutate) => {
         node.style.viewTransitionName = 'region-' + node.dataset.region;
     });
 
+    transitioning = true;
+
     const transition = document.startViewTransition(mutate);
+
+    /*
+     * A transition skipped by the browser — because a cross-document one is still running, which
+     * this flag cannot see — rejects `ready`. The swap itself still happens; only the animation is
+     * dropped. Unhandled, that rejection was one console error per swap, and the error made the
+     * real cause of a lost swap impossible to spot among them.
+     */
+    transition.ready.catch(() => {});
+    transition.updateCallbackDone?.catch(() => {});
 
     transition.finished
         .catch(() => {})
         .finally(() => {
+            transitioning = false;
+
             document.querySelectorAll('[data-region]').forEach((node) => {
                 node.style.viewTransitionName = '';
             });
@@ -946,9 +972,20 @@ document.addEventListener('submit', (event) => {
         form.setAttribute('aria-busy', 'true');
         form.closest('[data-autohide]')?.remove();
 
-        fetch(form.action, {
-            method: (form.method || 'post').toUpperCase(),
-            body,
+        /*
+         * A GET form carries its fields in the URL, not in a body — a fetch that puts FormData in
+         * the body of a GET sends an empty request and the server answers the unfiltered page.
+         * That is why the search and the filters used to reload instead of swapping.
+         */
+        const method = (form.method || 'post').toUpperCase();
+        const reading = method === 'GET';
+        const action = reading
+            ? form.action + '?' + new URLSearchParams([...body].filter(([, value]) => typeof value === 'string'))
+            : form.action;
+
+        fetch(action, {
+            method,
+            body: reading ? undefined : body,
             headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
             redirect: 'follow',
         })

@@ -1,6 +1,6 @@
 @props(['action', 'method' => 'POST', 'todo' => null, 'tags', 'submitLabel', 'cancelUrl' => null])
 
-<form method="POST" action="{{ $action }}" class="space-y-4">
+<form method="POST" action="{{ $action }}" class="space-y-4" data-live>
     @csrf
     @if ($method !== 'POST')
         @method($method)

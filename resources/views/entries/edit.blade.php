@@ -43,7 +43,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('entries.destroy', $entry) }}" data-confirm="{{ __('app.form.confirm_delete') }}">
+            <form method="POST" action="{{ route('entries.destroy', $entry) }}" data-confirm="{{ __('app.form.confirm_delete') }}" data-live>
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-danger w-full">

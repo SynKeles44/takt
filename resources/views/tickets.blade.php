@@ -16,7 +16,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-            <form method="GET" action="{{ route('tickets') }}" class="flex flex-wrap items-center gap-2">
+            <form method="GET" action="{{ route('tickets') }}" class="flex flex-wrap items-center gap-2" data-live>
                 <input type="hidden" name="tage" value="{{ $days }}">
                 <input type="hidden" name="ansicht" value="{{ $view }}">
                 <input type="search" name="q" value="{{ $term }}" class="control w-44 text-xs"
@@ -61,15 +61,20 @@
             project and label as usefully as the board does.
         --}}
         <form method="GET" action="{{ route('tickets') }}"
-              class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3" data-filter-form>
+              class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3" data-filter-form data-live>
             <input type="hidden" name="ansicht" value="{{ $view }}">
             <input type="hidden" name="tage" value="{{ $days }}">
             <input type="hidden" name="q" value="{{ $term }}">
 
-            {{-- the row holds its height while the facets are still unknown, so nothing shifts later --}}
+            {{--
+                The placeholders wear the real element's own classes rather than a height that
+                looks about right. A hand-picked `h-8` was 11px short of what `.control` actually
+                measures, and three of them plus the counter made the header jump 15px every time
+                the content landed — which is the whole thing a skeleton exists to prevent.
+            --}}
             @if ($defer)
                 @foreach (range(1, 3) as $placeholder)
-                    <span class="skeleton h-8 w-32 rounded-[var(--radius-control)]"></span>
+                    <span class="control skeleton w-auto min-w-28 text-xs"></span>
                 @endforeach
             @endif
 
@@ -96,7 +101,7 @@
 
         <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
             @if ($defer)
-                <span class="skeleton h-5 w-20 rounded-full"></span>
+                <span class="pill skeleton w-20 text-[10px]">&nbsp;</span>
             @else
                 <span class="pill text-[10px]">{{ __('app.tickets.shown', ['shown' => $shown, 'total' => $total]) }}</span>
             @endif
@@ -180,7 +185,7 @@
         <h2 class="heading">{{ __('app.ticket.new') }}</h2>
         <p class="mt-0.5 text-[11px] text-faint">{{ __('app.ticket.new_hint') }}</p>
 
-        <form method="POST" action="{{ route('tickets.store') }}" class="mt-3 flex flex-wrap items-end gap-2">
+        <form method="POST" action="{{ route('tickets.store') }}" class="mt-3 flex flex-wrap items-end gap-2" data-live>
             @csrf
             <label class="min-w-48 flex-1">
                 <span class="label">{{ __('app.ticket.new_title') }}</span>

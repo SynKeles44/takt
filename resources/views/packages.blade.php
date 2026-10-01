@@ -1,7 +1,7 @@
 <x-app-layout :title="__('app.packages.title')" :wide="true" :defer="$defer">
     <x-dev-page :title="__('app.packages.title')" :hint="__('app.packages.intro')" active="packages">
         <x-slot:actions>
-            <form method="POST" action="{{ route('packages.check.all') }}" data-busy>
+            <form method="POST" action="{{ route('packages.check.all') }}" data-busy data-live>
                 @csrf
                 <button type="submit" class="btn btn-ghost text-xs">
                     <x-icon name="repeat" class="size-3.5"/>
@@ -14,8 +14,8 @@
             @if ($defer)
                 @foreach (range(1, 5) as $tile)
                     <div class="tile px-3 py-2.5">
-                        <div class="skeleton skeleton-line w-10"></div>
-                        <div class="skeleton skeleton-line mt-1.5 w-20"></div>
+                        <p class="metric skeleton w-10 text-xl font-bold tracking-tight">&nbsp;</p>
+                        <p class="skeleton mt-0.5 w-20 text-[10px] leading-tight">&nbsp;</p>
                     </div>
                 @endforeach
             @endif
@@ -100,7 +100,7 @@
                                 </a>
                             @endif
 
-                            <form method="POST" action="{{ route('packages.update', $advisory['project']) }}" data-busy>
+                            <form method="POST" action="{{ route('packages.update', $advisory['project']) }}" data-busy data-live>
                                 @csrf
                                 <input type="hidden" name="manager" value="{{ $advisory['manager'] }}">
                                 <input type="hidden" name="package" value="{{ $advisory['package'] }}">
@@ -209,7 +209,7 @@
                         @endif
                     </p>
 
-                    <form method="POST" action="{{ route('packages.check', $project) }}" data-busy>
+                    <form method="POST" action="{{ route('packages.check', $project) }}" data-busy data-live>
                         @csrf
                         <button type="submit" class="btn btn-ghost text-[11px]">
                             <x-icon name="repeat" class="size-3"/>
@@ -253,7 +253,7 @@
                                     @endisset
 
                                     @if (in_array($package['status'], ['minor', 'major'], true) || isset($package['vulnerable']))
-                                        <form method="POST" action="{{ route('packages.update', $project) }}" data-busy>
+                                        <form method="POST" action="{{ route('packages.update', $project) }}" data-busy data-live>
                                             @csrf
                                             <input type="hidden" name="manager" value="{{ $manager }}">
                                             <input type="hidden" name="package" value="{{ $package['name'] }}">

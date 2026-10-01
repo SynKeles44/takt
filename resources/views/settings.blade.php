@@ -17,7 +17,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('settings.worktime') }}" class="mt-5 space-y-4">
+                <form method="POST" action="{{ route('settings.worktime') }}" class="mt-5 space-y-4" data-live>
                     @csrf
                     @method('PUT')
 
@@ -87,7 +87,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('settings.profile') }}" class="mt-5 space-y-4">
+                <form method="POST" action="{{ route('settings.profile') }}" class="mt-5 space-y-4" data-live>
                     @csrf
                     @method('PUT')
 
@@ -174,7 +174,7 @@
                            class="control metric text-xs" onclick="this.select()"
                            aria-label="{{ __('app.settings.ical_title') }}">
 
-                    <form method="POST" action="{{ route('settings.ical') }}" data-confirm="{{ __('app.settings.confirm_ical') }}">
+                    <form method="POST" action="{{ route('settings.ical') }}" data-confirm="{{ __('app.settings.confirm_ical') }}" data-live>
                         @csrf
                         @method('PUT')
                         <button type="submit" class="btn btn-ghost w-full text-xs">
@@ -194,7 +194,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('settings.password') }}" class="mt-5 space-y-4">
+                <form method="POST" action="{{ route('settings.password') }}" class="mt-5 space-y-4" data-live>
                     @csrf
                     @method('PUT')
 
@@ -231,7 +231,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('settings.sidebar') }}" class="mt-4 space-y-4">
+                <form method="POST" action="{{ route('settings.sidebar') }}" class="mt-4 space-y-4" data-live>
                     @csrf
                     @method('PUT')
 
@@ -376,7 +376,7 @@
                         {{ __('app.month.backup_action') }}
                     </a>
 
-                    <form method="POST" action="{{ route('backup.restore') }}" enctype="multipart/form-data" class="space-y-2 border-t border-line pt-3">
+                    <form method="POST" action="{{ route('backup.restore') }}" enctype="multipart/form-data" class="space-y-2 border-t border-line pt-3" data-live>
                         @csrf
 
                         <label for="backup" class="label">{{ __('app.backup.restore_title') }}</label>
@@ -408,7 +408,7 @@
                         {{ __('app.backup.settings_export') }}
                     </a>
 
-                    <form method="POST" action="{{ route('settings.import') }}" enctype="multipart/form-data" class="space-y-2 border-t border-line pt-3">
+                    <form method="POST" action="{{ route('settings.import') }}" enctype="multipart/form-data" class="space-y-2 border-t border-line pt-3" data-live>
                         @csrf
 
                         <label for="settings" class="label">{{ __('app.backup.settings_import') }}</label>
@@ -434,7 +434,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('settings.developer') }}" class="mt-4 space-y-3">
+                <form method="POST" action="{{ route('settings.developer') }}" class="mt-4 space-y-3" data-live>
                     @csrf
                     @method('PUT')
 

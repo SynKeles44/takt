@@ -11,12 +11,12 @@
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="min-w-0">
                     <span class="metric text-sm font-semibold text-accent-text">{{ $key }}</span>
-                    <div class="skeleton skeleton-line mt-2 w-64"></div>
+                    <h2 class="skeleton mt-1.5 w-64 text-base leading-snug font-semibold">&nbsp;</h2>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    @foreach (range(1, 4) as $button)
-                        <span class="skeleton h-8 w-28 rounded-[var(--radius-control)]"></span>
+                    @foreach ([28, 24, 28, 28] as $width)
+                        <span class="btn btn-ghost skeleton text-xs" style="inline-size: {{ $width / 4 }}rem">&nbsp;</span>
                     @endforeach
                 </div>
             </div>
@@ -82,7 +82,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <form method="POST" action="{{ route('tickets.timer', ['key' => $file['key']]) }}">
+                <form method="POST" action="{{ route('tickets.timer', ['key' => $file['key']]) }}" data-live>
                     @csrf
                     <button type="submit" @class(['btn text-xs', 'btn-primary' => ! $isRunning, 'btn-ghost' => $isRunning])>
                         <x-icon :name="$isRunning ? 'stop' : 'play'" class="size-3.5"/>
@@ -90,7 +90,7 @@
                     </button>
                 </form>
 
-                <form method="POST" action="{{ route('tickets.focus', ['key' => $file['key']]) }}">
+                <form method="POST" action="{{ route('tickets.focus', ['key' => $file['key']]) }}" data-live>
                     @csrf
                     <button type="submit" class="btn btn-ghost text-xs">
                         <x-icon name="check" class="size-3.5"/>
@@ -257,7 +257,7 @@
                 <x-card>
                     <h2 class="heading">{{ __('app.ticket.linear_fields') }}</h2>
 
-                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" class="mt-3 space-y-3">
+                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" class="mt-3 space-y-3" data-live>
                         @csrf
                         <input type="hidden" name="aktion" value="felder">
 
@@ -289,7 +289,7 @@
                         </div>
                     </form>
 
-                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" class="mt-4 space-y-2 border-t border-line pt-4">
+                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" class="mt-4 space-y-2 border-t border-line pt-4" data-live>
                         @csrf
                         <input type="hidden" name="aktion" value="kommentar">
 
@@ -308,7 +308,7 @@
 
                     <div class="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
                         @foreach (['zuweisen' => __('app.ticket.assign_me'), 'abgeben' => __('app.ticket.unassign')] as $action => $label)
-                            <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}">
+                            <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" data-live>
                                 @csrf
                                 <input type="hidden" name="aktion" value="{{ $action }}">
                                 <button type="submit" class="btn btn-ghost text-xs">{{ $label }}</button>
@@ -320,7 +320,7 @@
                 <x-card>
                     <h2 class="heading">{{ __('app.ticket.local') }}</h2>
 
-                    <form method="POST" action="{{ route('tickets.update', ['key' => $file['key']]) }}" class="mt-3 space-y-3">
+                    <form method="POST" action="{{ route('tickets.update', ['key' => $file['key']]) }}" class="mt-3 space-y-3" data-live>
                         @csrf
                         <label class="block">
                             <span class="label">{{ __('app.ticket.new_title') }}</span>
@@ -338,7 +338,7 @@
                         </button>
                     </form>
 
-                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" class="mt-4 border-t border-line pt-4">
+                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" class="mt-4 border-t border-line pt-4" data-live>
                         @csrf
                         <input type="hidden" name="aktion" value="anlegen">
                         <button type="submit" class="btn btn-ghost text-xs">
@@ -477,7 +477,7 @@
                         Duplicating creates a real issue in Linear that the team will see, so it
                         asks first. Everything above it only writes to the clipboard.
                     --}}
-                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}"
+                    <form method="POST" action="{{ route('tickets.linear', ['key' => $file['key']]) }}" data-live
                           class="mt-3 border-t border-line pt-3" data-confirm="{{ __('app.ticket.copy_confirm') }}">
                         @csrf
                         <input type="hidden" name="aktion" value="duplizieren">
@@ -505,7 +505,7 @@
                 <h2 class="heading">{{ __('app.ticket.notes') }}</h2>
                 <p class="mt-0.5 text-[11px] text-faint">{{ __('app.ticket.notes_hint') }}</p>
 
-                <form method="POST" action="{{ route('tickets.update', ['key' => $file['key']]) }}" class="mt-3 space-y-3">
+                <form method="POST" action="{{ route('tickets.update', ['key' => $file['key']]) }}" class="mt-3 space-y-3" data-live>
                     @csrf
                     <textarea name="notizen" rows="8" class="control w-full text-sm"
                               placeholder="{{ __('app.ticket.notes_placeholder') }}">{{ $local?->notes }}</textarea>
