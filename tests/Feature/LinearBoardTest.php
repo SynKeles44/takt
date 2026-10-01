@@ -200,7 +200,7 @@ class LinearBoardTest extends TestCase
         ]]]]]])]);
 
         foreach (['board', 'liste', 'sprints'] as $view) {
-            $this->get(route('tickets', ['ansicht' => $view]))
+            $this->page(route('tickets', ['ansicht' => $view]))
                 ->assertOk()
                 ->assertSee('Ein Ticket');
         }
@@ -223,7 +223,7 @@ class LinearBoardTest extends TestCase
         ]]]]]])]);
 
         foreach (['board', 'liste', 'sprints'] as $view) {
-            $html = (string) $this->get(route('tickets', ['ansicht' => $view]))->assertOk()->getContent();
+            $html = (string) $this->page(route('tickets', ['ansicht' => $view]))->assertOk()->getContent();
 
             $this->assertStringContainsString('data-filter-form', $html, "the {$view} view drops the filter row");
             $this->assertStringContainsString('name="projekt"', $html, "the {$view} view drops the project filter");
@@ -248,7 +248,7 @@ class LinearBoardTest extends TestCase
             ],
         ]]]]])]);
 
-        $this->get(route('tickets', ['ansicht' => 'sprints', 'projekt' => 'Ein Projekt']))
+        $this->page(route('tickets', ['ansicht' => 'sprints', 'projekt' => 'Ein Projekt']))
             ->assertOk()
             ->assertSee('Im Projekt')
             ->assertDontSee('Woanders');
@@ -273,12 +273,12 @@ class LinearBoardTest extends TestCase
             ],
         ]]]]])]);
 
-        $this->get(route('tickets'))
+        $this->page(route('tickets'))
             ->assertOk()
             ->assertSee('Im Sprint')
             ->assertDontSee('Alt und fertig');
 
         // and asking for every sprint brings it back
-        $this->get(route('tickets', ['sprint' => '']))->assertOk()->assertSee('Alt und fertig');
+        $this->page(route('tickets', ['sprint' => '']))->assertOk()->assertSee('Alt und fertig');
     }
 }

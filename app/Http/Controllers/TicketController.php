@@ -9,6 +9,7 @@ use App\Services\LinearBoard;
 use App\Services\Sprints;
 use App\Services\TicketBoard;
 use App\Services\Tickets;
+use App\Support\Deferred;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -43,7 +44,16 @@ class TicketController extends Controller
         $term = mb_strtolower(trim((string) $request->query('q', '')));
         $view = (string) $request->query('ansicht', 'board');
 
-        $result = $tickets->collect($request->user(), $days);
+        /*
+         * Linear is the slow part of this page — half a second warm, seconds on a cold cache —
+         * and the page's shape does not depend on the answer. So the first request skips the read
+         * entirely and renders skeletons; the browser asks again with X-Defer and gets the board.
+         */
+        $defer = Deferred::wanted($request);
+
+        $result = $defer
+            ? ['tickets' => collect(), 'loose' => collect(), 'ignored' => 0, 'error' => null, 'configured' => true]
+            : $tickets->collect($request->user(), $days);
 
         $matches = fn (array $row): bool => $term === ''
             || str_contains(mb_strtolower($row['id']), $term)
@@ -105,6 +115,7 @@ class TicketController extends Controller
         $loose = $result['loose']->filter($matches)->values();
 
         return view('tickets', [
+            'defer' => $defer,
             // the list view renders these straight through; the board groups them first
             'rows' => $rows,
             'focused' => app(TicketBoard::class)->focused(),

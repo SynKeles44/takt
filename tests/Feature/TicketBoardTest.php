@@ -145,7 +145,7 @@ class TicketBoardTest extends TestCase
     {
         app(TicketBoard::class)->create('Eigenes Ticket');
 
-        $this->get(route('tickets'))
+        $this->page(route('tickets'))
             ->assertOk()
             ->assertSee(__('app.ticket.no_state'))
             ->assertSee('TAKT-1')
@@ -156,7 +156,7 @@ class TicketBoardTest extends TestCase
     {
         $ticket = app(TicketBoard::class)->create('Eigenes Ticket', 'Beschreibung dazu');
 
-        $this->get(route('tickets.show', ['key' => $ticket->key]))
+        $this->page(route('tickets.show', ['key' => $ticket->key]))
             ->assertOk()
             ->assertSee('Eigenes Ticket')
             ->assertSee(__('app.ticket.notes'))

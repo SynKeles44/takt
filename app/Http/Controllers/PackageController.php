@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Services\CommandRunner;
 use App\Services\Packages;
+use App\Support\Deferred;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,11 +18,14 @@ use Illuminate\View\View;
  */
 class PackageController extends Controller
 {
-    public function index(Packages $packages): View
+    public function index(Request $request, Packages $packages): View
     {
-        $rows = $packages->overview();
+        // reading every manifest and lockfile of every project, then diffing them
+        $defer = Deferred::wanted($request);
+        $rows = $defer ? collect() : $packages->overview();
 
         return view('packages', [
+            'defer' => $defer,
             'rows' => $rows,
             'summary' => $packages->summary($rows),
             'advisories' => $packages->advisories($rows),

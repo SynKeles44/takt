@@ -65,7 +65,7 @@ class TicketDetailTest extends TestCase
     {
         $this->fakeIssue();
 
-        $response = $this->get(route('tickets.show', 'COR-4242'))->assertOk();
+        $response = $this->page(route('tickets.show', 'COR-4242'))->assertOk();
 
         foreach ([
             'Erste Zeile',              // description
@@ -91,7 +91,7 @@ class TicketDetailTest extends TestCase
     {
         $this->fakeIssue();
 
-        $this->get(route('tickets.show', 'COR-4242'))
+        $this->page(route('tickets.show', 'COR-4242'))
             ->assertOk()
             ->assertSee('data-copy="COR-4242"', escape: false)
             ->assertSee('data-copy="seymen/cor-4242-buchung"', escape: false)
@@ -143,7 +143,7 @@ class TicketDetailTest extends TestCase
     {
         $this->fakeIssue(['description' => null, 'comments' => ['nodes' => []], 'children' => ['nodes' => []]]);
 
-        $this->get(route('tickets.show', 'COR-4242'))
+        $this->page(route('tickets.show', 'COR-4242'))
             ->assertOk()
             ->assertDontSee(__('app.ticket.description'))
             ->assertDontSee(__('app.ticket.comments'))
@@ -161,7 +161,7 @@ class TicketDetailTest extends TestCase
     {
         $this->fakeIssue(['description' => '<script>alert(1)</script>']);
 
-        $this->get(route('tickets.show', 'COR-4242'))
+        $this->page(route('tickets.show', 'COR-4242'))
             ->assertOk()
             ->assertDontSee('<script>alert(1)</script>', escape: false)
             ->assertDontSee('&lt;script&gt;', escape: false);

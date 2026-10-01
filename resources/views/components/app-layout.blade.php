@@ -1,4 +1,4 @@
-@props(['title' => null, 'wide' => false])
+@props(['title' => null, 'wide' => false, 'defer' => false])
 
 @php
     $user = auth()->user();
@@ -10,7 +10,13 @@
 
 <!DOCTYPE html>
 @php $native = str_contains((string) request()->userAgent(), 'TaktShell'); @endphp
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $theme->resolved()->value }}" data-style="{{ $style->value }}" @if ($native) data-shell="native" @endif>
+{{--
+    `data-defer` is the page saying "what you see is the shape, the numbers are still coming".
+    A view sets $defer when it rendered skeletons instead of the slow read.
+--}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $theme->resolved()->value }}" data-style="{{ $style->value }}"
+      @if ($defer) data-defer="{{ request()->fullUrl() }}" @endif
+      @if ($native) data-shell="native" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

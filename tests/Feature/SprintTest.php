@@ -122,7 +122,7 @@ class SprintTest extends TestCase
     {
         $this->fakeCycle([$this->issue('COR-1', 'completed', '2026-09-29T15:00:00.000Z', 3)]);
 
-        $this->get(route('tickets', ['ansicht' => 'sprints']))
+        $this->page(route('tickets', ['ansicht' => 'sprints']))
             ->assertOk()
             ->assertSee('Cycle 11')
             ->assertSee(__('app.sprint.current'))

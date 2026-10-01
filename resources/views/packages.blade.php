@@ -1,4 +1,4 @@
-<x-app-layout :title="__('app.packages.title')" :wide="true">
+<x-app-layout :title="__('app.packages.title')" :wide="true" :defer="$defer">
     <x-dev-page :title="__('app.packages.title')" :hint="__('app.packages.intro')" active="packages">
         <x-slot:actions>
             <form method="POST" action="{{ route('packages.check.all') }}" data-busy>
@@ -11,7 +11,16 @@
         </x-slot:actions>
 
         <div class="mt-4 grid gap-2 border-t border-line pt-4 sm:grid-cols-3 xl:grid-cols-5" data-stagger>
-            @foreach ([
+            @if ($defer)
+                @foreach (range(1, 5) as $tile)
+                    <div class="tile px-3 py-2.5">
+                        <div class="skeleton skeleton-line w-10"></div>
+                        <div class="skeleton skeleton-line mt-1.5 w-20"></div>
+                    </div>
+                @endforeach
+            @endif
+
+            @foreach ($defer ? [] : [
                 ['label' => __('app.packages.title'), 'value' => $summary['total'], 'tone' => 'neutral'],
                 ['label' => __('app.packages.status.minor'), 'value' => $summary['minor'], 'tone' => 'accent'],
                 ['label' => __('app.packages.status.major'), 'value' => $summary['major'], 'tone' => 'danger'],
@@ -33,6 +42,9 @@
         </div>
     </x-dev-page>
 
+    @if ($defer)
+        <x-defer-skeleton :cards="3" :rows="4"/>
+    @else
     {{-- Security first: old is a chore, vulnerable is work. --}}
     <x-card class="mt-5">
         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -262,6 +274,8 @@
             <x-empty pose="search" :hint="__('app.packages.empty')"/>
         </x-card>
     @endforelse
+
+    @endif
 
     <p class="mt-4 text-[11px] leading-snug text-faint">{{ __('app.packages.hint') }}</p>
     <x-mascot pose="package" class="mascot-at-tail-right size-20"/>

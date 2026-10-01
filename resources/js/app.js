@@ -1,6 +1,7 @@
 import { createBoard } from './board';
 import { dayRange } from './day-range';
 import { commandRunner } from './command-runner';
+import { deferredRegions } from './deferred';
 import { docker } from './docker';
 import { folderPicker } from './folder-picker';
 import { ticketBoard } from './ticket-board';
@@ -1196,6 +1197,7 @@ ticketBoard({ swapRegions, toast });
 motionLayer();
 prefetchLinks();
 pendingMarker();
+deferredRegions({ swapRegions });
 sidebarOrder();
 slidingMarkers();
 

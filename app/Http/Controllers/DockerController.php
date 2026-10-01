@@ -5,15 +5,22 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Services\Docker;
+use App\Support\Deferred;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DockerController extends Controller
 {
-    public function index(Docker $docker): View
+    public function index(Request $request, Docker $docker): View
     {
-        return view('docker', ['docker' => $docker->overview()]);
+        // `docker ps` against a daemon with twenty-odd containers is the slowest thing on the page
+        $defer = Deferred::wanted($request);
+
+        return view('docker', [
+            'defer' => $defer,
+            'docker' => $defer ? null : $docker->overview(),
+        ]);
     }
 
     /** The list on its own, so the page can refresh it without reloading. */

@@ -1,6 +1,9 @@
-<x-app-layout :title="__('app.dev.releases')" :wide="true">
+<x-app-layout :title="__('app.dev.releases')" :wide="true" :defer="$defer">
     <x-dev-page :title="__('app.dev.releases')" :hint="__('app.dev.releases_intro')" active="releases"/>
 
+    @if ($defer)
+        <x-defer-skeleton :cards="3" :rows="3"/>
+    @else
     <div class="stack mt-5">
         @if ($count === 0)
             <x-card class="rise">
@@ -42,5 +45,6 @@
             </x-card>
         @endforeach
     </div>
+    @endif
     <x-mascot pose="rocket" class="mascot-at-tail size-20"/>
 </x-app-layout>

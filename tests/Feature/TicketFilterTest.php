@@ -62,7 +62,7 @@ class TicketFilterTest extends TestCase
     {
         $this->fakeBoard();
 
-        $this->get(route('tickets'))
+        $this->page(route('tickets'))
             ->assertOk()
             ->assertSee('Cycle 11')
             ->assertSee('Abwesenheitsplaner')
@@ -73,7 +73,7 @@ class TicketFilterTest extends TestCase
     {
         $this->fakeBoard();
 
-        $this->get(route('tickets', ['projekt' => 'Abwesenheitsplaner']))
+        $this->page(route('tickets', ['projekt' => 'Abwesenheitsplaner']))
             ->assertOk()
             ->assertSee('Mit Sprint')
             ->assertDontSee('Ohne alles');
@@ -83,8 +83,8 @@ class TicketFilterTest extends TestCase
     {
         $this->fakeBoard();
 
-        $this->get(route('tickets', ['label' => 'bug']))->assertOk()->assertSee('COR-1')->assertDontSee('COR-2');
-        $this->get(route('tickets', ['label' => 'gibtsnicht']))->assertOk()->assertDontSee('COR-1');
+        $this->page(route('tickets', ['label' => 'bug']))->assertOk()->assertSee('COR-1')->assertDontSee('COR-2');
+        $this->page(route('tickets', ['label' => 'gibtsnicht']))->assertOk()->assertDontSee('COR-1');
     }
 
     /**
@@ -95,7 +95,7 @@ class TicketFilterTest extends TestCase
     {
         $this->fakeBoard();
 
-        $this->get(route('tickets'))
+        $this->page(route('tickets'))
             ->assertOk()
             ->assertSee('data-state-select', escape: false)
             ->assertSee('In Review');

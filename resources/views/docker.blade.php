@@ -1,7 +1,7 @@
-<x-app-layout :title="__('app.docker.title')" :wide="true">
+<x-app-layout :title="__('app.docker.title')" :wide="true" :defer="$defer">
     <x-dev-page :title="__('app.docker.title')" :hint="__('app.docker.hint')" active="docker">
         <x-slot:actions>
-            @if ($docker['ok'])
+            @if (! $defer && $docker['ok'])
                 <span class="pill">{{ __('app.docker.summary', ['running' => $docker['running'], 'total' => $docker['total']]) }}</span>
             @endif
 
@@ -14,7 +14,11 @@
 
     <div class="mt-5" data-docker data-list-url="{{ route('docker.list') }}"
          data-act-url="{{ route('docker.act') }}" data-logs-url="{{ route('docker.logs') }}">
-        @include('partials.docker-list', ['docker' => $docker])
+        @if ($defer)
+            <x-defer-skeleton class="mt-0" :cards="3" :rows="3"/>
+        @else
+            @include('partials.docker-list', ['docker' => $docker])
+        @endif
     </div>
 
     {{-- the same shape as a run: a window with the output --}}

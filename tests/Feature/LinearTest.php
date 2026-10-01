@@ -147,7 +147,7 @@ class LinearTest extends TestCase
 
         $this->login(['linear_token' => 'lin_api_test']);
 
-        $this->get(route('tickets'))
+        $this->page(route('tickets'))
             ->assertOk()
             ->assertSee('COR-6839')
             ->assertSee('Buchung korrigieren')
@@ -159,7 +159,7 @@ class LinearTest extends TestCase
         Http::fake(['api.linear.app/graphql' => Http::response(['errors' => [['message' => 'kaputt']]])]);
         $this->login(['linear_token' => 'lin_api_test']);
 
-        $this->get(route('tickets'))->assertOk()->assertSee('kaputt');
+        $this->page(route('tickets'))->assertOk()->assertSee('kaputt');
     }
 
     public function test_without_a_key_the_page_says_where_the_list_comes_from(): void
@@ -167,7 +167,7 @@ class LinearTest extends TestCase
         Http::fake();
         $this->login();
 
-        $this->get(route('tickets'))->assertOk()->assertSee(__('app.tickets.no_token'));
+        $this->page(route('tickets'))->assertOk()->assertSee(__('app.tickets.no_token'));
 
         Http::assertNothingSent();
     }

@@ -252,7 +252,7 @@ class TicketFileTest extends TestCase
         $ticket = $board->create('Serverwechsel prüfen', 'Vorher Backup');
         $board->notes($ticket->key, 'Erst Weber fragen');
 
-        $this->get(route('tickets.show', ['key' => $ticket->key]))
+        $this->page(route('tickets.show', ['key' => $ticket->key]))
             ->assertOk()
             ->assertSee('Serverwechsel prüfen')
             ->assertSee('Erst Weber fragen')

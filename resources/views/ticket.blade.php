@@ -1,5 +1,49 @@
 @use('App\Support\Duration')
 
+@if ($defer)
+    {{--
+        The shape of a ticket file, while Linear, GitHub and the local repositories are still
+        being read. The key is known from the URL, so the header is real and only the content
+        below it is a placeholder — which is what keeps the page from jumping when it lands.
+    --}}
+    <x-app-layout :title="$key" :wide="true" :defer="true">
+        <x-card class="rise">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <span class="metric text-sm font-semibold text-accent-text">{{ $key }}</span>
+                    <div class="skeleton skeleton-line mt-2 w-64"></div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    @foreach (range(1, 4) as $button)
+                        <span class="skeleton h-8 w-28 rounded-[var(--radius-control)]"></span>
+                    @endforeach
+                </div>
+            </div>
+        </x-card>
+
+        <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
+            <div class="space-y-5">
+                <x-card>
+                    <div class="skeleton skeleton-line w-24"></div>
+                    <x-skeleton class="mt-3" type="row" :count="5"/>
+                </x-card>
+
+                <x-card style="opacity: .7">
+                    <div class="skeleton skeleton-line w-24"></div>
+                    <x-skeleton class="mt-3" type="row" :count="3"/>
+                </x-card>
+            </div>
+
+            <div class="space-y-5">
+                <x-card>
+                    <div class="skeleton skeleton-line w-24"></div>
+                    <x-skeleton class="mt-3" type="line" :count="6"/>
+                </x-card>
+            </div>
+        </div>
+    </x-app-layout>
+@else
 @php
     $local = $file['local'];
     $issue = $file['issue'];
@@ -536,3 +580,4 @@
     </div>
     <x-mascot pose="think" class="mascot-at-tail-right size-20"/>
 </x-app-layout>
+@endif

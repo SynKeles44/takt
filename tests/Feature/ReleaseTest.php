@@ -84,7 +84,7 @@ class ReleaseTest extends TestCase
         $path = $this->repository();
         Project::query()->create(['name' => 'Testrepo', 'path' => $path]);
 
-        $this->get(route('releases'))
+        $this->page(route('releases'))
             ->assertOk()
             ->assertSee(__('app.dev.releases_intro'))
             ->assertSee('release-1.1.0')
@@ -96,6 +96,6 @@ class ReleaseTest extends TestCase
 
     public function test_no_projects_at_all_says_so(): void
     {
-        $this->get(route('releases'))->assertOk()->assertSee(__('app.dev.releases_none'));
+        $this->page(route('releases'))->assertOk()->assertSee(__('app.dev.releases_none'));
     }
 }

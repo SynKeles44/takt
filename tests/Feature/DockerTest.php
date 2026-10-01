@@ -89,7 +89,7 @@ bbb444555666\x1fphpstorm_helpers\x1fphpstorm/helpers\x1fexited\x1fExited (0) 5 d
         $this->assertFalse($overview['ok']);
         $this->assertSame(__('app.docker.not_running'), $overview['error']);
 
-        $this->get(route('docker'))->assertOk()->assertSee(__('app.docker.not_running'));
+        $this->page(route('docker'))->assertOk()->assertSee(__('app.docker.not_running'));
     }
 
     public function test_an_action_runs_only_for_a_container_from_the_list(): void
@@ -139,7 +139,7 @@ bbb444555666\x1fphpstorm_helpers\x1fphpstorm/helpers\x1fexited\x1fExited (0) 5 d
     {
         $this->fake();
 
-        $this->get(route('docker'))
+        $this->page(route('docker'))
             ->assertOk()
             ->assertSee('galawork-web')
             ->assertSee('data-region="docker-list"', escape: false)
@@ -155,7 +155,7 @@ bbb444555666\x1fphpstorm_helpers\x1fphpstorm/helpers\x1fexited\x1fExited (0) 5 d
     {
         auth()->logout();
 
-        $this->get(route('docker'))->assertRedirect(route('login'));
+        $this->page(route('docker'))->assertRedirect(route('login'));
         $this->postJson(route('docker.act'), ['id' => 'abc', 'action' => 'stop'])->assertUnauthorized();
     }
 
@@ -171,6 +171,6 @@ bbb444555666\x1fphpstorm_helpers\x1fphpstorm/helpers\x1fexited\x1fExited (0) 5 d
             ),
         ]);
 
-        $this->get(route('docker'))->assertOk()->assertSee(__('app.docker.unreachable'));
+        $this->page(route('docker'))->assertOk()->assertSee(__('app.docker.unreachable'));
     }
 }

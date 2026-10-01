@@ -313,7 +313,7 @@ class PackageTest extends TestCase
     {
         $project = $this->project();
 
-        $html = $this->get(route('packages'))->assertOk()->getContent();
+        $html = $this->page(route('packages'))->assertOk()->getContent();
 
         /*
          * Nothing on this page opens itself — not a project, not the shared-versions block, and
@@ -330,7 +330,7 @@ class PackageTest extends TestCase
     {
         $project = $this->project();
 
-        $this->get(route('packages'))
+        $this->page(route('packages'))
             ->assertOk()
             ->assertSee('Testprojekt')
             ->assertSee('laravel/framework')

@@ -1,7 +1,7 @@
 @use('App\Support\Duration')
 
 {{-- only the board earns the full window: it scrolls sideways. The list and the sprints read like every other page. --}}
-<x-app-layout :title="__('app.tickets.title')" :wide="$view === 'board' ? 'full' : true">
+<x-app-layout :title="__('app.tickets.title')" :wide="$view === 'board' ? 'full' : true" :defer="$defer">
     {{--
         The header is the same width on all three views. Only the board's columns take the window,
         because nine of them have nothing to do with a reading width — everything above them does,
@@ -66,12 +66,19 @@
             <input type="hidden" name="tage" value="{{ $days }}">
             <input type="hidden" name="q" value="{{ $term }}">
 
+            {{-- the row holds its height while the facets are still unknown, so nothing shifts later --}}
+            @if ($defer)
+                @foreach (range(1, 3) as $placeholder)
+                    <span class="skeleton h-8 w-32 rounded-[var(--radius-control)]"></span>
+                @endforeach
+            @endif
+
             @foreach ([
                 ['sprint', __('app.sprint.tab')],
                 ['projekt', __('app.ticket.prop_project')],
                 ['label', __('app.ticket.labels')],
             ] as [$name, $label])
-                @if ($facets[$name] !== [])
+                @if (! $defer && $facets[$name] !== [])
                     <select name="{{ $name }}" class="control w-auto min-w-28 text-xs" onchange="this.form.requestSubmit()">
                         <option value="">{{ $label }}: {{ __('app.tickets.filter_all') }}</option>
                         @foreach ($facets[$name] as $value)
@@ -88,7 +95,11 @@
         </form>
 
         <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-            <span class="pill text-[10px]">{{ __('app.tickets.shown', ['shown' => $shown, 'total' => $total]) }}</span>
+            @if ($defer)
+                <span class="skeleton h-5 w-20 rounded-full"></span>
+            @else
+                <span class="pill text-[10px]">{{ __('app.tickets.shown', ['shown' => $shown, 'total' => $total]) }}</span>
+            @endif
 
             @if ($focused !== null)
                 <a href="{{ route('tickets.show', ['key' => $focused->key]) }}"
@@ -121,7 +132,32 @@
     @endif
 
     <div data-region="ticket-board" @class(['mt-5', 'page-width' => $view !== 'board'])>
-        @if ($view === 'sprints')
+        @if ($defer)
+            {{--
+                The shape of the board, while Linear is still being asked. Column-shaped on the
+                board and card-shaped on the list, because a skeleton that does not have the
+                geometry of what replaces it is a spinner that also makes the page jump.
+            --}}
+            @if ($view === 'board')
+                <div class="flex gap-3 overflow-hidden">
+                    @foreach (range(1, 6) as $column)
+                        <div class="w-72 shrink-0 space-y-2" style="opacity: {{ number_format(1 - ($column - 1) * 0.14, 2, '.', '') }}">
+                            <div class="skeleton skeleton-line w-24"></div>
+                            <x-skeleton type="card" :count="3"/>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <x-card>
+                    <div class="skeleton skeleton-line w-24"></div>
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        @foreach (range(1, 9) as $card)
+                            <div class="skeleton skeleton-card"></div>
+                        @endforeach
+                    </div>
+                </x-card>
+            @endif
+        @elseif ($view === 'sprints')
             @include('partials.sprints')
         @elseif ($view === 'board')
             <p class="page-width mb-2 text-[10px] text-faint">{{ __('app.ticket.shortcuts_state') }}</p>

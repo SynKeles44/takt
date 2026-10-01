@@ -146,13 +146,13 @@ class TicketTest extends TestCase
         $path = $this->repository();
         Project::query()->create(['name' => 'Testrepo', 'path' => $path]);
 
-        $this->get(route('tickets', ['tage' => 30]))
+        $this->page(route('tickets', ['tage' => 30]))
             ->assertOk()
             ->assertSee('COR-6839')
             ->assertSee('DEV-5472')
             ->assertSee(__('app.tickets.estimate_hint'));
 
-        $this->get(route('tickets', ['tage' => 30, 'q' => 'cor-6839']))
+        $this->page(route('tickets', ['tage' => 30, 'q' => 'cor-6839']))
             ->assertOk()
             ->assertSee('COR-6839')
             ->assertDontSee('DEV-5472');
@@ -162,6 +162,6 @@ class TicketTest extends TestCase
 
     public function test_an_absurd_window_is_rejected(): void
     {
-        $this->get(route('tickets', ['tage' => 4000]))->assertSessionHasErrors('tage');
+        $this->page(route('tickets', ['tage' => 4000]))->assertSessionHasErrors('tage');
     }
 }
