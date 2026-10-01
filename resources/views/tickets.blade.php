@@ -1,6 +1,7 @@
 @use('App\Support\Duration')
 
-<x-app-layout :title="__('app.tickets.title')" wide="full">
+{{-- only the board earns the full window: it scrolls sideways. The list and the sprints read like every other page. --}}
+<x-app-layout :title="__('app.tickets.title')" :wide="$view === 'board' ? 'full' : true">
     <x-card class="rise">
 
         <div class="flex flex-wrap items-start justify-between gap-4">
