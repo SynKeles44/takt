@@ -34,12 +34,17 @@ final class Sprints
     /**
      * @return array{sprints: Collection<int, array<string, mixed>>, error: ?string, configured: bool}
      */
-    public function recent(User $user, int $limit = self::DEFAULT_LIMIT): array
+    /**
+     * @param  ?Collection<int, array<string, mixed>>  $only  the tickets the page's filters kept,
+     *                                                        so the sprint view answers the same
+     *                                                        question the board does
+     */
+    public function recent(User $user, ?Collection $only = null, int $limit = self::DEFAULT_LIMIT): array
     {
         $mine = $this->linear->mine($user);
         $grouped = [];
 
-        foreach ($mine['issues'] as $issue) {
+        foreach ($only?->all() ?? $mine['issues'] as $issue) {
             $cycle = $issue['cycle'] ?? null;
 
             if ($cycle === null || ($cycle['starts_at'] ?? '') === '') {

@@ -11,12 +11,12 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <form method="GET" action="{{ route('tickets') }}" class="flex flex-wrap items-center gap-2">
-                    <input type="hidden" name="tage" value="{{ $days }}">
-                    <input type="hidden" name="ansicht" value="{{ $view }}">
-                    <input type="search" name="q" value="{{ $term }}" class="control w-44 text-xs"
-                           placeholder="{{ __('app.tickets.search') }}">
-                </form>
+            <form method="GET" action="{{ route('tickets') }}" class="flex flex-wrap items-center gap-2">
+                <input type="hidden" name="tage" value="{{ $days }}">
+                <input type="hidden" name="ansicht" value="{{ $view }}">
+                <input type="search" name="q" value="{{ $term }}" class="control w-44 text-xs"
+                       placeholder="{{ __('app.tickets.search') }}">
+            </form>
 
                 <div class="segmented" data-marker-key="tickets-view">
                     @foreach ([
@@ -50,35 +50,37 @@
             tickets this is what makes the board usable, and offering every project and label of
             every team would offer values that match nothing here. Each one submits on change —
             a filter you have to confirm is a filter nobody uses twice.
+
+            On every view, not only where it was first needed: a row that appears and disappears
+            moves every button above it each time the tab changes, and the sprint view filters by
+            project and label as usefully as the board does.
         --}}
-        @if ($view !== 'sprints')
-            <form method="GET" action="{{ route('tickets') }}"
-                  class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3" data-filter-form>
-                <input type="hidden" name="ansicht" value="{{ $view }}">
-                <input type="hidden" name="tage" value="{{ $days }}">
-                <input type="hidden" name="q" value="{{ $term }}">
+        <form method="GET" action="{{ route('tickets') }}"
+              class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3" data-filter-form>
+            <input type="hidden" name="ansicht" value="{{ $view }}">
+            <input type="hidden" name="tage" value="{{ $days }}">
+            <input type="hidden" name="q" value="{{ $term }}">
 
-                @foreach ([
-                    ['sprint', __('app.sprint.tab')],
-                    ['projekt', __('app.ticket.prop_project')],
-                    ['label', __('app.ticket.labels')],
-                ] as [$name, $label])
-                    @if ($facets[$name] !== [])
-                        <select name="{{ $name }}" class="control w-auto min-w-28 text-xs" onchange="this.form.requestSubmit()">
-                            <option value="">{{ $label }}: {{ __('app.tickets.filter_all') }}</option>
-                            @foreach ($facets[$name] as $value)
-                                <option value="{{ $value }}" @selected($picked[$name] === $value)>{{ $value }}</option>
-                            @endforeach
-                        </select>
-                    @endif
-                @endforeach
-
-                @if (array_filter($picked) !== [])
-                    <a href="{{ route('tickets', ['ansicht' => $view, 'tage' => $days, 'q' => $term]) }}"
-                       class="pill hover:text-ink">{{ __('app.tickets.filter_clear') }}</a>
+            @foreach ([
+                ['sprint', __('app.sprint.tab')],
+                ['projekt', __('app.ticket.prop_project')],
+                ['label', __('app.ticket.labels')],
+            ] as [$name, $label])
+                @if ($facets[$name] !== [])
+                    <select name="{{ $name }}" class="control w-auto min-w-28 text-xs" onchange="this.form.requestSubmit()">
+                        <option value="">{{ $label }}: {{ __('app.tickets.filter_all') }}</option>
+                        @foreach ($facets[$name] as $value)
+                            <option value="{{ $value }}" @selected($picked[$name] === $value)>{{ $value }}</option>
+                        @endforeach
+                    </select>
                 @endif
-            </form>
-        @endif
+            @endforeach
+
+            @if (array_filter($picked) !== [])
+                <a href="{{ route('tickets', ['ansicht' => $view, 'tage' => $days, 'q' => $term]) }}"
+                   class="pill hover:text-ink">{{ __('app.tickets.filter_clear') }}</a>
+            @endif
+        </form>
 
         <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
             <span class="pill text-[10px]">{{ __('app.tickets.shown', ['shown' => $shown, 'total' => $total]) }}</span>

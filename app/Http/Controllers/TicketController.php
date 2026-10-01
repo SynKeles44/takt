@@ -144,7 +144,7 @@ class TicketController extends Controller
             'visibleStates' => $request->user()->board_states,
             'sprint' => $view === 'board' ? $linearBoard->sprint($rows) : null,
             // only the sprint view pays for the sprint read; it answers from the same cached issues
-            'sprints' => $view === 'sprints' ? $sprints->recent($request->user()) : null,
+            'sprints' => $view === 'sprints' ? $sprints->recent($request->user(), $rows) : null,
         ]);
     }
 

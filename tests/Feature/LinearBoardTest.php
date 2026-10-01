@@ -207,6 +207,54 @@ class LinearBoardTest extends TestCase
     }
 
     /**
+     * The header is the same height on all three views.
+     *
+     * The filter row used to be left out of the sprint view, so switching tabs moved every button
+     * above it — and the thing you were aiming at was somewhere else by the time you clicked. The
+     * row is what decides that height, so asserting it is present on each view is the check.
+     */
+    public function test_the_header_carries_the_same_rows_on_every_view(): void
+    {
+        Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => [[
+            'identifier' => 'COR-1', 'title' => 'Ein Ticket', 'url' => '', 'updatedAt' => '2026-09-30T08:00:00.000Z',
+            'state' => ['name' => 'Todo', 'type' => 'unstarted'], 'team' => ['key' => 'COR', 'name' => 'Core'],
+            'project' => ['name' => 'Ein Projekt'],
+            'cycle' => ['id' => 'c11', 'number' => 11, 'name' => 'Cycle 11', 'startsAt' => '2026-09-28T00:00:00.000Z', 'endsAt' => '2026-10-11T00:00:00.000Z'],
+        ]]]]]])]);
+
+        foreach (['board', 'liste', 'sprints'] as $view) {
+            $html = (string) $this->get(route('tickets', ['ansicht' => $view]))->assertOk()->getContent();
+
+            $this->assertStringContainsString('data-filter-form', $html, "the {$view} view drops the filter row");
+            $this->assertStringContainsString('name="projekt"', $html, "the {$view} view drops the project filter");
+        }
+    }
+
+    /** And the filters do something there, which is what earns the row its place on that view. */
+    public function test_the_sprint_view_honours_the_filters(): void
+    {
+        Http::fake(['api.linear.app/graphql' => Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => [
+            [
+                'identifier' => 'COR-1', 'title' => 'Im Projekt', 'url' => '', 'updatedAt' => '2026-09-30T08:00:00.000Z',
+                'state' => ['name' => 'Todo', 'type' => 'unstarted'], 'team' => ['key' => 'COR', 'name' => 'Core'],
+                'project' => ['name' => 'Ein Projekt'],
+                'cycle' => ['id' => 'c11', 'number' => 11, 'name' => 'Cycle 11', 'startsAt' => '2026-09-28T00:00:00.000Z', 'endsAt' => '2026-10-11T00:00:00.000Z'],
+            ],
+            [
+                'identifier' => 'COR-2', 'title' => 'Woanders', 'url' => '', 'updatedAt' => '2026-09-30T08:00:00.000Z',
+                'state' => ['name' => 'Todo', 'type' => 'unstarted'], 'team' => ['key' => 'COR', 'name' => 'Core'],
+                'project' => ['name' => 'Anderes Projekt'],
+                'cycle' => ['id' => 'c11', 'number' => 11, 'name' => 'Cycle 11', 'startsAt' => '2026-09-28T00:00:00.000Z', 'endsAt' => '2026-10-11T00:00:00.000Z'],
+            ],
+        ]]]]])]);
+
+        $this->get(route('tickets', ['ansicht' => 'sprints', 'projekt' => 'Ein Projekt']))
+            ->assertOk()
+            ->assertSee('Im Projekt')
+            ->assertDontSee('Woanders');
+    }
+
+    /**
      * The board opens on the running sprint, the way Linear's cycle board does — without it the
      * Done column carries every ticket closed in the window and buries the four that still need a
      * decision. It is a preselection, so the select shows it and an empty one asks for all.
