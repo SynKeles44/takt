@@ -7,10 +7,12 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Snippet;
 use App\Services\Commits;
+use App\Services\Linear;
 use App\Services\ProjectRunner;
 use App\Services\Reviews;
 use App\Services\Slack;
 use App\Services\TestPost;
+use App\Services\Tickets;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -19,6 +21,9 @@ use Illuminate\View\View;
 
 class DeveloperController extends Controller
 {
+    /** Enough to find the one you are posting about, few enough that the list stays scannable. */
+    private const int TICKET_CHOICES = 40;
+
     public function index(Request $request, Commits $commits, Reviews $reviews, ProjectRunner $runner): View
     {
         $request->validate(['tag' => ['nullable', 'date_format:Y-m-d']]);
@@ -135,22 +140,58 @@ class DeveloperController extends Controller
         ));
     }
 
-    public function post(Request $request, TestPost $builder): View
+    public function post(Request $request, TestPost $builder, Linear $linear, Reviews $reviews, Tickets $tickets): View
     {
         $input = $request->validate([
             'ticket' => ['nullable', 'string', 'max:400'],
             'pr' => ['nullable', 'string', 'max:400'],
             'instance' => ['nullable', 'string', 'max:400'],
+            'fuellen' => ['nullable', 'string'],
         ]);
+
+        $user = $request->user();
+        $key = mb_strtoupper(trim((string) ($input['ticket'] ?? '')));
+        $filled = null;
+
+        /*
+         * Filling is its own button rather than something the Build button does on the side: an
+         * automatic fill that runs on every submit cannot be undone — clear a field it guessed
+         * wrong and the next click puts it back.
+         */
+        if (($input['fuellen'] ?? null) !== null && $key !== '') {
+            // fetched rather than read from cache: this runs on a click that asked for exactly
+            // this, and a cold cache answering "nothing found" would be a lie about the ticket
+            $all = $reviews->forUser($user);
+
+            $filled = $builder->suggest(
+                $user,
+                $key,
+                [...$all['mine'], ...$all['incoming']],
+                $linear->forIds($user, [$key])['issues'][$key] ?? null,
+            );
+
+            // what was found wins over what was in the field; what was not found leaves it alone
+            foreach (['pr', 'instance'] as $field) {
+                if ($filled[$field] !== '') {
+                    $input[$field] = $filled[$field];
+                }
+            }
+        }
 
         return view('testpost', [
             'input' => $input,
-            'result' => $builder->build($request->user(), $input),
-            'slackReady' => app(Slack::class)->configured($request->user()),
+            'result' => $builder->build($user, $input),
+            'slackReady' => app(Slack::class)->configured($user),
+            'filled' => $filled,
+            // the keys to choose from, so the field is a picker as well as a text box
+            'choices' => $tickets->collect($user)['tickets']
+                ->map(fn (array $row): array => ['key' => $row['id'], 'title' => $row['title']])
+                ->take(self::TICKET_CHOICES)
+                ->values(),
             'defaults' => [
-                'ticket' => $request->user()->ticket_url_template ?: TestPost::TICKET_DEFAULT,
-                'pr' => $request->user()->pr_url_template ?: TestPost::PR_DEFAULT,
-                'instance' => $request->user()->instance_url_template ?: TestPost::INSTANCE_DEFAULT,
+                'ticket' => $user->ticket_url_template ?: TestPost::TICKET_DEFAULT,
+                'pr' => $user->pr_url_template ?: TestPost::PR_DEFAULT,
+                'instance' => $user->instance_url_template ?: TestPost::INSTANCE_DEFAULT,
             ],
         ]);
     }

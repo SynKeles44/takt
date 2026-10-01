@@ -118,4 +118,66 @@ final class TestPost
             $template,
         );
     }
+
+    /**
+     * What the ticket already knows about its own PR and its own test instance.
+     *
+     * Typing three fields by hand means looking up two of them somewhere else first, and both are
+     * written down already: the pull request carries the ticket key in its title, and the review
+     * instance has been posted into the ticket by whoever deployed it. Neither is guessed — a
+     * value is only offered when it was found, and the caller is told which half came up empty.
+     *
+     * @param  list<array<string, mixed>>  $pulls  the user's pull requests, already fetched
+     * @return array{pr: string, instance: string, found: list<string>, missing: list<string>}
+     */
+    public function suggest(User $user, string $key, array $pulls, ?array $issue): array
+    {
+        $key = mb_strtoupper(trim($key));
+
+        $pr = '';
+        $instance = '';
+
+        foreach ($pulls as $pull) {
+            if ($key !== '' && mb_stripos((string) $pull['title'], $key) !== false) {
+                $pr = (string) $pull['number'];
+                break;
+            }
+        }
+
+        if ($issue !== null) {
+            $instance = $this->instanceIn($user, implode("\n", [
+                (string) ($issue['description'] ?? ''),
+                ...array_map(static fn (array $c): string => (string) ($c['body'] ?? ''), $issue['comments'] ?? []),
+            ]));
+        }
+
+        $fields = ['pr' => $pr, 'instance' => $instance];
+
+        return [
+            'pr' => $pr,
+            'instance' => $instance,
+            'found' => array_keys(array_filter($fields)),
+            'missing' => array_keys(array_filter($fields, static fn (string $v): bool => $v === '')),
+        ];
+    }
+
+    /**
+     * The first URL in the text that matches the user's own instance template.
+     *
+     * The template is the pattern — `https://{id}-web.galawork.dev{path}` becomes a regex whose
+     * `{id}` is one host label and whose `{path}` is the rest. That is what keeps this from
+     * being a guess: it finds a review instance for this user's setup, or it finds nothing.
+     */
+    private function instanceIn(User $user, string $text): string
+    {
+        $template = $user->instance_url_template ?: self::INSTANCE_DEFAULT;
+
+        $pattern = '#'.str_replace(
+            [preg_quote('{id}', '#'), preg_quote('{path}', '#')],
+            ['[A-Za-z0-9][A-Za-z0-9-]*', '[^\s<>()\[\]"\']*'],
+            preg_quote($template, '#'),
+        ).'#';
+
+        return preg_match($pattern, $text, $hit) === 1 ? $hit[0] : '';
+    }
 }

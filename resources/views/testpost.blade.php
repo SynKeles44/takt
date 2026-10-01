@@ -6,10 +6,29 @@
             <h2 class="heading">{{ __('app.dev.fields') }}</h2>
 
             <form method="GET" action="{{ route('dev.testpost') }}" class="mt-4 space-y-3">
+                {{--
+                    A text box with a list behind it, not a dropdown instead of one: pasting a key
+                    from somewhere else has to stay the quickest path, and picking one of my own
+                    tickets should not mean typing it out from memory.
+                --}}
                 <div>
                     <label for="ticket" class="label">{{ __('app.dev.ticket') }}</label>
                     <input id="ticket" type="text" name="ticket" value="{{ $input['ticket'] ?? '' }}"
-                           class="control metric text-xs" maxlength="400" placeholder="COR-6944" autofocus>
+                           class="control metric text-xs" maxlength="400" placeholder="COR-6944"
+                           list="ticket-choices" autocomplete="off" autofocus>
+
+                    @if ($choices->isNotEmpty())
+                        <datalist id="ticket-choices">
+                            @foreach ($choices as $choice)
+                                <option value="{{ $choice['key'] }}">{{ $choice['title'] }}</option>
+                            @endforeach
+                        </datalist>
+
+                        <button type="submit" name="fuellen" value="1" class="btn btn-ghost mt-2 w-full text-xs">
+                            <x-icon name="repeat" class="size-3.5"/>
+                            {{ __('app.dev.fill_from_ticket') }}
+                        </button>
+                    @endif
                 </div>
 
                 <div>
@@ -24,6 +43,21 @@
                            class="control metric text-xs" maxlength="400" placeholder="b63d4865/mod/zeiterfassung/?fn=time_list">
                     <p class="mt-1 text-[11px] text-dim">{{ __('app.dev.instance_hint') }}</p>
                 </div>
+
+                @if ($filled !== null)
+                    <p @class([
+                            'rounded-[var(--radius-control)] border px-3 py-2 text-[11px]',
+                            'border-work/30 bg-work/10 text-work-text' => $filled['missing'] === [],
+                            'border-rest/30 bg-rest/10 text-rest-text' => $filled['missing'] !== [],
+                       ])>
+                        @if ($filled['found'] !== [])
+                            {{ __('app.dev.filled_found', ['fields' => collect($filled['found'])->map(fn ($key) => __('app.dev.'.$key))->implode(', ')]) }}
+                        @endif
+                        @if ($filled['missing'] !== [])
+                            {{ __('app.dev.filled_missing', ['fields' => collect($filled['missing'])->map(fn ($key) => __('app.dev.'.$key))->implode(', ')]) }}
+                        @endif
+                    </p>
+                @endif
 
                 <div class="flex flex-wrap gap-2">
                     <button type="submit" class="btn btn-primary text-xs">
