@@ -15,6 +15,7 @@ use App\Models\TimeEntry;
 use App\Models\Todo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -25,6 +26,15 @@ use Tests\TestCase;
 class EveryPageTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // the dashboard carries every widget, and one of them asks docker for its container list
+        Process::fake();
+        Process::preventStrayProcesses();
+    }
 
     public function test_every_page_answers_with_a_complete_document(): void
     {
@@ -52,6 +62,31 @@ class EveryPageTest extends TestCase
                 'werkbank',
                 (string) $this->get($url)->getContent(),
                 "{$name} still mentions the old name",
+            );
+        }
+    }
+
+    /**
+     * No page may load hard.
+     *
+     * The soft page change is a cross-document view transition, and it only reads as one while
+     * the shell stays put: without `data-region="main"` the whole document is a single transition
+     * group, the sidebar cross-fades with itself, and the result looks worse than no transition at
+     * all. A page that forgets the attribute is a page that snaps — so every page is asked.
+     */
+    public function test_every_page_puts_its_content_in_the_named_transition_group(): void
+    {
+        $this->login();
+        $this->seedContent();
+
+        // the print documents open in their own tab and are no part of the app's own navigation
+        $printable = ['insights.report', 'month.timesheet'];
+
+        foreach ($this->pages()->except($printable) as $name => $url) {
+            $this->assertStringContainsString(
+                '<main data-region="main">',
+                (string) $this->get($url)->getContent(),
+                "{$name} is not inside the named transition group and would load hard",
             );
         }
     }

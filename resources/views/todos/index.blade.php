@@ -65,7 +65,7 @@
                 </form>
 
                 <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-                    <div class="tile flex items-center gap-1 p-1">
+                    <div class="tile flex items-center gap-1 p-1" data-marker-row data-marker-key="todo-filter">
                         @foreach ([
                             ['open', __('app.todos.filter_open'), $openCount],
                             ['done', __('app.todos.filter_done'), $doneCount],
@@ -73,12 +73,16 @@
                         ] as [$key, $tabLabel, $count])
                             <a href="{{ route('todos.index', $key === 'open' ? [] : ['filter' => $key]) }}"
                                @class([
-                                   'rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition',
-                                   'bg-hover text-ink' => $filter === $key,
+                                   'relative rounded-[var(--radius-control)] px-3 py-1.5 text-xs font-semibold transition',
+                                   'text-ink' => $filter === $key,
                                    'text-muted hover:text-ink' => $filter !== $key,
                                ])>
-                                {{ $tabLabel }}
-                                <span class="metric ml-1 {{ $filter === $key ? 'text-accent-text' : 'text-dim' }}" data-count="{{ $key }}">{{ $count }}</span>
+                                @if ($filter === $key)
+                                    <span class="tab-marker" aria-hidden="true"></span>
+                                @endif
+
+                                <span class="relative">{{ $tabLabel }}</span>
+                                <span class="metric relative ml-1 {{ $filter === $key ? 'text-accent-text' : 'text-dim' }}" data-count="{{ $key }}">{{ $count }}</span>
                             </a>
                         @endforeach
                     </div>

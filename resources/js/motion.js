@@ -1,6 +1,8 @@
 import autoAnimate from '@formkit/auto-animate';
 import { animate } from 'motion/mini';
 
+import { rememberMarkerPosition, takeMarkerHandover } from './marker';
+
 /**
  * The motion layer.
  *
@@ -175,10 +177,38 @@ export function segmentedIndicator() {
 
         place(false);
 
+        /*
+         * A segmented control whose segments are links navigates, and then the animation started
+         * on the press is thrown away with the old document — the same failure the navigation rows
+         * had. A keyed group hands its position to the next page instead, through the same storage
+         * the row markers use, and arrives travelling rather than already in place.
+         */
+        const key = group.dataset.markerKey ? `seg:${group.dataset.markerKey}` : null;
+        const from = key ? takeMarkerHandover(key) : null;
+
+        if (from && ! calm()) {
+            const now = marker.getBoundingClientRect();
+            const shift = from.left - now.left;
+
+            if (shift !== 0) {
+                marker.animate(
+                    [
+                        { transform: `${marker.style.transform} translateX(${shift}px)`, width: `${from.width}px` },
+                        { transform: marker.style.transform, width: marker.style.width },
+                    ],
+                    { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)', fill: 'none' },
+                );
+            }
+        }
+
         group.addEventListener('pointerdown', (event) => {
             const segment = event.target.closest('.segment');
 
             if (! segment || segment === group.querySelector('.segment-active')) return;
+
+            if (key) {
+                rememberMarkerPosition(key, marker.getBoundingClientRect());
+            }
 
             // move the marker on the press, not on the reload the click may trigger
             group.querySelectorAll('.segment-active').forEach((other) => other.classList.remove('segment-active'));

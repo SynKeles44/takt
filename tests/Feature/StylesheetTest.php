@@ -53,6 +53,31 @@ class StylesheetTest extends TestCase
         }
     }
 
+    /**
+     * The soft page change rests on three lines in the stylesheet, and all three have to survive
+     * the build: the opt-in itself, and the two names that keep the shell out of the transition.
+     * Without the names the whole document is one group, the sidebar cross-fades with itself, and
+     * the result reads as a worse reload than no transition at all.
+     */
+    public function test_the_page_transition_survives_the_build(): void
+    {
+        $css = $this->stylesheet();
+
+        $this->assertMatchesRegularExpression(
+            '/@view-transition\s*\{[^}]*navigation\s*:\s*auto/i',
+            $css,
+            'Without the opt-in every navigation is a hard load.',
+        );
+
+        foreach (['takt-nav', 'takt-page'] as $name) {
+            $this->assertStringContainsString(
+                'view-transition-name:'.$name,
+                str_replace(' ', '', $css),
+                sprintf('%s is unnamed, so the shell animates along with the content.', $name),
+            );
+        }
+    }
+
     public function test_the_motion_tokens_resolve_to_real_values(): void
     {
         $css = $this->stylesheet();

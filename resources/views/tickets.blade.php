@@ -17,14 +17,14 @@
                            placeholder="{{ __('app.tickets.search') }}">
                 </form>
 
-                <div class="segmented">
+                <div class="segmented" data-marker-key="tickets-view">
                     @foreach (['board' => __('app.ticket.board'), 'liste' => __('app.ticket.list')] as $value => $label)
                         <a href="{{ route('tickets', ['ansicht' => $value, 'tage' => $days, 'q' => $term]) }}"
                            @class(['segment', 'segment-active' => $view === $value])>{{ $label }}</a>
                     @endforeach
                 </div>
 
-                <div class="segmented">
+                <div class="segmented" data-marker-key="tickets-window">
                     @foreach ($windows as $window)
                         <a href="{{ route('tickets', ['tage' => $window, 'ansicht' => $view, 'q' => $term]) }}"
                            @class(['segment', 'segment-active' => $window === $days])>{{ $window }}</a>

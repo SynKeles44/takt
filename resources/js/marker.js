@@ -179,16 +179,17 @@ const rows = [];
  */
 const HANDOVER = 'takt.marker.from';
 
-const remember = (host, item) => {
-    const marker = host.querySelector('[data-marker]');
-
-    if (! marker) return;
-
-    const box = marker.getBoundingClientRect();
-
+/**
+ * Record where a marker stands, under the key of the row it belongs to.
+ *
+ * Exported because the segmented controls carry their own marker, built in `motion.js` with its
+ * own geometry — and a second storage format for the same idea is a second thing to get wrong.
+ * They hand over through exactly this entry.
+ */
+export const rememberMarkerPosition = (key, box) => {
     try {
         sessionStorage.setItem(HANDOVER, JSON.stringify({
-            key: host.dataset.markerKey,
+            key,
             top: box.top,
             left: box.left,
             width: box.width,
@@ -200,7 +201,14 @@ const remember = (host, item) => {
     }
 };
 
-const handover = (host) => {
+/**
+ * Take the handover meant for this key, if there is one. Reading it consumes it.
+ *
+ * Only the row the handover belongs to consumes it. Rows are wired in order, and the sidebar goes
+ * first — it used to clear the entry on its way past, so a click on a tab row handed its position
+ * to a row that then threw it away. The tab row found nothing and appeared in place.
+ */
+export const takeMarkerHandover = (key) => {
     let saved = null;
 
     try {
@@ -218,12 +226,7 @@ const handover = (host) => {
         return null;
     }
 
-    /*
-     * Only the row the handover belongs to consumes it. Rows are wired in order, and the sidebar
-     * goes first — it used to clear the entry on its way past, so a click on a tab row handed its
-     * position to a row that then threw it away. The tab row found nothing and appeared in place.
-     */
-    if (saved.key !== host.dataset.markerKey) {
+    if (saved.key !== key) {
         return null;
     }
 
@@ -233,6 +236,16 @@ const handover = (host) => {
 
     return saved;
 };
+
+const remember = (host) => {
+    const marker = host.querySelector('[data-marker]');
+
+    if (! marker) return;
+
+    rememberMarkerPosition(host.dataset.markerKey, marker.getBoundingClientRect());
+};
+
+const handover = (host) => takeMarkerHandover(host.dataset.markerKey);
 
 /*
  * Delegated on the document rather than bound per row. A listener on the row itself did not fire
@@ -250,7 +263,7 @@ document.addEventListener('click', (event) => {
 
         if (item && host.contains(item)) {
             // hand the position to the next document first, then move for the same-page case
-            remember(host, item);
+            remember(host);
             move(host, item, true);
         }
     });
@@ -262,4 +275,14 @@ export function slidingMarkers() {
     document.querySelectorAll('[data-tab-row]').forEach((row) => wire(row, 'a', 'tab-marker', 'tabs'));
     document.querySelectorAll('[data-subtab-row]').forEach((row) => wire(row, 'a', 'subtab-marker', 'subtabs'));
     document.querySelectorAll('[data-period-row]').forEach((row) => wire(row, 'a', 'tab-marker', 'period'));
+
+    /*
+     * The open hook. Three rows above are named one by one because they predate it; anything else
+     * in the app that wants a travelling highlight says so in its own markup instead of being
+     * added to this list — which is the difference between a row that was remembered and a row
+     * that cannot be forgotten.
+     */
+    document.querySelectorAll('[data-marker-row]').forEach(
+        (row) => wire(row, row.dataset.markerItem || 'a', 'tab-marker', row.dataset.markerKey || 'row'),
+    );
 }
