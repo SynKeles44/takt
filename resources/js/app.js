@@ -657,8 +657,19 @@ const swapRegions = (html, only = null) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
 
     // decided before anything moves, so the caller still gets a synchronous yes or no
-    const pairs = [...document.querySelectorAll('[data-region]')]
-        .filter((node) => only === null || only.includes(node.dataset.region))
+    const wanted = [...document.querySelectorAll('[data-region]')]
+        .filter((node) => only === null || only.includes(node.dataset.region));
+
+    /*
+     * A region INSIDE another region is brought along by the outer swap and must not be swapped
+     * again. `replaceWith` detaches its argument from wherever it currently sits, so replacing the
+     * old inner node — which the outer swap already dropped out of the document — tears the fresh
+     * inner node back OUT of the page that just received it. The ticket page has exactly this
+     * shape (`ticket-board` lives inside `main`), and the symptom was the whole board vanishing
+     * after a search: header updated, content gone.
+     */
+    const pairs = wanted
+        .filter((node) => ! wanted.some((other) => other !== node && other.contains(node)))
         .map((node) => [node, doc.querySelector(`[data-region="${node.dataset.region}"]`)])
         .filter(([, fresh]) => fresh !== null);
 
