@@ -62,7 +62,7 @@ class ReleaseCommand extends Command
         $name = (string) config('app.name');
         $arch = (string) ($this->option('arch') ?: (php_uname('m') === 'arm64' ? 'aarch64' : 'x86_64'));
         $phpVersion = (string) $this->option('php');
-        $version = (string) ($this->option('app-version') ?: $this->describe());
+        $version = self::version((string) ($this->option('app-version') ?: $this->describe()));
         $port = (int) $this->option('port');
         $dist = rtrim(base_path((string) $this->option('path')), '/');
         $work = storage_path('app/release');
@@ -307,6 +307,18 @@ class ReleaseCommand extends Command
         $this->components->task('Bundle assembled');
 
         return true;
+    }
+
+    /**
+     * The version as Finder and the file names show it. Tags are written `v0.1.0`, but
+     * CFBundleShortVersionString is plain numbers — the first release showed "v0.1.0" in Finder.
+     * Only a `v` in front of a digit goes, so a name that merely starts with v is left alone.
+     */
+    public static function version(string $raw): string
+    {
+        $version = trim($raw);
+
+        return preg_match('/^[vV]\d/', $version) === 1 ? substr($version, 1) : $version;
     }
 
     private function describe(): string

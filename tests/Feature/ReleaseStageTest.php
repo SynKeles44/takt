@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Console\Commands\ReleaseCommand;
 use App\Support\AppBundle;
 use App\Support\ReleaseStage;
 use Illuminate\Support\Facades\File;
@@ -81,6 +82,17 @@ class ReleaseStageTest extends TestCase
         $this->assertStringContainsString('<key>CFBundleIdentifier</key><string>de.takt.app</string>', $plist);
         $this->assertStringNotContainsString('TaktRoot', $plist);
         $this->assertStringNotContainsString('TaktPhp', $plist);
+    }
+
+    /** A tag is `v0.1.0`; Finder and the file names want `0.1.0`. */
+    public function test_the_version_drops_the_v_of_a_tag_and_nothing_else(): void
+    {
+        $this->assertSame('0.1.0', ReleaseCommand::version('v0.1.0'));
+        $this->assertSame('0.1.0', ReleaseCommand::version(" V0.1.0\n"));
+        $this->assertSame('0.2.0-3-gab2c8c7', ReleaseCommand::version('v0.2.0-3-gab2c8c7'));
+        $this->assertSame('0.1.0', ReleaseCommand::version('0.1.0'));
+        $this->assertSame('ab2c8c7', ReleaseCommand::version('ab2c8c7'));
+        $this->assertSame('vnext', ReleaseCommand::version('vnext'));
     }
 
     public function test_the_checkout_property_list_points_at_the_installation(): void
