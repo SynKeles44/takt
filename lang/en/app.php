@@ -218,8 +218,13 @@ return [
         'theme_next' => 'Next scheme',
     ],
 
+    'build' => [
+        'stale' => 'The interface is older than the code. Rebuild once and everything matches again:',
+    ],
+
     'style' => [
         'soft' => ['label' => 'Soft', 'description' => 'Round cards, soft shadows'],
+        'apple' => ['label' => 'Apple', 'description' => 'San Francisco, 13 pt, glass on the sidebar only'],
         'minimal' => ['label' => 'Minimalism', 'description' => 'Borderless, airy, hairlines only'],
         'bento' => ['label' => 'Bento', 'description' => 'Large radii, tinted tiles'],
         'glassmorphism' => ['label' => 'Glassmorphism', 'description' => 'Heavy blur, translucent surfaces'],

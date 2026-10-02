@@ -169,4 +169,22 @@ class StylesheetTest extends TestCase
         $this->assertNotFalse($position);
         $this->assertGreaterThan(strlen($css) * 0.8, $position, 'the app-window overrides must stay at the end, outside every layer');
     }
+
+    /**
+     * The Apple style follows the Human Interface Guidelines on where glass may appear: the
+     * functional layer only. So the content surfaces run without blur, the sidebar carries the
+     * material, and both accessibility fallbacks the HIG names survive the build.
+     */
+    public function test_the_apple_style_keeps_glass_on_the_functional_layer_only(): void
+    {
+        $css = $this->stylesheet();
+
+        $this->assertMatchesRegularExpression('/\[data-style=apple\]\{[^}]*--blur:0(px)?[;}]/', $css);
+        $this->assertMatchesRegularExpression('/\[data-style=apple\] \.nav-aside\{[^}]*backdrop-filter:blur\(/', $css);
+        $this->assertMatchesRegularExpression('/@media \(prefers-reduced-transparency:reduce\)\{\[data-style=apple\] \.nav-aside\{[^}]*backdrop-filter:none/', $css);
+        $this->assertStringContainsString('@media (prefers-contrast:more){[data-style=apple]{', $css);
+
+        // the macOS body size: a 15px root puts 0.875rem at 13px, and nothing drops below 10px
+        $this->assertMatchesRegularExpression('/\[data-style=apple\]\{[^}]*--root-size:15px/', $css);
+    }
 }

@@ -218,8 +218,13 @@ return [
         'theme_next' => 'Nächstes Farbschema',
     ],
 
+    'build' => [
+        'stale' => 'Die Oberfläche ist älter als der Code. Einmal neu bauen, dann stimmt wieder alles:',
+    ],
+
     'style' => [
         'soft' => ['label' => 'Sanft', 'description' => 'Runde Karten, weiche Schatten'],
+        'apple' => ['label' => 'Apple', 'description' => 'San Francisco, 13 pt, Glas nur in der Seitenleiste'],
         'minimal' => ['label' => 'Minimalismus', 'description' => 'Rahmenlos, viel Luft, nur Haarlinien'],
         'bento' => ['label' => 'Bento', 'description' => 'Große Radien, getönte Kacheln'],
         'glassmorphism' => ['label' => 'Glassmorphism', 'description' => 'Starke Unschärfe, transluzente Flächen'],

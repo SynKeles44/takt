@@ -7,6 +7,7 @@ namespace App\Enums;
 enum DesignStyle: string
 {
     case Soft = 'soft';
+    case Apple = 'apple';
     case Minimal = 'minimal';
     case Bento = 'bento';
     case Glassmorphism = 'glassmorphism';
