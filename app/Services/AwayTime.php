@@ -25,6 +25,18 @@ final class AwayTime
             return null;
         }
 
+        /*
+         * A gap that crosses midnight is not an absence worth asking about — it is a timer
+         * somebody forgot to stop. The three answers this question offers all assume the gap
+         * happened INSIDE a working day: booking fifteen hours as a break, or cutting the work
+         * at 14:47 and starting it again at 06:17 the next morning, are both wrong answers to a
+         * question that should not have been asked. The forgotten timer is the real problem and
+         * belongs in the history, where a booking can be edited properly.
+         */
+        if (! $from->isSameDay($to)) {
+            return null;
+        }
+
         // only worth recording if work was running while nobody was there
         $overlapping = TimeEntry::query()
             ->ofType(EntryType::Work)
@@ -57,7 +69,17 @@ final class AwayTime
 
     public function pending(): ?AwayGap
     {
-        return AwayGap::query()->open()->orderByDesc('ended_at')->first();
+        /*
+         * Same rule on the way out, not only on the way in: gaps recorded before this rule
+         * existed are still in the table, and they would keep asking a question that has no
+         * right answer. Filtering in SQL rather than in PHP, so "the newest open gap" still
+         * means the newest one that qualifies.
+         */
+        return AwayGap::query()
+            ->open()
+            ->whereRaw('date(started_at) = date(ended_at)')
+            ->orderByDesc('ended_at')
+            ->first();
     }
 
     /** Turns the gap into a break, splitting the work around it. */

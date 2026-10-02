@@ -2672,6 +2672,26 @@ body::before {
     animation: wb-rise 0.34s var(--ease) both;
 }
 
+/*
+ * A tile holding the backdate popover lets it out, and comes to the front.
+ *
+ * `.widget-body` scrolls vertically and clips horizontally, so the panel — which hangs below the
+ * button that opens it — was cut off at the tile's edge: measured, the body ended at 302 and the
+ * panel reached 420, which is why only its heading was ever visible. And `wb-rise … both` leaves
+ * a transform on every tile, making each its own stacking context, so once the panel is out it
+ * still needs its tile lifted above the ones that come after it in the grid.
+ *
+ * Scoped to `.backdate` on purpose: other widgets use `<details>` for their own lists — Docker's
+ * container groups, for one — and those are inside the scroll area and belong there.
+ */
+.widget-body:has(.backdate[open]) {
+    overflow: visible;
+}
+
+.widget-slot:has(.backdate[open]) {
+    z-index: 40;
+}
+
 @media (width >= 64rem) {
     .widget-slot {
         grid-column: span var(--widget-span, 6) / span var(--widget-span, 6);
