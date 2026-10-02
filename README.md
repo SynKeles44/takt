@@ -22,6 +22,11 @@ own copy of the code; your data lives in `~/Library/Application Support/Takt`, s
 with a newer one keeps it, and while it is open it writes a backup of every account once a day
 ([where to find it](#your-data)). macOS 12 or later.
 
+When a newer version is out, Takt says so in the lower right corner; **Update now** downloads it,
+checks it against the release's checksums and its signature, puts it in place of the old one and
+restarts — your data stays. *Takt → Nach Updates suchen …* asks right away. Versions before 0.1.2
+cannot do this yet and are updated once by hand.
+
 The builds are not notarized yet, so macOS refuses the first start. Open it once, then go to
 **System Settings → Privacy & Security** and click **Open Anyway** next to the note about Takt;
 from then on it opens like any app. (On macOS 14 and older, right-click → **Open** does the same.)
@@ -143,6 +148,12 @@ Inside that bundle nothing is ever written. The shell sets `TAKT_DATA` to
 SQLite file, `storage/` and the framework's caches there; `takt:prepare` writes the `.env` with a
 fresh key and migrates on first launch, and is a no-op afterwards. A checkout never sets
 `TAKT_DATA` and keeps every path where it was.
+
+The bundle records the repository it was built from (`TaktUpdateRepo`, read from the `origin`
+remote; `--update-repo=owner/name` sets it, `--update-repo=none` switches updates off). The app
+looks for the latest release there at launch and every six hours, and only offers one whose
+assets carry the expected names: `Takt-<version>-<arch>.zip` and `SHA256SUMS`, which is what
+`make release` writes.
 
 Building needs the Xcode command line tools, Composer and Node on the build machine. Signing is
 ad-hoc by default; for a plain double-click on other Macs pass `--identity "Developer ID

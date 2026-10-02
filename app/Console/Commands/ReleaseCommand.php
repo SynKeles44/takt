@@ -31,7 +31,8 @@ class ReleaseCommand extends Command
                             {--identity=- : The codesign identity, "-" for ad-hoc}
                             {--dmg : Also write a disk image next to the zip}
                             {--path=dist : Where the results are written}
-                            {--port=8000 : The port the app serves on}';
+                            {--port=8000 : The port the app serves on}
+                            {--update-repo= : owner/name the app looks for new releases in, default the origin remote; "none" switches it off}';
 
     protected $description = 'Build a self-contained macOS app with its own PHP — nothing to install for the user';
 
@@ -271,11 +272,15 @@ class ReleaseCommand extends Command
             File::ensureDirectoryExists($directory);
         }
 
-        file_put_contents($bundle.'/Contents/Info.plist', AppBundle::plist($name, $version, [
+        $repository = $this->updateRepository();
+
+        file_put_contents($bundle.'/Contents/Info.plist', AppBundle::plist($name, $version, array_filter([
             'TaktBundled' => true,
             'TaktPort' => $port,
             'TaktHost' => 'localhost',
-        ]));
+            // where the app asks for a newer release; without it the app never checks
+            'TaktUpdateRepo' => $repository,
+        ], fn (mixed $value): bool => $value !== '')));
 
         $error = null;
 
@@ -319,6 +324,36 @@ class ReleaseCommand extends Command
         $version = trim($raw);
 
         return preg_match('/^[vV]\d/', $version) === 1 ? substr($version, 1) : $version;
+    }
+
+    /** owner/name from --update-repo, or from a github.com origin remote; empty switches updates off. */
+    private function updateRepository(): string
+    {
+        $option = trim((string) $this->option('update-repo'));
+
+        if ($option === 'none') {
+            return '';
+        }
+
+        if ($option !== '') {
+            return self::repository($option);
+        }
+
+        $remote = Process::path(base_path())->run(['/usr/bin/git', 'remote', 'get-url', 'origin']);
+
+        return $remote->successful() ? self::repository(trim($remote->output())) : '';
+    }
+
+    /** `owner/name` out of whatever names a GitHub repository: the pair itself, an https or an ssh remote. */
+    public static function repository(string $value): string
+    {
+        $value = trim($value);
+
+        if (preg_match('#^[\w.-]+/[\w.-]+$#', $value) === 1) {
+            return preg_replace('/\.git$/', '', $value) ?? '';
+        }
+
+        return preg_match('#github\.com[:/]([\w.-]+)/([\w.-]+?)(?:\.git)?/?$#', $value, $match) === 1 ? $match[1].'/'.$match[2] : '';
     }
 
     private function describe(): string

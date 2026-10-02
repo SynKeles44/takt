@@ -218,6 +218,19 @@ return [
         'theme_next' => 'Nächstes Farbschema',
     ],
 
+    'update' => [
+        'available' => 'Takt :version ist da',
+        'idle' => 'Du hast :current. Die neue Version installiert sich mit einem Klick, Deine Daten bleiben.',
+        'action' => 'Jetzt aktualisieren',
+        'notes' => 'Was ist neu',
+        'later' => 'Später',
+        'download' => 'Lädt die neue Version …',
+        'verify' => 'Prüft Prüfsumme und Signatur …',
+        'install' => 'Installiert …',
+        'restart' => 'Fertig — Takt startet neu.',
+        'failed' => 'Aktualisieren fehlgeschlagen: :reason. Die bisherige Version läuft weiter.',
+    ],
+
     'build' => [
         'stale' => 'Die Oberfläche ist älter als der Code.',
         'rebuild' => 'Jetzt neu bauen',

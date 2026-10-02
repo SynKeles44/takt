@@ -1,5 +1,6 @@
 import Carbon.HIToolbox
 import Cocoa
+import CryptoKit
 import EventKit
 import UserNotifications
 import WebKit
@@ -202,6 +203,235 @@ final class Server {
     }
 }
 
+
+/*
+ * Updates for the downloaded app.
+ *
+ * The shell asks GitHub for the latest release of the repository the bundle was built from. A
+ * newer one is offered in the page; a click downloads its zip for this arch, checks it against the
+ * release's SHA256SUMS, unpacks it, checks the signature and that it is the same app at the
+ * advertised version, moves this bundle to the trash, puts the new one in its place and starts it.
+ * The data lives in Application Support and is not touched. A checkout bundle never checks — it is
+ * usually ahead of the latest release, and its updates are a git pull.
+ */
+final class Updater {
+    struct Release {
+        let version: String
+        let zip: URL
+        let sums: URL
+        let page: URL
+    }
+
+    enum Failure: Error {
+        case reason(String)
+    }
+
+    static var repository: String { Config.info["TaktUpdateRepo"] as? String ?? "" }
+    static var current: String { Config.info["CFBundleShortVersionString"] as? String ?? "0" }
+
+    static var arch: String {
+        #if arch(arm64)
+            return "aarch64"
+        #else
+            return "x86_64"
+        #endif
+    }
+
+    static var enabled: Bool { Config.bundled && !repository.isEmpty }
+
+    /// Plain numeric comparison: 0.1.10 is newer than 0.1.9; a suffix after a dash never wins.
+    static func isNewer(_ candidate: String, than installed: String) -> Bool {
+        let parts = { (version: String) -> [Int] in
+            version.split(separator: "-").first.map { $0.split(separator: ".").map { Int($0) ?? 0 } } ?? []
+        }
+
+        let a = parts(candidate), b = parts(installed)
+
+        for index in 0..<max(a.count, b.count) {
+            let left = index < a.count ? a[index] : 0
+            let right = index < b.count ? b[index] : 0
+
+            if left != right { return left > right }
+        }
+
+        return false
+    }
+
+    private func request(_ url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 30
+        request.setValue("Takt/\(Updater.current)", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        return request
+    }
+
+    func check(completion: @escaping (Release?) -> Void) {
+        guard Updater.enabled, let url = URL(string: "https://api.github.com/repos/\(Updater.repository)/releases/latest") else {
+            completion(nil)
+
+            return
+        }
+
+        URLSession.shared.dataTask(with: request(url)) { data, response, _ in
+            guard let data, (response as? HTTPURLResponse)?.statusCode == 200,
+                  let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                  let tag = json["tag_name"] as? String,
+                  json["draft"] as? Bool != true, json["prerelease"] as? Bool != true else {
+                completion(nil)
+
+                return
+            }
+
+            let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+
+            guard Updater.isNewer(version, than: Updater.current) else {
+                completion(nil)
+
+                return
+            }
+
+            let assets = json["assets"] as? [[String: Any]] ?? []
+
+            let asset = { (name: String) -> URL? in
+                assets.first { $0["name"] as? String == name }
+                    .flatMap { $0["browser_download_url"] as? String }
+                    .flatMap(URL.init(string:))
+            }
+
+            guard let zip = asset("\(Config.name)-\(version)-\(Updater.arch).zip"),
+                  let sums = asset("SHA256SUMS"),
+                  let page = (json["html_url"] as? String).flatMap(URL.init(string:)) else {
+                completion(nil)
+
+                return
+            }
+
+            completion(Release(version: version, zip: zip, sums: sums, page: page))
+        }.resume()
+    }
+
+    /// Downloads, verifies and swaps the bundle. Runs off the main thread; throws a reason to show.
+    func install(_ release: Release, progress: @escaping (String) -> Void) throws -> URL {
+        let work = FileManager.default.temporaryDirectory.appendingPathComponent("takt-update-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: work) }
+
+        progress("download")
+
+        let sums = try fetch(release.sums, to: work.appendingPathComponent("SHA256SUMS"))
+        let archive = try fetch(release.zip, to: work.appendingPathComponent(release.zip.lastPathComponent))
+
+        progress("verify")
+
+        let listed: String = (try? String(contentsOf: sums, encoding: .utf8)) ?? ""
+        let name: String = release.zip.lastPathComponent
+        var expected: String?
+
+        // `shasum -a 256` lines: the hex digest, two spaces, the file name
+        for line in listed.split(separator: "\n") {
+            let fields: [Substring] = line.split(separator: " ", omittingEmptySubsequences: true)
+
+            if fields.count == 2, String(fields[1]) == name {
+                expected = String(fields[0]).lowercased()
+            }
+        }
+
+        guard let expected else { throw Failure.reason("SHA256SUMS nennt \(release.zip.lastPathComponent) nicht") }
+        guard try sha256(of: archive) == expected else { throw Failure.reason("die Prüfsumme stimmt nicht") }
+
+        let unpacked = work.appendingPathComponent("unpacked", isDirectory: true)
+        try run("/usr/bin/ditto", ["-x", "-k", archive.path, unpacked.path])
+
+        let fresh = unpacked.appendingPathComponent("\(Config.name).app")
+        let info = NSDictionary(contentsOf: fresh.appendingPathComponent("Contents/Info.plist")) as? [String: Any] ?? [:]
+
+        guard info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier,
+              info["CFBundleShortVersionString"] as? String == release.version,
+              info["TaktBundled"] as? Bool == true else {
+            throw Failure.reason("das Paket ist nicht \(Config.name) \(release.version)")
+        }
+
+        try run("/usr/bin/codesign", ["--verify", "--deep", "--strict", fresh.path])
+
+        progress("install")
+
+        let installed = Bundle.main.bundleURL
+        var trashed: NSURL?
+
+        do {
+            try FileManager.default.trashItem(at: installed, resultingItemURL: &trashed)
+        } catch {
+            throw Failure.reason("\(installed.deletingLastPathComponent().path) ist nicht beschreibbar")
+        }
+
+        do {
+            try FileManager.default.moveItem(at: fresh, to: installed)
+        } catch {
+            // put the old app back, so a failed update never leaves no app at all
+            if let trashed = trashed as URL? { try? FileManager.default.moveItem(at: trashed, to: installed) }
+
+            throw Failure.reason("die neue Version ließ sich nicht ablegen")
+        }
+
+        return installed
+    }
+
+    private func fetch(_ url: URL, to destination: URL) throws -> URL {
+        var result: Result<URL, Error> = .failure(Failure.reason("keine Antwort"))
+        let done = DispatchSemaphore(value: 0)
+
+        URLSession.shared.downloadTask(with: request(url)) { location, response, error in
+            defer { done.signal() }
+
+            guard let location, (response as? HTTPURLResponse)?.statusCode == 200 else {
+                result = .failure(Failure.reason(error?.localizedDescription ?? "Download fehlgeschlagen"))
+
+                return
+            }
+
+            do {
+                try FileManager.default.moveItem(at: location, to: destination)
+                result = .success(destination)
+            } catch {
+                result = .failure(error)
+            }
+        }.resume()
+
+        done.wait()
+
+        return try result.get()
+    }
+
+    private func sha256(of file: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: file)
+        defer { try? handle.close() }
+
+        var hasher = SHA256()
+
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func run(_ tool: String, _ arguments: [String]) throws {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: tool)
+        task.arguments = arguments
+        task.standardOutput = FileHandle.nullDevice
+        task.standardError = FileHandle.nullDevice
+
+        try task.run()
+        task.waitUntilExit()
+
+        guard task.terminationStatus == 0 else {
+            throw Failure.reason("\((tool as NSString).lastPathComponent) lehnt das Paket ab")
+        }
+    }
+}
+
 /// A transparent strip along the top edge that moves the window, like a title bar would.
 final class DragStrip: NSView {
     static let height: CGFloat = 44
@@ -233,6 +463,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     private var statusItem: NSStatusItem?
     private var stateTimer: Timer?
     private var choresTimer: Timer?
+    private var updateTimer: Timer?
+    private let updater = Updater()
+    private var pendingRelease: Updater.Release?
+    private var installing = false
     private var hotKey: EventHotKeyRef?
     private var awaySince: Date?
     private let calendarStore = EKEventStore()
@@ -267,6 +501,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                     self.choresTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
                         self?.server.chores()
                     }
+
+                    // a downloaded app looks for a newer release now and every six hours
+                    self.checkForUpdate()
+                    self.updateTimer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { [weak self] _ in
+                        self?.checkForUpdate()
+                    }
                 } else {
                     self.showStartupFailure()
                 }
@@ -293,6 +533,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         trailTimer?.invalidate()
         stateTimer?.invalidate()
         choresTimer?.invalidate()
+        updateTimer?.invalidate()
         server.stopIfOwned()
     }
 
@@ -670,6 +911,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         configuration.applicationNameForUserAgent = "TaktShell/1.0"
         configuration.userContentController.add(self, name: "notify")
         configuration.userContentController.add(self, name: "canvas")
+        configuration.userContentController.add(self, name: "update")
         configuration.userContentController.addUserScript(WKUserScript(
             source: Self.notificationBridge,
             injectionTime: .atDocumentStart,
@@ -790,6 +1032,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             webView.alphaValue = 1
         }
 
+        // every page is a new document, so the notice is handed to each one
+        announceUpdate()
+
         webView.evaluateJavaScript("document.title") { [weak self] title, _ in
             if let title = title as? String, !title.isEmpty {
                 self?.window.title = title
@@ -850,6 +1095,99 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
     }
 
+    // MARK: updates
+
+    @objc private func checkForUpdateFromMenu() {
+        checkForUpdate(reportNone: true)
+    }
+
+    private func checkForUpdate(reportNone: Bool = false) {
+        updater.check { [weak self] release in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                self.pendingRelease = release
+                self.announceUpdate()
+
+                guard let release else {
+                    if reportNone { self.alert("Du hast die neueste Version", "\(Config.name) \(Updater.current) ist aktuell.") }
+
+                    return
+                }
+
+                // `defaults write de.takt.app takt.autoUpdate -bool true` installs without asking
+                if UserDefaults.standard.bool(forKey: "takt.autoUpdate") {
+                    self.installUpdate(release)
+                }
+            }
+        }
+    }
+
+    private func announceUpdate() {
+        guard let release = pendingRelease else { return }
+
+        webView?.evaluateJavaScript("window.takt?.updateAvailable?.({ version: '\(release.version)', current: '\(Updater.current)' })")
+    }
+
+    private func reportUpdate(_ state: String, _ detail: String = "") {
+        let escaped = detail.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
+
+        webView?.evaluateJavaScript("window.takt?.updateStatus?.('\(state)', '\(escaped)')")
+    }
+
+    private func installUpdate(_ release: Updater.Release) {
+        guard !installing else { return }
+
+        installing = true
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            do {
+                let installed = try self.updater.install(release) { step in
+                    DispatchQueue.main.async { self.reportUpdate(step) }
+                }
+
+                DispatchQueue.main.async { self.relaunch(installed) }
+            } catch {
+                let reason: String
+
+                if case let Updater.Failure.reason(text) = error {
+                    reason = text
+                } else {
+                    reason = error.localizedDescription
+                }
+
+                DispatchQueue.main.async {
+                    self.installing = false
+                    self.reportUpdate("failed", reason)
+                }
+            }
+        }
+    }
+
+    /// The new bundle is in place: stop the server this app started, start the new app, quit.
+    private func relaunch(_ bundle: URL) {
+        reportUpdate("restart")
+        server.stopIfOwned()
+
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 1.5; /usr/bin/open \"$0\"", bundle.path]
+        try? task.run()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NSApp.terminate(nil)
+        }
+    }
+
+    private func alert(_ title: String, _ text: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        alert.runModal()
+    }
+
     // MARK: the page's canvas colour
 
     private static let canvasKey = "takt.canvas"
@@ -895,6 +1233,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     // MARK: notifications from the page
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "update" {
+            let action = (message.body as? [String: Any])?["action"] as? String
+
+            if action == "install", let release = pendingRelease {
+                installUpdate(release)
+            } else if action == "notes", let release = pendingRelease {
+                NSWorkspace.shared.open(release.page)
+            }
+
+            return
+        }
+
         if message.name == "canvas" {
             guard let text = message.body as? String, let color = Self.color(from: text) else { return }
 
@@ -956,6 +1306,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "Über \(Config.name)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+
+        if Updater.enabled {
+            appMenu.addItem(withTitle: "Nach Updates suchen …", action: #selector(checkForUpdateFromMenu), keyEquivalent: "")
+        }
+
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "\(Config.name) ausblenden", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(withTitle: "Alle anzeigen", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")

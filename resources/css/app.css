@@ -3896,6 +3896,43 @@ input[type='time'] {
 }
 
 /*
+ * MARK: update notice
+ *
+ * The downloaded app's offer of a newer version. A card of its own in the lower right, above the
+ * content and below the dialogs, so it can wait there without covering what is being worked on.
+ */
+.update-notice {
+    position: fixed;
+    inset-block-end: 1.25rem;
+    inset-inline-end: 1.25rem;
+    z-index: 55;
+    inline-size: min(23rem, calc(100vw - 2.5rem));
+    padding: 1rem;
+    background-color: var(--color-popover);
+    box-shadow: 0 24px 60px -24px var(--shadow-color);
+}
+
+.update-notice[hidden] {
+    display: none;
+}
+
+.update-notice-icon {
+    background-color: color-mix(in oklab, var(--color-accent) 16%, transparent);
+    color: var(--color-accent-text);
+}
+
+.update-notice[data-state='failed'] .update-notice-icon {
+    background-color: color-mix(in oklab, var(--color-danger) 16%, transparent);
+    color: var(--color-danger-text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .update-notice:not([hidden]) {
+        animation: wb-rise var(--dur) var(--ease) both;
+    }
+}
+
+/*
  * MARK: the back-date panel
  *
  * Floating, not expanding. Inline it grew the button row and pushed the start buttons upward,

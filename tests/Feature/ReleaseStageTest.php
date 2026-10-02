@@ -95,6 +95,24 @@ class ReleaseStageTest extends TestCase
         $this->assertSame('vnext', ReleaseCommand::version('vnext'));
     }
 
+    /** The app asks the repository it was built from; anything that is not GitHub switches that off. */
+    public function test_the_update_repository_is_read_from_every_spelling_of_a_remote(): void
+    {
+        $this->assertSame('SynKeles44/takt', ReleaseCommand::repository('https://github.com/SynKeles44/takt.git'));
+        $this->assertSame('SynKeles44/takt', ReleaseCommand::repository('https://github.com/SynKeles44/takt'));
+        $this->assertSame('SynKeles44/takt', ReleaseCommand::repository('git@github.com:SynKeles44/takt.git'));
+        $this->assertSame('SynKeles44/takt', ReleaseCommand::repository('SynKeles44/takt'));
+        $this->assertSame('', ReleaseCommand::repository('https://gitlab.com/someone/takt.git'));
+        $this->assertSame('', ReleaseCommand::repository(''));
+    }
+
+    public function test_the_bundled_property_list_carries_the_update_repository(): void
+    {
+        $plist = AppBundle::plist('Takt', '0.1.2', ['TaktBundled' => true, 'TaktUpdateRepo' => 'SynKeles44/takt']);
+
+        $this->assertStringContainsString('<key>TaktUpdateRepo</key><string>SynKeles44/takt</string>', $plist);
+    }
+
     public function test_the_checkout_property_list_points_at_the_installation(): void
     {
         $plist = AppBundle::plist('Takt', '1.0', ['TaktPort' => 8000, 'TaktHost' => 'local.takt.de', 'TaktRoot' => '/Users/me/Takt', 'TaktPhp' => '/opt/homebrew/bin/php']);

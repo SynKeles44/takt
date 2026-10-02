@@ -32,6 +32,21 @@ class NativeShellTest extends TestCase
         $this->assertGreaterThan(strpos($html, 'app.css') ?: strpos($html, 'build/assets'), strpos($html, 'navigation: none'));
     }
 
+    /** The shell finds the newer release; the page carries the notice it fills, in the user's language. */
+    public function test_the_app_window_carries_the_update_notice(): void
+    {
+        $this->login(['locale' => 'en']);
+
+        $this->withServerVariables(['HTTP_USER_AGENT' => 'Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 TaktShell/1.0'])
+            ->get(route('settings'))
+            ->assertOk()
+            ->assertSee('data-update ', escape: false)
+            ->assertSee('data-update-install', escape: false)
+            ->assertSee('Update now')
+            ->assertSee('data-template="Takt :version is out"', escape: false)
+            ->assertSee(__('app.update.failed', ['reason' => ':reason'], 'en'), escape: false);
+    }
+
     public function test_a_browser_keeps_the_transitions(): void
     {
         $this->login();
@@ -41,6 +56,7 @@ class NativeShellTest extends TestCase
             ->assertOk()
             ->assertDontSee('data-shell="native"', escape: false)
             ->assertDontSee('navigation: none', escape: false)
-            ->assertDontSee('data-settled', escape: false);
+            ->assertDontSee('data-settled', escape: false)
+            ->assertDontSee('data-update-install', escape: false);
     }
 }

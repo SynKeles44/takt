@@ -265,6 +265,44 @@
         <span class="pending-label">{{ __('app.nav.loading') }}</span>
     </div>
 
+    @if ($native)
+        {{--
+            The update notice of the downloaded app. The shell finds the newer release and calls
+            window.takt.updateAvailable(); everything shown here is rendered by the server, so the
+            words follow the user's language. Outside every region: no live swap removes it.
+        --}}
+        <div data-update class="update-notice surface-plain" role="status" aria-live="polite" hidden>
+            <div class="flex items-start gap-3">
+                <span class="update-notice-icon grid size-9 shrink-0 place-items-center rounded-[var(--radius-control)]">
+                    <x-icon name="download" class="size-4"/>
+                </span>
+
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-ink" data-update-title data-template="{{ __('app.update.available', ['version' => ':version']) }}"></p>
+                    <p class="mt-0.5 text-xs text-muted" data-update-text
+                       data-idle="{{ __('app.update.idle', ['current' => ':current']) }}"
+                       data-download="{{ __('app.update.download') }}"
+                       data-verify="{{ __('app.update.verify') }}"
+                       data-install="{{ __('app.update.install') }}"
+                       data-restart="{{ __('app.update.restart') }}"
+                       data-failed="{{ __('app.update.failed', ['reason' => ':reason']) }}"></p>
+
+                    <div class="mt-3 flex flex-wrap items-center gap-2" data-update-actions>
+                        <button type="button" class="btn btn-primary px-3 py-1.5 text-xs" data-update-install>
+                            {{ __('app.update.action') }}
+                        </button>
+                        <button type="button" class="btn btn-ghost px-3 py-1.5 text-xs" data-update-notes>
+                            {{ __('app.update.notes') }}
+                        </button>
+                        <button type="button" class="btn btn-ghost px-3 py-1.5 text-xs" data-update-later>
+                            {{ __('app.update.later') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if (! empty($dueWatch ?? []))
         <script type="application/json" data-due-watch>@json($dueWatch)</script>
     @endif

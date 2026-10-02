@@ -1,3 +1,5 @@
+import { updateAvailable, updateStatus } from './update';
+
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
 const post = (url, payload) => fetch(url, {
@@ -74,6 +76,12 @@ export function shellApi() {
 
             return post(url, { day, events }).catch(() => {});
         },
+
+        /** The shell found a newer release; the notice offers it. */
+        updateAvailable,
+
+        /** The shell reports how the update is going: download, verify, install, restart, failed. */
+        updateStatus,
 
         /*
          * The shell reports a lock or sleep once the Mac is back. It travels through the page so the

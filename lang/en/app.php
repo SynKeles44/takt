@@ -218,6 +218,19 @@ return [
         'theme_next' => 'Next scheme',
     ],
 
+    'update' => [
+        'available' => 'Takt :version is out',
+        'idle' => 'You have :current. The new version installs with one click; your data stays.',
+        'action' => 'Update now',
+        'notes' => 'What is new',
+        'later' => 'Later',
+        'download' => 'Downloading the new version …',
+        'verify' => 'Checking checksum and signature …',
+        'install' => 'Installing …',
+        'restart' => 'Done — Takt restarts.',
+        'failed' => 'Update failed: :reason. The current version keeps running.',
+    ],
+
     'build' => [
         'stale' => 'The interface is older than the code.',
         'rebuild' => 'Rebuild now',

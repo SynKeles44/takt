@@ -34,6 +34,7 @@ import { ticketBoard } from './ticket-board';
 import { timeFields } from './time-field';
 import { toast } from './toast';
 import { asyncForms } from './todo-async';
+import { updateNotice } from './update';
 
 clock();
 confirmDialog();
@@ -42,6 +43,7 @@ carousel();
 palette();
 notifications();
 shellApi();
+updateNotice();
 liveForms();
 asyncForms();
 menus();
