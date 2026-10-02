@@ -4,408 +4,202 @@
 
 <h1 align="center">Takt</h1>
 
-<p align="center"><em>Zeit und Aufgaben an einem Platz.</em> — a local-first workspace for organising your work.</p>
+<p align="center"><em>Zeit und Aufgaben an einem Platz.</em> — a local-first workspace for working time, tasks and your day-to-day development.</p>
 
 ---
 
-Takt keeps working time and tasks in one place. Time is booked with a live start/stop
-timer or as free manual entries; tasks carry details, due dates and tags with their own
-warning rules. Every user signs in, works on their own data and configures their own
-working hours, colour theme and design style. Everything is stored locally in a SQLite
-file — no cloud, no external services.
+Takt runs on your own machine: a Laravel app, one SQLite file, a native macOS window. No
+cloud, no external services, nothing leaves the computer unless you connect GitHub, Linear or
+Slack yourself.
 
-## Features
+## Install
 
-- **Accounts** — email/password sign-in with rate limiting; every user only ever sees their
-  own time entries and todos (enforced server-side by a global ownership scope).
-- **Per-user settings** — weekly hours, working days per week, name, email, password,
-  colour theme and design style, all under the settings entry in the sidebar.
-- **Four colour themes** — flipped through the same way as the design styles, each with a
-  live preview in its own colours. Mitternacht (dark blue), Tageslicht (light), Onyx (black) and
-  Salbei (dark green). Applied server-side, so there is no flash of the wrong theme.
-- **Tasks** — title, details, due date with optional time, tags, repetition, subtasks and
-  file attachments. Grouped by due state (overdue, due soon, today, this week, later, no
-  date), highlighted on the dashboard, with quick add, edit page, filters and bulk clearing.
-- **Quick capture** — "Angebot Müller morgen 14:00 #deadline" in the add field sets title,
-  due date, time and tag in one line (German relative dates, weekdays, `DD.MM.`, times).
-- **Repetition** — daily, weekdays, weekly, biweekly, monthly, yearly. Completing a task
-  spawns the next occurrence with its tags and subtasks.
-- **Command palette** — ⌘K / Ctrl+K to jump between sections or start and stop the timer,
-  with full-text search across tasks, task details, entry notes and day notes.
-- **Calendar** — month grid with booked hours per day and the tasks due, plus a subscribable
-  iCal feed (token-protected, regenerable) for the phone calendar.
-- **Insights** — one surface for week, month and year (`/auswertung`): the same header,
-  four tiles (work, target, balance, completed) and the same distribution list; switching
-  the period changes the numbers, not the layout. The year adds a day-by-day heatmap, the
-  month adds a print-ready timesheet with signature lines and a CSV export.
-- **Copying pull requests** — every pull request offers its link on a button, and a checkbox
-  decides whether it belongs in a collected copy (all ticked by default). One button per
-  project copies its ticked pull requests under a `PROJECT NAME:` heading, one button copies
-  every project with a blank line between them. Projects with nothing ticked are left out. A
-  switch in the header adds the titles; it is off by default, and with it every pull request
-  takes two lines — title, then link — with a blank line between them.
-- **Posting to Slack** — the test post can go straight into the testing channel, under your own
-  name and avatar. That needs a user token (`xoxp-`) with `chat:write`, which you store once in
-  the settings together with the channel; the token is kept encrypted and never rendered back
-  into the page. Sending asks first, then links to the message.
-- **Registering a project** — the button inside the folder field opens Takt's own folder
-  dialog (crumbs to walk back up, git repositories marked), and the rest of the form fills
-  itself: name, GitHub remote, start command (`make start` by default) and, if the project
-  states one, the port. The dialog only ever reads below your home directory. The port stays
-  optional; it only feeds the state dot and the open link.
-- **Make targets** — Takt reads the Makefile of every registered project, lists the targets
-  with their `##` descriptions and runs one with a click: the dialog follows the output live,
-  shows the exit code and can stop the run. Only a target that is actually in the Makefile is
-  ever run, and the run goes through your login shell, so `docker` and friends are found.
-  Projects are collapsed by default and a filter searches every target at once.
-- **Interactive runs** — a target that expects a terminal gets one, so `docker compose exec`
-  works and a prompt can be answered right in the dialog. Terminal output is cleaned up before
-  it is shown, so progress bars stay one line.
-- **Docker** — the containers of this machine, grouped the way compose groups them: state,
-  image, published ports as links, start/stop/restart per container and the logs in a window.
-  The list keeps itself current while the page is in front. Only a container from the current
-  list is ever acted on, and removing one is deliberately not offered.
-- **Development section** — today's commits across your registered repositories, the pull
-  requests waiting for your review (and yours waiting for others), a launcher for local
-  environments with port state, reusable command snippets one ⌘K away from the clipboard,
-  and a builder for the structured test post (ticket, PR, test instance).
-- **Notifications** — the tag warning window and the working-time reminders are delivered as
-  native notifications in the app bundle, or as browser notifications in a browser tab.
-- **Tag rules** — every tag defines how long before the due time a warning appears and
-  whether expired tasks are auto-completed. Tags have their own page under `/todo/tags`,
-  reachable from the task list.
-- **Ten design styles** — Sanft, Minimalismus, Bento, Glassmorphism, Neumorphism,
-  Skeuomorphism, Industrial, Brutalismus, Terminal and Kompakt. The style changes radii,
-  border weights, shadows, surface gradients, spacing density and heading typography; it is a
-  second axis independent of the colour theme, previewed as a mini UI in the settings.
-- **Sidebar navigation** — sections and the account block in a left sidebar, collapsing to a
-  compact bar on narrow screens.
-- **Live timer** — start work or a break, switch between them with one click. Switching
-  closes the running entry and opens the new one, so the day stays gap-free.
-- **Manual entries** — log or correct any time range afterwards. Entries that end after
-  midnight roll over to the next day automatically.
-- **Overlap protection** — a new entry that collides with an existing one is rejected with
-  a pointer to the conflicting entry.
-- **Boundary dragging** — stretching an entry over a shared boundary while editing moves the
-  directly adjacent entry with it, so a work/break boundary can be corrected in one step.
-  Shrinking leaves a gap and never grows a neighbour; an edit that would swallow, split or
-  stop a neighbour is refused instead.
-- **Dashboard of widgets** — a tile board you arrange the way you arrange a home screen:
-  "Dashboard anpassen" starts the edit mode, the tiles wiggle, the minus badge takes one off,
-  the pill changes its width and height, and a tile can be dragged wherever you want it. What
-  is not on the board waits in a gallery that slides in from the right — drag an entry onto
-  the board or tap it. Out of the box it is the default set (timer, key figures, week chart,
-  day note, tasks, booking form, entries), and one click restores it. 21 widgets in three
-  groups — time, tasks and development — among them month summary, week trend, year heatmap,
-  upcoming days off, tasks by label, task progress, commits today, commits this week, review
-  queue, my pull requests, project launcher, snippets, test post and repository links. Only
-  what is on the board loads data, so the GitHub-backed widgets cost nothing when they are
-  not shown.
-- **Plus/minus balance** — flextime balance on the dashboard: booked work time minus
-  the daily target for every day that has bookings, today included. Days without bookings
-  never create minus hours, and a still-running entry only counts once it is stopped.
-- **Week history** — navigate week by week, with per-day totals, averages and inline
-  edit/delete for every entry.
-- **Trash and undo** — deleted entries and tasks rest in the trash for 30 days; the toast
-  right after a deletion undoes it in one click, expired items are purged automatically.
-- **Marking days in the calendar** — hold the mouse and drag across the days you mean (or hold
-  one day for a single day); letting go opens the absence window with exactly that range
-  already filled in. A plain click still opens that week in the history.
-- **Absences and public holidays** — vacation, sick leave and other day ranges, plus German
-  public holidays for the chosen federal state (Easter-based ones computed). Those days carry
-  no daily target, so they never create minus hours; a vacation account tracks the rest.
-- **Home office as a marker** — a `home_office` day is not an absence: it keeps its normal
-  target, so its hours stay normal hours. Settings hold the agreed days per week; the absence
-  page reports the days this year, the days in the chosen window and the average per week, and
-  a widget shows this week against the agreement over 7, 30 or 365 days.
-- **Working time hints** — informational warnings for missing breaks above 6 h and 9 h, more
-  than 10 h a day and less than 11 h rest between two days.
-- **Time on a task** — a booking can belong to a task; a task can be started directly and
-  shows the time booked on it.
-- **Snooze, subtask templates, day notes** — push a dated task by an hour, a day or a week;
-  reuse named checklists; keep one free-text note per day.
-- **Backup** — JSON export of all own data, additive restore that never duplicates, plus a
-  daily `takt:backup` command that keeps the newest 30 files per account.
-- **Language and theme** — interface language per user (de/en) and a theme that can follow
-  the system light/dark preference.
-- **In-app dialogs** — confirmations are rendered inside the app in its own design, never as
-  a browser alert; toasts appear without shifting the layout.
-- **A widget gallery that shows the shape** — while the board is in edit mode, the gallery on
-  the right holds every widget that is not on the board, each card carrying the tile's real
-  proportion and a schematic of its content. Pointing at a card opens the peek: the real
-  widget, at the width its span gets on the board. Filter by group or by text; a removed tile
-  goes straight back into the gallery.
-- **No hard reloads** — adding a task, booking time, deleting a row or restoring from the
-  trash posts in place and only re-renders the affected region; without JavaScript the plain
-  form submit still works.
-- **Printable report** — every insights period (week, month, year) exports a print-ready
-  report with totals, the day-by-day table and the tasks completed in that period.
-- **Working time reminders** — optional notifications for the daily target, a due break
-  above six hours and the approaching ten hour limit.
-- **Collapsible sidebar** — the navigation folds into an icon rail and back, animated, and
-  remembers the choice locally. Collapsed, hovering the logo reveals the expand button in
-  its place; logo, icons and avatar sit on one axis, so nothing moves but the labels and
-  the rail's edge. The avatar opens an account menu with settings, trash and logout.
-- **Settings as JSON** — working time, vacation, federal state, language, theme and design
-  style export to a file and import back; invalid values are skipped, never guessed.
-- **German UI**, English translations included (`lang/de`, `lang/en`).
-
-## Installieren
+One line. It checks the requirements, clones to `~/Takt`, installs dependencies, sets up the
+database, registers the name **local.takt.de**, builds the macOS app and opens it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SynKeles44/takt/main/install.sh | bash
 ```
 
-Danach ist alles fertig — kein weiterer Befehl. Das Skript prüft die Voraussetzungen, klont
-nach `~/Takt`, installiert die Abhängigkeiten, richtet die Datenbank ein, trägt den Namen
-**local.takt.de** ein, baut auf macOS die App (`~/Applications/Takt.app`), startet den Server
-und öffnet die App. Ein zweiter Aufruf aktualisiert eine vorhandene Installation.
+Then open **http://local.takt.de:8000** (or the app in `~/Applications/Takt.app`) and create
+your account under *Registrieren*. Done.
 
-Die Adresse ist **http://local.takt.de:8000**. Der Eintrag in `/etc/hosts` ist der einzige
-Schritt mit Administratorrechten und wird einmal beim Installieren abgefragt; wer ihn
-überspringt, bleibt auf `http://localhost:8000` — Takt sagt es und stellt erst um, wenn der
-Name wirklich auf diesen Rechner zeigt.
+The `/etc/hosts` entry is the only step that asks for your password. Skip it and Takt stays on
+`http://localhost:8000` — it says so and switches over once the name points at this machine.
 
-Anpassbar über Umgebungsvariablen: `TAKT_DIR` (Zielordner), `TAKT_HOST` (Name), `TAKT_PORT`,
-`TAKT_REPO`, `TAKT_REF`, `TAKT_AUTOSTART=0` (ohne Login-Dienst).
+**Requirements:** macOS or Linux · PHP 8.3+ with `pdo_sqlite` and `gd` · Composer 2 · Node 20+ ·
+for the macOS app the Xcode Command Line Tools (`xcode-select --install`). On macOS with Homebrew:
 
-## Aktualisieren
+```bash
+brew install php composer node git
+```
+
+Variables the installer understands: `TAKT_DIR` (target folder), `TAKT_HOST`, `TAKT_PORT`,
+`TAKT_REPO`, `TAKT_REF`, `TAKT_AUTOSTART=0` (no login item). Running the line a second time
+updates an existing installation.
+
+## Update
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SynKeles44/takt/main/update.sh | bash
 ```
 
-Holt die Änderungen, installiert Abhängigkeiten nachträglich, migriert die Datenbank, baut
-Frontend und App neu und startet den Login-Dienst durch. Bricht ab, wenn lokale Änderungen
-im Ordner liegen. Im Projektordner geht auch `make update`.
+Pulls, installs, migrates, rebuilds the frontend and the app, restarts the login item. Refuses
+to run over local changes. Inside the project folder `make update` does the same.
 
-Von Hand geht es genauso:
+## Everyday commands
+
+| Command | What it does |
+| --- | --- |
+| `make start` | Starts the server in the background and prints the address. Rebuilds the frontend first when the sources are newer than the build. |
+| `make stop` / `make restart` / `make status` | Stops it, restarts it, says whether it runs. |
+| `make app` | Builds `~/Applications/Takt.app` for this installation. |
+| `make autostart` / `make autostart-remove` | Starts the server with your login session (macOS launchd), or hands the port back. |
+| `make setup` | Runs the whole setup again — `.env`, key, database, name, app, login item. Safe at any time. |
+| `make update` | Same as the update line above. |
+
+Host and port come from `APP_URL` in `.env`; the server always binds to `127.0.0.1`. One run
+on another port: `make start PORT=8080`. Logs: `storage/logs/serve.log`.
+
+### Manual install
 
 ```bash
 git clone https://github.com/SynKeles44/takt.git && cd takt
 composer install && npm ci && npm run build
-php artisan takt:setup
+php artisan takt:setup            # .env, key, database, name, app, login item
 ```
-
-`takt:setup` macht den Rest: `.env`, Schlüssel, Datenbank, Icons, den Namen, die macOS-App und
-den Login-Dienst. Der Name allein geht auch nachträglich:
 
 ```bash
-php artisan takt:hostname local.takt.de     # sagt Dir die eine sudo-Zeile, falls nötig
-php artisan takt:hostname --remove          # zurück auf localhost
+php artisan takt:hostname local.takt.de   # name only — prints the one sudo line if needed
+php artisan takt:hostname --remove        # back to localhost
 ```
 
-Beim ersten Start legst Du unter `/registrieren` ein Konto an. Takt läuft vollständig lokal:
-eine SQLite-Datei im Projektordner, keine Cloud, keine externen Dienste.
+### Docker
 
-## Voraussetzungen
-
-- macOS oder Linux (das App-Bundle ist macOS-only, der Browser funktioniert überall)
-- PHP 8.3+ mit `pdo_sqlite` und `gd`
-- Composer 2, Node 20+
-- Für das App-Bundle: Xcode Command Line Tools (`xcode-select --install`)
-- Oder nichts davon: [mit Docker](#mit-docker) bringt das Image alles mit
-
-## Mit Docker
-
-Auf einem Rechner, auf dem nichts installiert ist außer Docker:
+For a machine with nothing but Docker on it:
 
 ```bash
-PROJECTS_PATH=/Users/du/Projekte docker compose up -d --build
+PROJECTS_PATH=/Users/you/Projects docker compose up -d --build
 ```
 
-Dann `http://localhost:8000` öffnen und unter *Registrieren* den ersten Benutzer anlegen.
-Schlüssel, Datenbank und Logs liegen in Volumes und überleben jeden Rebuild; der
-Anwendungsschlüssel wird beim ersten Start einmalig erzeugt und danach wiederverwendet — im
-Image steckt keiner, sonst hätte jede Kopie denselben.
+Open `http://localhost:8000` and register. Key, database and logs live in volumes and survive
+rebuilds; the app key is generated once on first start. `PROJECTS_PATH` is the folder with your
+repositories, mounted under the same path so a project registered on the host is found inside.
+The Docker socket is mounted read-only for the Docker section. The container serves with
+FrankenPHP, because the development section makes requests that take ten seconds and a
+single-threaded server would freeze the app.
 
-`PROJECTS_PATH` ist der Ordner mit Deinen Repositories. Er wird unter demselben Pfad in den
-Container gehängt, damit ein auf dem Host registriertes Projekt drinnen auch auffindbar ist.
-Ohne ihn läuft die App, aber der Entwicklungsbereich hat nichts zu lesen. Der Docker-Socket
-ist nur lesend eingehängt und versorgt ausschließlich den Docker-Bereich.
-
-### Windows
-
-Die App selbst läuft unverändert. Der Entwicklungsbereich braucht eine Zeile mehr, und zwar aus
-einem Grund, der sich nicht wegkonfigurieren lässt: Takt speichert **absolute Pfade**, und
-`C:\Projekte` gibt es in einem Linux-Container nicht. Deshalb wird der Ort im Container getrennt
-angegeben:
+**Windows:** Takt stores absolute paths, and `C:\Projekte` does not exist in a Linux container,
+so the mount point is set separately and projects are registered as `/projects/<name>`:
 
 ```powershell
 $env:PROJECTS_PATH="C:\Projekte"; $env:PROJECTS_MOUNT="/projects"; docker compose up -d --build
 ```
 
-Die Projekte trägst Du in Takt dann als `/projects/<name>` ein, nicht mit ihrem Windows-Pfad.
-Auf macOS und Linux bleibt `PROJECTS_MOUNT` weg — dort ist der Pfad innen und außen derselbe, und
-ein bereits eingetragenes Projekt funktioniert ohne Änderung weiter.
+Not in the container, by nature: the native macOS shell (menu bar timer, global hotkey, calendar
+access, away detection). Everything else is there.
 
-Im Image stecken `git`, `make`, `composer` und `npm`, denn der Entwicklungsbereich benutzt
-sie: Commits lesen, Make-Ziele starten, Pakete aktualisieren — das läuft alles im Container.
+## The macOS app
 
-**Was der Container nicht kann, und nicht können wird:** die native macOS-Shell. Menüleisten-Uhr,
-globaler Hotkey, Kalenderzugriff und die Abwesenheitserkennung sind Cocoa und EventKit; in
-einem Linux-Container gibt es beides nicht. Wer das will, baut zusätzlich `make app` auf einem
-Mac. Alles andere — Zeiterfassung, Auswertung, Tickets, Entwicklung, Pakete — ist vollständig da.
+`Takt.app` is a Cocoa window around a WKWebView: own Dock icon, own menu (reload, back/forward,
+zoom), native notifications, window size and position remembered. It starts the local server
+if nothing serves the port and stops only what it started; links to other hosts and the print
+views open in the browser. The shell is `desktop/main.swift`, compiled with `swiftc` and ad-hoc
+signed — no certificate needed. Without the toolchain the bundle falls back to a chromeless
+browser window. Rebuild with `make app` after moving the project: the bundle stores the path.
 
-Der Server im Container ist FrankenPHP und nicht `artisan serve`: der Entwicklungsbereich stellt
-Anfragen, die zehn Sekunden und mehr dauern (GitHub-Reviews, zwei Paket-Registries), und ein
-Server mit einem einzigen Thread macht daraus eine eingefrorene Anwendung.
+With `make autostart` the login item owns the server: starts with your session, restarts if it
+dies; `make start`/`stop` and the app defer to it.
 
-## As a macOS app
+## What is in it
 
-```bash
-make app          # builds ~/Applications/Takt.app (own icon, own window)
-make autostart    # keeps the local server running from login
-```
+**Time**
+- Live timer for work and breaks, one click to switch, the day stays gap-free. Manual entries
+  for any range, midnight rollover, overlap protection, boundary dragging between neighbours.
+- Flextime balance, week history, working-time hints (breaks above 6 h / 9 h, more than 10 h,
+  less than 11 h rest), optional reminders as native or browser notifications.
+- Away detection in the app: a locked or sleeping Mac while the timer runs is reported once
+  you are back — book it as a break, cut the work, or leave it. Gaps across midnight are a
+  forgotten timer, not an absence, and are not asked about.
+- Calendar with booked hours and due tasks per day, drag across days to book an absence, a
+  token-protected iCal feed. Absences, German public holidays per federal state, vacation
+  account, home office as a marker with a weekly agreement.
+- Insights for week, month and year on one surface — totals, target, balance, distribution,
+  year heatmap, printable timesheet with signature lines, CSV export.
 
-`Takt.app` is a real macOS application: a Cocoa window around a WKWebView, its own Dock icon,
-its own menu (reload, back/forward, zoom, quit), native notifications for the working-time
-reminders, and window size and position remembered between launches. No browser is involved.
-It starts the local server if nothing serves the port and stops only what it started itself;
-links to other hosts and the print views open in the default browser.
+**Tasks**
+- Title, details, due date and time, tags with their own warning rules, repetition, subtasks,
+  attachments, snooze, checklist templates, one day note per day.
+- Quick capture: `Angebot Müller morgen 14:00 #deadline` sets everything in one line.
+- Time on a task: start a task directly, see what was booked on it.
 
-The window shell is compiled from [`desktop/main.swift`](desktop/main.swift) with `swiftc`
-(Xcode command line tools) and ad-hoc signed, so no certificate is needed. Without that
-toolchain the bundle falls back to a chromeless browser window. Rebuild the bundle after
-moving the project, since it stores the absolute path.
+**Development**
+- Tickets: a board of five columns that describe your day, fed by Linear and your local
+  repositories; list and sprint views, a search, time booked per ticket.
+- Today's commits, pull requests waiting for your review and yours waiting for others, approved
+  pull requests, copy buttons that collect links per project.
+- Registered projects with a folder picker, start/stop, port state; Make targets run from the
+  page with live output, interactive when the target needs a terminal.
+- Docker containers grouped by compose project: state, ports, start/stop/restart, logs.
+- Package updates across projects, release notes, snippets one ⌘K away, and the structured
+  test post (ticket, PR, test instance) that can go straight into Slack under your own name.
 
-With `make autostart` the login item owns the server: it starts with your session, restarts
-if it stops, and `make start` / `make stop` / `make status` and the app bundle defer to it
-instead of starting a second one. `make autostart-remove` hands the port back.
+**Everywhere**
+- Command palette (⌘K) for navigation, timer and full-text search. Dashboard of 30 widgets in
+  three groups, arranged like a home screen; only what is on the board loads data.
+- Four colour themes (Mitternacht, Tageslicht, Onyx, Salbei) plus an automatic one, and eleven
+  design styles — among them Apple, built to the macOS Human Interface Guidelines. Sidebar you
+  can pin sub-areas to and reorder. Interface in German or English.
+- Every account sees only its own data. Trash with undo for 30 days. JSON backup and restore,
+  settings export and import.
+- Every action posts in place and re-renders only the affected region; without JavaScript the
+  plain form still works.
 
-## Running
+**Integrations** (all optional, set per user under *Einstellungen*): a GitHub token with read
+access, a Linear token, a Slack user token (`xoxp-`, `chat:write`) with a channel. Tokens are
+stored encrypted and never rendered back into the page.
 
-```bash
-make start
-```
-
-Then open the address `make start` prints — `http://local.takt.de:8000` once the name is in
-`/etc/hosts`, otherwise `http://localhost:8000`. `make stop` shuts it down again, `make restart` does both and
-`make status` reports whether it is running. The server runs in the background; its output goes
-to `storage/logs/serve.log`.
-
-| Target | What it does |
-| --- | --- |
-| `make start` | Starts the app in the background, refuses to start twice or onto a busy port. |
-| `make stop` | Stops the app and its PHP child process. |
-| `make restart` | `stop`, then `start`. |
-| `make status` | Prints the URL and pid, or that nothing is running. |
-| `make setup` | Runs the whole setup again (name, app, login item) — safe at any time. |
-
-Host and port come from `APP_URL` in `.env`; the server itself always binds to `127.0.0.1`,
-and the name resolves there. Use another port for one run with `make start PORT=8080`. For frontend development with hot reloading, run
-`npm run dev` alongside `make start`.
-
-## First run
-
-Register the first account at `/registrieren` — the command below needs an existing account. Working time defaults to 40 hours over 5 days
-(8 hours daily target) and can be changed per user under `/einstellungen`.
-
-Entries that were created before accounts existed have no owner; adopt them with:
-
-```bash
-php artisan takt:assign-owner you@example.com
-```
-
-## Maintenance commands
+## Maintenance
 
 | Command | What it does |
 | --- | --- |
-| `php artisan takt:backup` | Writes a JSON backup per account under `storage/app/backups/<user>/` and keeps the newest 30. |
-| `php artisan takt:purge-trash` | Removes trashed entries and tasks older than 30 days. |
-| `php artisan takt:history` | Fills demo working time — replaces real entries in the range, after writing a safety copy. |
+| `php artisan takt:backup` | JSON backup per account under `storage/app/backups/<user>/`, keeps the newest 30. Scheduled daily at 23:45. |
+| `php artisan takt:purge-trash` | Removes trashed entries and tasks older than 30 days. Scheduled daily at 03:15. |
+| `php artisan takt:assign-owner you@example.com` | Adopts entries that were created before accounts existed. |
+| `php artisan takt:history` | Fills past months with realistic demo working time. Writes a safety copy first; `--help` lists the range, balance and seed options. |
 | `php artisan takt:icons` | Regenerates the notification icon. |
 
-Both maintenance commands are scheduled daily in `routes/console.php`; run
-`php artisan schedule:work` (or a cron entry for `schedule:run`) to have them fire on their own.
+The schedule needs a runner: `php artisan schedule:work`, or a cron entry for `schedule:run`.
 
-## Configuration
-
-| Variable | Default | Purpose |
+| `.env` variable | Default | Purpose |
 | --- | --- | --- |
+| `APP_URL` | `http://localhost:8000` | Name and port the server answers on; `takt:hostname` writes it. |
 | `APP_TIMEZONE` | `Europe/Berlin` | Timezone all entries are stored and displayed in. |
-| `APP_LOCALE` | `de` | UI language (`de` or `en`). |
+| `APP_LOCALE` | `de` | Default interface language (`de` or `en`); every user can override it. |
 
-## Generating a history
+Everything lives in `database/database.sqlite`. Back it up by copying that one file.
 
-```bash
-php artisan takt:history
-```
-
-Fills the past months with realistic random workdays: start between 08:00 and 09:30, end
-between 16:00 and 19:00, one or two breaks of 30–90 minutes in total, and net workdays
-between 6h15m and 9h45m. Every full week hits the weekly target (5 × 8h = 40h); the
-requested plus/minus balance is added to the most recent generated week. Weekends stay
-empty.
-
-| Option | Default | Purpose |
-| --- | --- | --- |
-| `--user` | the only account | Email of the user the generated entries belong to. |
-| `--months` | `4` | How far back to fill, aligned to full ISO weeks. |
-| `--skip-weeks` | `2` | How many calendar weeks stay empty, including the current one. |
-| `--from` | — | Explicit first day (`Y-m-d`), overrides `--months`. |
-| `--to` | — | Explicit last day (`Y-m-d`), overrides `--skip-weeks`. |
-| `--balance` | `1` | Target plus/minus balance in hours across the generated range. |
-| `--keep` | — | Only clear the generated range instead of everything up to today. |
-| `--seed` | random | Seed for reproducible output. |
-| `--force` | — | Delete entries in the cleared range without asking. |
-
-Whenever the range already holds entries, the command first writes a full JSON safety copy
-to `storage/app/backups/<user>/<email>-before-history-<timestamp>.json` and names the path,
-then asks for confirmation (`--force` skips only the question, never the safety copy). A
-deleted entry also stays in the trash for 30 days, so a regeneration is reversible twice
-over — import the safety copy in Settings, or restore the entries from the trash.
-
-By default the command clears everything from the first generated day up to **today**, so
-the skipped weeks are guaranteed to be empty. With `--keep` it only clears the generated
-range, which lets you fill a single island of days without touching the rest:
+## Development
 
 ```bash
-php artisan takt:history --months=4 --to=2026-07-31 --balance=0
-php artisan takt:history --from=2026-08-17 --to=2026-08-19 --balance=1 --keep
+php artisan test        # the whole suite
+npm run dev             # Vite with hot reloading, next to make start
+vendor/bin/pint --dirty # formatting
 ```
 
-That fills four months up to 31 July, leaves 1–16 August empty, books Mon–Wed of the
-current week and puts the whole plus/minus balance (+1h) into those three days.
-
-Wipe everything with
-`php artisan tinker --execute='App\Models\TimeEntry::query()->delete();'`.
-
-## Tests
-
-```bash
-php artisan test
-```
-
-Covers the timer state machine (start, switch, stop, no-op), manual entry validation
-(overlap, midnight rollover, identical times), updates, deletion, the plus/minus balance
-and the history generator (weekly targets, time windows, gap-free days, skipped weeks).
-
-## Architecture
+`public/build` is not versioned. A build older than the sources shows a banner in the app and
+is rebuilt by `make start`; after editing CSS or JS run `npm run build` yourself.
 
 | Path | Role |
 | --- | --- |
-| `app/Enums/EntryType.php` | `work` / `break` with label, accent and opposite type. |
-| `app/Enums/Theme.php` | The four colour themes with label, description and preview swatches. |
-| `app/Enums/DesignStyle.php` | The eight design styles. |
-| `app/Enums/DueState.php` | Due classification: overdue, warning, today, week, later, undated, done. |
-| `app/Enums/TagColor.php` | Semantic tag colours that follow the active theme. |
-| `app/Models/Todo.php`, `app/Models/Tag.php` | Tasks with body, due date, tags; tags with warning rules. |
-| `app/Services/TodoMaintenance.php` | Auto-completes expired tasks whose tags opted in. |
-| `app/Models/Concerns/BelongsToUser.php` | Global ownership scope + automatic `user_id` on create. |
-| `app/Models/TimeEntry.php` | The single table: `type`, `started_at`, `ended_at`, `note`. A running entry has `ended_at = null`. |
-| `app/Services/TimeTracker.php` | Timer state machine, totals, daily breakdown, balance, overlap lookup. |
-| `app/Services/EntryAdjuster.php` | Trims adjacent entries when an edit moves a shared boundary. |
-| `app/Services/WorkHistoryGenerator.php` | Random but target-exact workday generation. |
-| `app/Console/Commands/GenerateHistoryCommand.php` | `takt:history` — writes the generated range and prints a weekly summary. |
-| `app/Http/Requests/` | Boundary validation, including the overlap check. |
-| `app/Support/Duration.php` | Second formatting (`7h 32m`, `07:32:10`, `7.54`, `+1h 00m`). |
-| `app/Support/Period.php` | Start/end pair with overlap, containment and duration helpers. |
-| `resources/views/components/` | Blade UI components (layout, card, stat, entry row, entry form, icons, logo). |
-| `resources/js/app.js` | Live-ticking clocks, delete confirmation, flash auto-hide, todo autosave. |
-| `resources/css/app.css` | Semantic colour tokens per theme, shape tokens per design style, and the component layer (`surface`, `row`, `control`, `btn`, `pill`, `heading`, `metric`). |
+| `app/Services/TimeTracker.php`, `EntryAdjuster.php` | Timer state machine, totals, balance; boundary trimming between neighbours. |
+| `app/Services/AwayTime.php` | Records a locked or sleeping Mac and offers the three answers. |
+| `app/Services/Tickets.php`, `Linear.php`, `Reviews.php` | The ticket board and the GitHub/Linear reads behind the development section. |
+| `app/Enums/Widget.php`, `app/Services/Dashboard.php` | The 30 widgets and the board layout. |
+| `app/Enums/Theme.php`, `app/Enums/DesignStyle.php` | Colour themes and design styles; each style is one token block in `app.css`. |
+| `app/Support/Deferred.php` | Slow pages render skeletons first and fetch their content on a second request. |
+| `app/Support/BuildFreshness.php` | Compares `public/build/manifest.json` with the CSS/JS sources. |
+| `resources/js/app.js` | The boot file; it only calls the modules next to it. Every module listens on `document` and never keeps a node from the first paint — regions are swapped in place, and a cached node dies with the swap (`FrontendWiringTest` guards the shape). |
+| `resources/css/app.css` | Colour tokens per theme, shape tokens per design style, the component layer. |
+| `desktop/main.swift` | The macOS shell: window, menu bar timer, notifications, away detection, the page's canvas colour behind the web view. |
 | `docs/requirements.md`, `docs/plan.md` | Requirement list and implementation plan. |
-
-## Data
-
-Everything lives in `database/database.sqlite`. Back it up by copying that one file.
