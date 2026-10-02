@@ -75,7 +75,9 @@ final class TestPost
          * it was optional. The real one was already in hand: `forIds` answers from the same cache
          * the board fills, so this costs a request only for a key nothing has looked at yet.
          */
-        $known = $this->linear->forIds($user, [Str::upper($value)])['issues'][Str::upper($value)]['url'] ?? null;
+        // a bare number first gets its team key back; the template cannot guess one
+        $key = $this->linear->identify($user, $value);
+        $known = $this->linear->forIds($user, [$key])['issues'][$key]['url'] ?? null;
 
         if (is_string($known) && $known !== '') {
             return $known;
@@ -86,7 +88,7 @@ final class TestPost
 
         return str_replace(
             ['{key}', '{KEY}'],
-            [Str::lower($value), Str::upper($value)],
+            [Str::lower($key), $key],
             $template,
         );
     }

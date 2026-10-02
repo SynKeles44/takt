@@ -150,7 +150,9 @@ class DeveloperController extends Controller
         ]);
 
         $user = $request->user();
-        $key = mb_strtoupper(trim((string) ($input['ticket'] ?? '')));
+        $typed = mb_strtoupper(trim((string) ($input['ticket'] ?? '')));
+        // `7053` is enough to say which ticket is meant, but not to link it: the key is completed first
+        $key = $linear->identify($user, $typed);
         $filled = null;
 
         /*
@@ -176,6 +178,12 @@ class DeveloperController extends Controller
                 if ($filled[$field] !== '') {
                     $input[$field] = $filled[$field];
                 }
+            }
+
+            // the completed key goes back into the field, so what is posted is also what is shown
+            if ($key !== $typed) {
+                $input['ticket'] = $key;
+                $filled['found'] = ['ticket', ...$filled['found']];
             }
         }
 

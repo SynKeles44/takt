@@ -68,6 +68,45 @@ final class Linear
         return ['issues' => array_intersect_key($known, array_flip($ids)), 'error' => $fetched['error']];
     }
 
+    /**
+     * The full identifier for what somebody typed: `7053` becomes `COR-7053`.
+     *
+     * A bare number is how a ticket is said out loud, and it is enough for the pull-request
+     * match, which looks at titles. The ticket link is not that forgiving — the template built
+     * `…/issue/7053` from it, an address that does not exist. The number is looked up among the
+     * user's own tickets first, which costs nothing, and across all teams only after that.
+     */
+    public function identify(User $user, string $value): string
+    {
+        $value = mb_strtoupper(trim($value));
+
+        if (! ctype_digit($value) || ! $this->configured($user)) {
+            return $value;
+        }
+
+        foreach ($this->mine($user)['issues'] as $issue) {
+            if (str_ends_with((string) $issue['id'], '-'.$value)) {
+                return (string) $issue['id'];
+            }
+        }
+
+        $response = $this->post($user, <<<'GRAPHQL'
+            query ByNumber($number: Float!) {
+              issues(filter: { number: { eq: $number } }, first: 5) {
+                nodes { identifier }
+              }
+            }
+        GRAPHQL, ['number' => (int) $value]);
+
+        foreach ($response['data']['issues']['nodes'] ?? [] as $node) {
+            if (is_array($node) && is_string($node['identifier'] ?? null) && str_ends_with($node['identifier'], '-'.$value)) {
+                return $node['identifier'];
+            }
+        }
+
+        return $value;
+    }
+
     public function forget(User $user): void
     {
         Cache::forget('linear.v2.'.$user->getKey());

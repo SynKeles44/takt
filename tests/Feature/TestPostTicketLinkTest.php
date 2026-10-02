@@ -76,6 +76,74 @@ class TestPostTicketLinkTest extends TestCase
     }
 
     /** A pasted URL is the author's own and is passed through untouched. */
+    /** `7053` is how a ticket is said; the link needs `COR-7053`, and Linear knows which team. */
+    public function test_a_bare_number_is_completed_to_its_key_before_the_lookup(): void
+    {
+        $user = $this->login(['linear_token' => 'lin_test']);
+
+        Http::fake(['api.linear.app/graphql' => function ($request) {
+            $body = (string) $request->body();
+
+            if (str_contains($body, 'assignedIssues')) {
+                return Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => []]]]]);
+            }
+
+            if (str_contains($body, 'ByNumber')) {
+                return Http::response(['data' => ['issues' => ['nodes' => [['identifier' => 'COR-7053']]]]]);
+            }
+
+            return Http::response(['data' => ['issues' => ['nodes' => [[
+                'identifier' => 'COR-7053',
+                'title' => 'Abwesenheiten',
+                'url' => 'https://linear.app/acme/issue/COR-7053/abwesenheiten',
+                'updatedAt' => '2026-10-01T08:00:00.000Z',
+                'state' => ['name' => 'Todo', 'type' => 'unstarted'],
+                'team' => ['key' => 'COR', 'name' => 'Core'],
+            ]]]]]);
+        }]);
+
+        $this->assertSame(
+            'https://linear.app/acme/issue/COR-7053/abwesenheiten',
+            app(TestPost::class)->build($user, ['ticket' => '7053'])['ticket'],
+        );
+    }
+
+    public function test_a_number_among_my_own_tickets_needs_no_extra_request(): void
+    {
+        $user = $this->login(['linear_token' => 'lin_test']);
+
+        Http::fake(['api.linear.app/graphql' => function ($request) {
+            $body = (string) $request->body();
+
+            if (str_contains($body, 'assignedIssues')) {
+                return Http::response(['data' => ['viewer' => ['assignedIssues' => ['nodes' => [[
+                    'identifier' => 'GAL-7053',
+                    'title' => 'Meins',
+                    'url' => 'https://linear.app/acme/issue/GAL-7053/meins',
+                    'updatedAt' => '2026-10-01T08:00:00.000Z',
+                    'state' => ['name' => 'Todo', 'type' => 'unstarted'],
+                    'team' => ['key' => 'GAL', 'name' => 'Gala'],
+                ]]]]]]);
+            }
+
+            $this->assertStringNotContainsString('ByNumber', $body, 'the number was already known from my own tickets');
+
+            return Http::response(['data' => ['issues' => ['nodes' => [[
+                'identifier' => 'GAL-7053',
+                'title' => 'Meins',
+                'url' => 'https://linear.app/acme/issue/GAL-7053/meins',
+                'updatedAt' => '2026-10-01T08:00:00.000Z',
+                'state' => ['name' => 'Todo', 'type' => 'unstarted'],
+                'team' => ['key' => 'GAL', 'name' => 'Gala'],
+            ]]]]]);
+        }]);
+
+        $this->assertSame(
+            'https://linear.app/acme/issue/GAL-7053/meins',
+            app(TestPost::class)->build($user, ['ticket' => '7053'])['ticket'],
+        );
+    }
+
     public function test_a_pasted_url_is_left_alone(): void
     {
         $user = $this->login(['linear_token' => 'lin_api_test']);
