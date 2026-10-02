@@ -29,8 +29,7 @@
         </div>
         <div>
             <label for="due_time" class="label">{{ __('app.todos.due_time') }}</label>
-            <input id="due_time" type="time" name="due_time" class="control metric"
-                   value="{{ old('due_time', $todo?->due_has_time ? $todo->due_at->format('H:i') : null) }}">
+            <x-time-field id="due_time" name="due_time" :value="old('due_time', $todo?->due_has_time ? $todo->due_at->format('H:i') : null)"/>
             @error('due_time') <p class="field-error">{{ $message }}</p> @enderror
         </div>
     </div>

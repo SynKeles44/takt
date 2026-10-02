@@ -25,7 +25,7 @@
                         </div>
                         <div class="sm:w-28">
                             <label for="due_time" class="label">{{ __('app.todos.due_time') }}</label>
-                            <input id="due_time" type="time" name="due_time" value="{{ old('due_time') }}" class="control metric">
+                            <x-time-field id="due_time" name="due_time" :value="old('due_time')"/>
                         </div>
 
                         @if ($templates->isNotEmpty())

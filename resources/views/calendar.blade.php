@@ -191,22 +191,22 @@
                     <div class="grid grid-cols-2 gap-3">
                         <label class="block">
                             <span class="label">{{ __('app.form.start') }}</span>
-                            <input type="time" name="von" value="09:00" required class="control mt-1 w-full">
+                            <x-time-field name="von" value="09:00" required class="mt-1 w-full"/>
                         </label>
                         <label class="block">
                             <span class="label">{{ __('app.form.end') }}</span>
-                            <input type="time" name="bis" value="17:00" required class="control mt-1 w-full">
+                            <x-time-field name="bis" value="17:00" required class="mt-1 w-full"/>
                         </label>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <label class="block">
                             <span class="label">{{ __('app.bulk.break_from') }}</span>
-                            <input type="time" name="pause_von" value="12:30" class="control mt-1 w-full">
+                            <x-time-field name="pause_von" value="12:30" class="mt-1 w-full"/>
                         </label>
                         <label class="block">
                             <span class="label">{{ __('app.bulk.break_to') }}</span>
-                            <input type="time" name="pause_bis" value="13:00" class="control mt-1 w-full">
+                            <x-time-field name="pause_bis" value="13:00" class="mt-1 w-full"/>
                         </label>
                     </div>
 

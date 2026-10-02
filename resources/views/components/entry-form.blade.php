@@ -54,12 +54,12 @@
     <div class="grid grid-cols-2 gap-3">
         <div>
             <label for="starts_at" class="{{ $label }}">{{ __('app.form.start') }}</label>
-            <input id="starts_at" type="time" name="starts_at" value="{{ $currentStart }}" class="{{ $field }} metric" required>
+            <x-time-field id="starts_at" name="starts_at" :value="$currentStart" :class="$field" required/>
             @error('starts_at') <p class="field-error">{{ $message }}</p> @enderror
         </div>
         <div>
             <label for="ends_at" class="{{ $label }}">{{ __('app.form.end') }}</label>
-            <input id="ends_at" type="time" name="ends_at" value="{{ $currentEnd }}" class="{{ $field }} metric" required>
+            <x-time-field id="ends_at" name="ends_at" :value="$currentEnd" :class="$field" required/>
             @error('ends_at') <p class="field-error">{{ $message }}</p> @enderror
         </div>
     </div>

@@ -39,7 +39,7 @@
                     @php $name = $block['prefix'].'_'.$suffix; @endphp
                     <div>
                         <label for="{{ $name }}" class="{{ $label }}">{{ $caption }}</label>
-                        <input id="{{ $name }}" type="time" name="{{ $name }}" value="{{ old($name) }}" class="{{ $field }}">
+                        <x-time-field :id="$name" :name="$name" :value="old($name)" :class="$field"/>
                     </div>
                 @endforeach
             </div>

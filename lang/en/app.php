@@ -69,6 +69,8 @@ return [
     ],
 
     'form' => [
+        'hours' => 'Hours',
+        'minutes' => 'Minutes',
         'on' => 'Turn on',
         'off' => 'Turn off',
         'like_last_time' => 'Like last time',

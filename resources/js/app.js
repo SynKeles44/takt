@@ -5,6 +5,7 @@ import { deferredRegions } from './deferred';
 import { docker } from './docker';
 import { folderPicker } from './folder-picker';
 import { ticketBoard } from './ticket-board';
+import { timeFields } from './time-field';
 import { motionLayer } from './motion';
 import { pendingMarker } from './pending';
 import { prefetchLinks } from './prefetch';
@@ -1253,6 +1254,7 @@ prefetchLinks();
 pendingMarker();
 deferredRegions({ swapRegions });
 sidebarOrder();
+timeFields();
 slidingMarkers();
 
 /*

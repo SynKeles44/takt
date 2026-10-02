@@ -160,8 +160,8 @@
                     <div class="backdate-panel">
                         <label class="block">
                             <span class="label">{{ __('app.timer.backdate_from') }}</span>
-                            <input type="time" name="ab" form="timer-work" value="{{ now()->subMinutes(30)->format('H:i') }}"
-                                   class="control mt-1 w-full text-sm" data-backdate>
+                            <x-time-field name="ab" form="timer-work" :value="now()->subMinutes(30)->format('H:i')"
+                                      class="mt-1 w-full text-sm" data-backdate/>
                         </label>
 
                         <p class="mt-1.5 text-[11px] leading-snug text-faint">{{ __('app.timer.backdate_hint') }}</p>
