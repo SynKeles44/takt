@@ -14,9 +14,16 @@
     `data-defer` is the page saying "what you see is the shape, the numbers are still coming".
     A view sets $defer when it rendered skeletons instead of the slow read.
 --}}
+{{--
+    Inside the app window the page arrives whole: no view transition and no entrance animation.
+    Photographed from inside the window, the system WebKit captured named elements as blank
+    images and painted the new page with an empty content column for a third of a second — on a
+    dark scheme a flash of bare canvas on every click. `data-settled` is the mark the deferred
+    loader uses after a swap; set from the start it switches every arrival animation off.
+--}}
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $theme->resolved()->value }}" data-style="{{ $style->value }}"
       @if ($defer) data-defer="{{ request()->fullUrl() }}" @endif
-      @if ($native) data-shell="native" @endif>
+      @if ($native) data-shell="native" data-settled @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -57,6 +64,10 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <meta name="theme-color" content="{{ $theme->resolved()->preview()['canvas'] }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if ($native)
+        {{-- after the stylesheet, so this is the rule that counts: the app window does not cross-fade pages --}}
+        <style>@view-transition { navigation: none; }</style>
+    @endif
 </head>
 <body class="min-h-dvh text-ink antialiased">
     @if (session('status'))

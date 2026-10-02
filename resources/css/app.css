@@ -3814,6 +3814,17 @@ input[type='time'] {
 }
 
 /*
+ * No named transition groups inside the app window. The system WebKit captures a named element
+ * as a blank image — photographed from inside the window: the content column rendered as bare
+ * canvas for 300 ms after every click, the tab rows went dim, the sidebar vanished. Unnamed,
+ * everything is part of the root, and the root cross-fades as one picture. The slide the browser
+ * gets is traded for a page that never goes blank.
+ */
+:root[data-shell='native'] main[data-region='main'] {
+    view-transition-name: none;
+}
+
+/*
  * MARK: view transitions — how a region swap moves
  *
  * The default is a cross-fade with a hint of lift, which reads as "this updated". Paging
@@ -3822,29 +3833,37 @@ input[type='time'] {
  * transition names, so nothing else on the page moves.
  */
 /*
- * The outgoing snapshot never fades. It stays at full opacity and the incoming one is drawn in
- * over it, so at no point is there a frame in which both halves are translucent.
- *
- * Measured, in WebKit, with the generic rule that is written here matched to the root as well
- * (a cross-document transition takes the same `old(*)` / `new(*)` selectors): old and new were
- * blended with mix-blend-mode normal, not plus-lighter — so half-way through, the page was 75 %
- * page and 25 % of whatever lies beneath the document. In the browser that is white, in the app
- * window the window's colour; on a light scheme the whole screen went pale for a fifth of a
- * second on every click, on a dark one it went darker. Two translucent layers can never add up to
- * an opaque one without plus-lighter, and an engine that does not honour it is not something a
- * stylesheet can argue with — so the old layer simply does not become translucent.
+ * A cross-fade with a hint of movement. Old and new run the same duration on the same curve, so
+ * their opacities add up to one at every instant — WebKit blends the two with mix-blend-mode
+ * normal rather than plus-lighter, and with unequal curves the sum dipped and the colour beneath
+ * the document showed through. (An outgoing snapshot that stays opaque while the new one slides
+ * over it was tried instead and read as two screens overlapping; the fade is the right shape.)
  */
 @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation-duration: var(--dur);
+        animation-timing-function: var(--ease);
+    }
+
     ::view-transition-old(*) {
-        animation: none;
+        animation-name: vt-out;
     }
 
     ::view-transition-new(*) {
-        animation: vt-in var(--dur) var(--ease) both;
+        animation-name: vt-in;
+    }
+
+    :root[data-swap-direction='forward'] ::view-transition-old(*) {
+        animation-name: vt-out-left;
     }
 
     :root[data-swap-direction='forward'] ::view-transition-new(*) {
         animation-name: vt-in-right;
+    }
+
+    :root[data-swap-direction='back'] ::view-transition-old(*) {
+        animation-name: vt-out-right;
     }
 
     :root[data-swap-direction='back'] ::view-transition-new(*) {
@@ -3852,12 +3871,24 @@ input[type='time'] {
     }
 }
 
+@keyframes vt-out {
+    to { opacity: 0; transform: translateY(-4px); }
+}
+
 @keyframes vt-in {
     from { opacity: 0; transform: translateY(6px); }
 }
 
+@keyframes vt-out-left {
+    to { opacity: 0; transform: translateX(-2.5%); }
+}
+
 @keyframes vt-in-right {
     from { opacity: 0; transform: translateX(3%); }
+}
+
+@keyframes vt-out-right {
+    to { opacity: 0; transform: translateX(2.5%); }
 }
 
 @keyframes vt-in-left {
@@ -4042,27 +4073,29 @@ main[data-region='main'] {
     /*
      * Deliberately not subtle. The first version moved four pixels over 180 ms and was reported
      * as "no animation at all" — which is the correct reading: a transition nobody can see is
-     * indistinguishable from none, and then only the hard cut remains to notice.
-     *
-     * The outgoing page stays opaque underneath while the new one rises in over it — see the
-     * region rules above for why nothing here is allowed to fade OUT.
+     * indistinguishable from none, and then only the hard cut remains to notice. Both halves run
+     * the same duration on the same curve, for the reason given at the region rules.
      */
     ::view-transition-old(takt-page) {
-        animation: none;
+        animation: takt-page-out 0.32s var(--ease) both;
     }
 
     ::view-transition-new(takt-page) {
         animation: takt-page-in 0.32s var(--ease) both;
     }
 
-    /*
-     * The root — canvas, ambient glow, the page title — does not animate at all. It used to
-     * cross-fade, and that cross-fade was the flash: both copies translucent at once, and the
-     * colour beneath the document showing through the whole window for a moment.
-     */
+    /* the root — canvas, glow, title — cross-fades on the same clock as the content */
     ::view-transition-old(root),
     ::view-transition-new(root) {
-        animation: none;
+        animation-duration: 0.32s;
+        animation-timing-function: var(--ease);
+    }
+}
+
+@keyframes takt-page-out {
+    to {
+        opacity: 0;
+        transform: translateY(-14px);
     }
 }
 

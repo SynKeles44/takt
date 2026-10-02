@@ -24,7 +24,8 @@ export const calmed = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 let transitioning = false;
 
 const withTransition = (mutate) => {
-    if (! document.startViewTransition || calmed() || transitioning) {
+    // the app window swaps in place without a transition — see the layout for why
+    if (! document.startViewTransition || calmed() || transitioning || document.documentElement.dataset.shell === 'native') {
         mutate();
 
         return;
@@ -32,12 +33,15 @@ const withTransition = (mutate) => {
 
     /*
      * The sidebar is never named: WebKit captures it as a blank image, so a named nav vanished
-     * for the length of every swap that touched it. Unnamed it belongs to the root, which does
-     * not animate, and simply shows its new state.
+     * for the length of every swap that touched it. Inside the app window nothing is named at
+     * all — the system WebKit blanks every named element, content column included — and the
+     * swap is one root cross-fade.
      */
-    document.querySelectorAll('[data-region]:not([data-region="nav"])').forEach((node) => {
-        node.style.viewTransitionName = 'region-' + node.dataset.region;
-    });
+    if (document.documentElement.dataset.shell !== 'native') {
+        document.querySelectorAll('[data-region]:not([data-region="nav"])').forEach((node) => {
+            node.style.viewTransitionName = 'region-' + node.dataset.region;
+        });
+    }
 
     transitioning = true;
 

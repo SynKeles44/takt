@@ -117,7 +117,8 @@ const standStill = (host, key) => {
      */
     if ([...rows].some((other) => other.isConnected && other.style.viewTransitionName === name)) return;
 
-    host.style.viewTransitionName = name;
+    // not in the app window: the system WebKit renders a named row blank for the whole transition
+    if (document.documentElement.dataset.shell !== 'native') host.style.viewTransitionName = name;
 
     /*
      * The rule is written per name rather than through `view-transition-class`. The class exists

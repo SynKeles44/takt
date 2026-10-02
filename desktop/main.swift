@@ -570,6 +570,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         webView.setValue(false, forKey: "drawsBackground")
         paintCanvas(Self.storedCanvas())
 
+        // invisible until the first page has painted: the window's canvas colour shows instead of
+        // the web view's own white, which the switch above no longer prevents on current WebKit
+        webView.alphaValue = 0
+
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1180, height: 820),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -662,9 +666,66 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        if webView.alphaValue < 1 {
+            webView.alphaValue = 1
+        }
+
         webView.evaluateJavaScript("document.title") { [weak self] title, _ in
             if let title = title as? String, !title.isEmpty {
                 self?.window.title = title
+            }
+        }
+
+        if UserDefaults.standard.bool(forKey: "takt.debugSnapshots") {
+            // what the engine inside this window actually supports — written next to the frames
+            webView.evaluateJavaScript("JSON.stringify({ sameDocument: 'startViewTransition' in document, crossDocument: typeof CSSViewTransitionRule !== 'undefined', pageReveal: 'onpagereveal' in window, scheme: getComputedStyle(document.documentElement).colorScheme, canvas: getComputedStyle(document.documentElement).backgroundColor, url: location.pathname })") { value, _ in
+                let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Takt/snapshots", isDirectory: true)
+                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                try? ((value as? String ?? "") + "\n").data(using: .utf8)?.write(to: folder.appendingPathComponent("engine.txt"))
+            }
+        }
+    }
+
+    // MARK: snapshot series — `defaults write de.takt.app takt.debugSnapshots -bool true`
+
+    /*
+     * What the window shows during a navigation cannot be observed from outside the app: a
+     * browser's engine composites differently, and the screen cannot be recorded without a
+     * permission the shell does not have. So the web view photographs itself — one frame every
+     * 50 ms for a second after each navigation starts — into ~/Library/Logs/Takt/snapshots. Off
+     * unless the default above is set; it costs nothing when it is not.
+     */
+    private var snapshotRun = 0
+
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        guard UserDefaults.standard.bool(forKey: "takt.debugSnapshots") else { return }
+
+        snapshotRun += 1
+
+        let run = snapshotRun
+        let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Takt/snapshots", isDirectory: true)
+
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        let started = Date()
+
+        for frame in 0..<20 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(frame * 50)) { [weak self] in
+                guard let self, let webView = self.webView else { return }
+
+                let configuration = WKSnapshotConfiguration()
+                configuration.afterScreenUpdates = false
+
+                webView.takeSnapshot(with: configuration) { image, _ in
+                    guard let image, let tiff = image.tiffRepresentation,
+                          let bitmap = NSBitmapImageRep(data: tiff),
+                          let png = bitmap.representation(using: .png, properties: [:]) else { return }
+
+                    let elapsed = Int(Date().timeIntervalSince(started) * 1000)
+                    let file = folder.appendingPathComponent(String(format: "run%02d-%02d-%04dms.png", run, frame, elapsed))
+
+                    try? png.write(to: file)
+                }
             }
         }
     }
