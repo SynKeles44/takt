@@ -12,7 +12,24 @@ Takt runs on your own machine: a Laravel app, one SQLite file, a native macOS wi
 cloud, no external services, nothing leaves the computer unless you connect GitHub, Linear or
 Slack yourself.
 
-## Install
+## Download (nothing to install)
+
+For a Mac with nothing on it — no PHP, no Homebrew, no Docker. From the
+[latest release](https://github.com/SynKeles44/takt/releases/latest) download
+`Takt-<version>-aarch64.dmg` (Apple silicon, M1 and later) or `Takt-<version>-x86_64.dmg` (Intel),
+drag **Takt** into Applications, open it, create your account. The app carries its own PHP and its
+own copy of the code; your data lives in `~/Library/Application Support/Takt`, so replacing the app
+with a newer one keeps it. macOS 12 or later.
+
+The builds are not notarized yet, so macOS refuses the first start. Open it once, then go to
+**System Settings → Privacy & Security** and click **Open Anyway** next to the note about Takt;
+from then on it opens like any app. (On macOS 14 and older, right-click → **Open** does the same.)
+
+What it does not bring along: the tools the development section talks to — git, Docker, make —
+and the tokens for GitHub, Linear and Slack. Time tracking, tasks, calendar and insights need
+nothing. There is no Windows app; on Windows Takt runs [with Docker](#docker).
+
+## Install from source
 
 One line. It checks the requirements, clones to `~/Takt`, installs dependencies, sets up the
 database, registers the name **local.takt.de**, builds the macOS app and opens it:
@@ -54,6 +71,7 @@ to run over local changes. Inside the project folder `make update` does the same
 | `make start` | Starts the server in the background and prints the address. Rebuilds the frontend first when the sources are newer than the build. |
 | `make stop` / `make restart` / `make status` | Stops it, restarts it, says whether it runs. |
 | `make app` | Builds `~/Applications/Takt.app` for this installation. |
+| `make release` | Builds the self-contained apps for Apple silicon and Intel into `dist/` (zip and dmg). |
 | `make autostart` / `make autostart-remove` | Starts the server with your login session (macOS launchd), or hands the port back. |
 | `make setup` | Runs the whole setup again — `.env`, key, database, name, app, login item. Safe at any time. |
 | `make update` | Same as the update line above. |
@@ -110,6 +128,24 @@ browser window. Rebuild with `make app` after moving the project: the bundle sto
 
 With `make autostart` the login item owns the server: starts with your session, restarts if it
 dies; `make start`/`stop` and the app defer to it.
+
+### Self-contained release
+
+`make release` (or `php artisan takt:release --arch=aarch64|x86_64 [--dmg]`) builds the other kind
+of bundle — the one for people who have nothing installed. It stages the code from what git sees
+(never `.env`, the database or `node_modules`), drops tests, Docker and the frontend sources, runs
+`composer install --no-dev`, adds a static PHP 8.5 from static-php.dev (pinned by checksum) with a
+`php.ini`, compiles the shell for the target arch and signs the result.
+
+Inside that bundle nothing is ever written. The shell sets `TAKT_DATA` to
+`~/Library/Application Support/Takt`, and `bootstrap/app.php` moves the environment file, the
+SQLite file, `storage/` and the framework's caches there; `takt:prepare` writes the `.env` with a
+fresh key and migrates on first launch, and is a no-op afterwards. A checkout never sets
+`TAKT_DATA` and keeps every path where it was.
+
+Building needs the Xcode command line tools, Composer and Node on the build machine. Signing is
+ad-hoc by default; for a plain double-click on other Macs pass `--identity "Developer ID
+Application: …"` and notarize the zip with `xcrun notarytool submit … --wait`.
 
 ## What is in it
 
@@ -198,6 +234,7 @@ a button that runs `npm run build` for you; `make start` rebuilds as well.
 | `app/Enums/Widget.php`, `app/Services/Dashboard.php` | The 30 widgets and the board layout. |
 | `app/Enums/Theme.php`, `app/Enums/DesignStyle.php` | Colour themes and design styles; each style is one token block in `app.css`. |
 | `app/Support/Deferred.php` | Slow pages render skeletons first and fetch their content on a second request. |
+| `app/Support/DataDirectory.php`, `app/Console/Commands/ReleaseCommand.php` | Where a bundled copy writes (`TAKT_DATA`), and the build of the self-contained app. |
 | `app/Support/BuildFreshness.php` | Compares `public/build/manifest.json` with the CSS/JS sources. |
 | `resources/js/app.js` | The boot file; it only calls the modules next to it. Every module listens on `document` and never keeps a node from the first paint — regions are swapped in place, and a cached node dies with the swap (`FrontendWiringTest` guards the shape). |
 | `resources/css/app.css` | Colour tokens per theme, shape tokens per design style, the component layer. |

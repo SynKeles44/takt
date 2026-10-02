@@ -8,10 +8,38 @@ import WebKit
 struct Config {
     static let info = Bundle.main.infoDictionary ?? [:]
     static let name = info["CFBundleName"] as? String ?? "Takt"
-    static let root = info["TaktRoot"] as? String ?? ""
-    static let php = info["TaktPhp"] as? String ?? "/usr/bin/php"
+
+    /*
+     * Two kinds of bundle. One wraps a checkout and points at it and at the machine's PHP. The
+     * other — `takt:release` — carries its own PHP and its own copy of the code inside Resources,
+     * and writes to Application Support, because a signed bundle must never change.
+     */
+    static let bundled = info["TaktBundled"] as? Bool ?? false
+    static let resources = Bundle.main.resourcePath ?? ""
+    static let root = bundled ? resources + "/app" : (info["TaktRoot"] as? String ?? "")
+    static let php = bundled ? resources + "/php" : (info["TaktPhp"] as? String ?? "/usr/bin/php")
     static let port = info["TaktPort"] as? Int ?? 8000
     static let host = info["TaktHost"] as? String ?? "local.takt.de"
+
+    /// Where the app writes: the project folder for a checkout, Application Support for a bundled copy.
+    static let data = bundled
+        ? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/\(name)").path
+        : root
+
+    /// What every PHP process the shell starts gets on top of its own environment.
+    static var environment: [String: String] {
+        var environment = ProcessInfo.processInfo.environment
+
+        if bundled {
+            environment["TAKT_DATA"] = data
+            // the php.ini next to the bundled binary: opcache on, a sane memory limit
+            environment["PHPRC"] = resources
+        }
+
+        return environment
+    }
+
+    static var log: URL { URL(fileURLWithPath: data).appendingPathComponent("storage/logs/serve.log") }
     /// What the window shows. The server binds to the loopback; the name resolves there.
     static var url: URL { URL(string: "http://\(host)\(port == 80 ? "" : ":\(port)")")! }
     static var loopback: URL { URL(string: "http://127.0.0.1:\(port)")! }
@@ -21,7 +49,7 @@ struct Config {
      * because the shell has to know before the server starts and does not read the database.
      */
     static var networkAccess: Bool {
-        root.isEmpty ? false : FileManager.default.fileExists(atPath: root + "/storage/app/network-access")
+        data.isEmpty ? false : FileManager.default.fileExists(atPath: data + "/storage/app/network-access")
     }
 
     static var bind: String { networkAccess ? "0.0.0.0" : "127.0.0.1" }
@@ -54,6 +82,53 @@ final class Server {
         return alive
     }
 
+    /// The log every PHP process of the shell writes to, created on first use.
+    private func logHandle() -> FileHandle? {
+        let log = Config.log
+
+        try? FileManager.default.createDirectory(at: log.deletingLastPathComponent(), withIntermediateDirectories: true)
+
+        if !FileManager.default.fileExists(atPath: log.path) {
+            FileManager.default.createFile(atPath: log.path, contents: nil)
+        }
+
+        let handle = try? FileHandle(forWritingTo: log)
+        handle?.seekToEndOfFile()
+
+        return handle
+    }
+
+    /*
+     * A bundled copy readies its data folder before the first start: environment, key, migrated
+     * database. On every later launch this finds the work done and returns in a moment. Runs off
+     * the main thread — the first launch migrates a fresh database.
+     */
+    func prepare() -> Bool {
+        guard Config.bundled, !responds() else { return true }
+
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: Config.php)
+        task.arguments = ["artisan", "takt:prepare", "--port=\(Config.port)", "--name=\(Config.name)", "--no-interaction"]
+        task.currentDirectoryURL = URL(fileURLWithPath: Config.root)
+        task.environment = Config.environment
+
+        if let handle = logHandle() {
+            task.standardOutput = handle
+            task.standardError = handle
+        }
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+
+            return task.terminationStatus == 0
+        } catch {
+            NSLog("Takt: preparing the data folder failed — \(error.localizedDescription)")
+
+            return false
+        }
+    }
+
     func start() {
         guard !responds(), !Config.root.isEmpty else { return }
 
@@ -61,11 +136,9 @@ final class Server {
         task.executableURL = URL(fileURLWithPath: Config.php)
         task.arguments = ["artisan", "serve", "--host=\(Config.bind)", "--port=\(Config.port)"]
         task.currentDirectoryURL = URL(fileURLWithPath: Config.root)
+        task.environment = Config.environment
 
-        let log = URL(fileURLWithPath: Config.root).appendingPathComponent("storage/logs/serve.log")
-
-        if let handle = try? FileHandle(forWritingTo: log) {
-            handle.seekToEndOfFile()
+        if let handle = logHandle() {
             task.standardOutput = handle
             task.standardError = handle
         }
@@ -138,14 +211,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         buildMenu()
         buildWindow()
 
-        server.start()
-
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let ready = self?.server.waitUntilReady() ?? false
+            guard let self else { return }
+
+            let prepared = self.server.prepare()
+
+            if prepared {
+                self.server.start()
+            }
+
+            // a first launch migrates and then boots a cold server — give it room
+            let ready = prepared && self.server.waitUntilReady(seconds: Config.bundled ? 40 : 12)
 
             DispatchQueue.main.async {
-                guard let self else { return }
-
                 if ready {
                     self.webView.load(URLRequest(url: Config.url))
                 } else {
@@ -626,7 +704,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     private func showStartupFailure() {
         let alert = NSAlert()
         alert.messageText = Config.name
-        alert.informativeText = "Der lokale Server ist nicht gestartet.\n\nPrüfe storage/logs/serve.log im Projektordner."
+        alert.informativeText = "Der lokale Server ist nicht gestartet.\n\nDetails stehen in \(Config.log.path)"
         alert.alertStyle = .critical
         alert.addButton(withTitle: "Beenden")
         alert.runModal()

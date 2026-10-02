@@ -12,6 +12,8 @@ use App\Models\Todo;
 use App\Services\FrontendBuild;
 use App\Services\TimeTracker;
 use App\Support\BuildFreshness;
+use App\Support\DataDirectory;
+use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
@@ -25,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(BuildFreshness::class, fn (): BuildFreshness => BuildFreshness::forApp());
         $this->app->bind(FrontendBuild::class, fn (): FrontendBuild => FrontendBuild::forApp());
+
+        /*
+         * `artisan serve` starts its PHP server with the environment stripped of everything it does
+         * not know. A bundled Takt needs two variables to survive that: where its data lives, and
+         * where its php.ini is — without them the server writes into the read-only bundle.
+         */
+        ServeCommand::$passthroughVariables = array_values(array_unique([...ServeCommand::$passthroughVariables, DataDirectory::ENV, 'PHPRC']));
         //
     }
 

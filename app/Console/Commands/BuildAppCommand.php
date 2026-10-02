@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Support\AppBundle;
 use App\Support\AppIcon;
 use App\Support\LocalUrl;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Str;
 
 /**
  * Wraps the local installation in a macOS app bundle: double-click, own Dock icon,
@@ -23,9 +23,6 @@ class BuildAppCommand extends Command
                             {--force : Overwrite a bundle that points at another installation}';
 
     protected $description = 'Build the macOS app bundle for this installation';
-
-    /** icns needs these sizes, @1x and @2x */
-    private const array ICON_SIZES = [16, 32, 128, 256, 512];
 
     public function handle(): int
     {
@@ -66,9 +63,19 @@ class BuildAppCommand extends Command
             }
         }
 
-        file_put_contents($bundle.'/Contents/Info.plist', $this->plist($name, $port));
+        file_put_contents($bundle.'/Contents/Info.plist', AppBundle::plist($name, '1.0', [
+            'TaktPort' => $port,
+            'TaktHost' => LocalUrl::host(),
+            'TaktRoot' => base_path(),
+            'TaktPhp' => PHP_BINARY,
+        ]));
 
-        $native = $this->compileShell($bundle.'/Contents/MacOS/'.$name);
+        $error = null;
+        $native = AppBundle::compileShell($bundle.'/Contents/MacOS/'.$name, $error);
+
+        if (! $native && $error !== null && is_file('/usr/bin/swiftc')) {
+            $this->components->warn('swiftc failed, falling back to a browser window: '.$error);
+        }
 
         if (! $native) {
             file_put_contents($bundle.'/Contents/MacOS/'.$name, $this->launcher($port));
@@ -76,10 +83,11 @@ class BuildAppCommand extends Command
 
         chmod($bundle.'/Contents/MacOS/'.$name, 0o755);
 
-        $this->icon($bundle.'/Contents/Resources/AppIcon.icns');
+        if (! AppBundle::writeIcon($bundle.'/Contents/Resources/AppIcon.icns')) {
+            $this->components->warn('iconutil failed, falling back to a single PNG icon.');
+        }
 
-        // ad-hoc signature: no certificate needed, but the system treats it as a real app
-        Process::run(['/usr/bin/codesign', '--force', '--sign', '-', '--timestamp=none', $bundle]);
+        AppBundle::sign($bundle);
 
         // let Finder pick up the new bundle straight away
         Process::run(['/usr/bin/touch', $bundle]);
@@ -104,76 +112,6 @@ class BuildAppCommand extends Command
         $result = Process::run(['/usr/bin/plutil', '-extract', 'TaktRoot', 'raw', '-o', '-', $plist]);
 
         return $result->successful() ? trim($result->output()) : null;
-    }
-
-    /**
-     * The window is a real Cocoa app around a WKWebView — no browser involved.
-     * Without Xcode's toolchain the bundle falls back to a browser window.
-     */
-    private function compileShell(string $binary): bool
-    {
-        $source = base_path('desktop/main.swift');
-
-        if (! is_file($source) || ! is_file('/usr/bin/swiftc')) {
-            return false;
-        }
-
-        $build = Process::timeout(180)->run([
-            '/usr/bin/swiftc',
-            '-swift-version', '5',
-            '-O',
-            '-o', $binary,
-            $source,
-            '-framework', 'Cocoa',
-            '-framework', 'WebKit',
-            '-framework', 'UserNotifications',
-        ]);
-
-        if ($build->failed()) {
-            $this->components->warn('swiftc failed, falling back to a browser window: '.trim($build->errorOutput()));
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private function plist(string $name, int $port): string
-    {
-        $identifier = 'de.'.Str::slug($name).'.app';
-        $root = base_path();
-        $php = PHP_BINARY;
-        $host = LocalUrl::host();
-
-        return <<<PLIST
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleName</key><string>{$name}</string>
-            <key>CFBundleDisplayName</key><string>{$name}</string>
-            <key>CFBundleIdentifier</key><string>{$identifier}</string>
-            <key>CFBundleExecutable</key><string>{$name}</string>
-            <key>CFBundleIconFile</key><string>AppIcon</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>CFBundleShortVersionString</key><string>1.0</string>
-            <key>CFBundleVersion</key><string>1</string>
-            <key>LSMinimumSystemVersion</key><string>12.0</string>
-            <key>LSUIElement</key><false/>
-            <key>NSHighResolutionCapable</key><true/>
-            <key>TaktPort</key><integer>{$port}</integer>
-            <key>TaktHost</key><string>{$host}</string>
-            <key>TaktRoot</key><string>{$root}</string>
-            <key>TaktPhp</key><string>{$php}</string>
-            <key>NSCalendarsUsageDescription</key><string>Takt zeigt Deine Termine als Buchungsvorschläge — sie bleiben auf diesem Rechner.</string>
-            <key>NSCalendarsFullAccessUsageDescription</key><string>Takt zeigt Deine Termine als Buchungsvorschläge — sie bleiben auf diesem Rechner.</string>
-            <key>NSAppTransportSecurity</key>
-            <dict>
-                <key>NSAllowsLocalNetworking</key><true/>
-            </dict>
-        </dict>
-        </plist>
-        PLIST;
     }
 
     private function launcher(int $port): string
@@ -251,27 +189,5 @@ class BuildAppCommand extends Command
 
         exec /usr/bin/open "\$URL"
         SHELL;
-    }
-
-    private function icon(string $path): void
-    {
-        $iconset = sys_get_temp_dir().'/takt-'.Str::random(8).'.iconset';
-
-        mkdir($iconset, 0o755, true);
-
-        foreach (self::ICON_SIZES as $size) {
-            AppIcon::write($size, sprintf('%s/icon_%dx%d.png', $iconset, $size, $size));
-            AppIcon::write($size * 2, sprintf('%s/icon_%dx%d@2x.png', $iconset, $size, $size));
-        }
-
-        $result = Process::run(['/usr/bin/iconutil', '-c', 'icns', $iconset, '-o', $path]);
-
-        if ($result->failed()) {
-            $this->components->warn('iconutil failed, falling back to a single PNG icon.');
-
-            AppIcon::write(1024, str_replace('.icns', '.png', $path));
-        }
-
-        Process::run(['/bin/rm', '-rf', $iconset]);
     }
 }

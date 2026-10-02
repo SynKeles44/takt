@@ -11,7 +11,7 @@ PID_FILE := storage/app/takt-serve.pid
 LOG_FILE := storage/logs/serve.log
 
 .DEFAULT_GOAL := help
-.PHONY: help start stop restart status app autostart autostart-remove setup update
+.PHONY: help start stop restart status app release autostart autostart-remove setup update
 
 help:
 	@echo "Takt"
@@ -20,6 +20,7 @@ help:
 	@echo "  make restart   stop, then start"
 	@echo "  make status    show whether the app is running"
 	@echo "  make app       build the macOS app bundle into ~/Applications"
+	@echo "  make release   build self-contained apps (own PHP) for Apple silicon and Intel into dist/"
 	@echo "  make autostart start the server with your login session"
 	@echo "  make setup     make a fresh copy ready to use (name, app, login item)"
 	@echo "  make update    pull, install, migrate and rebuild"
@@ -107,6 +108,10 @@ setup:
 
 app:
 	@php artisan takt:app --port=$(PORT)
+
+release:
+	@php artisan takt:release --arch=aarch64 --dmg
+	@php artisan takt:release --arch=x86_64 --dmg
 
 autostart:
 	@php artisan takt:autostart --port=$(PORT)
