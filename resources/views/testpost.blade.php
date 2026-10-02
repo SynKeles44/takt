@@ -6,6 +6,11 @@
             <h2 class="heading">{{ __('app.dev.fields') }}</h2>
 
             <form method="GET" action="{{ route('dev.testpost') }}" class="mt-4 space-y-3" data-live>
+                {{-- which ticket the fields were last filled from, so a fill for another one starts clean --}}
+                @if (filled($input['gefuellt'] ?? null))
+                    <input type="hidden" name="gefuellt" value="{{ $input['gefuellt'] }}">
+                @endif
+
                 {{--
                     A text box with a list behind it, not a dropdown instead of one: pasting a key
                     from somewhere else has to stay the quickest path, and picking one of my own

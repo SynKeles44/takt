@@ -147,6 +147,7 @@ class DeveloperController extends Controller
             'pr' => ['nullable', 'string', 'max:400'],
             'instance' => ['nullable', 'string', 'max:400'],
             'fuellen' => ['nullable', 'string'],
+            'gefuellt' => ['nullable', 'string', 'max:80'],
         ]);
 
         $user = $request->user();
@@ -173,12 +174,25 @@ class DeveloperController extends Controller
                 fn (string $repository, int $number): string => $reviews->conversation($user, $repository, $number),
             );
 
-            // what was found wins over what was in the field; what was not found leaves it alone
+            /*
+             * What was found wins over what was in the field. What was not found depends on whose
+             * value the field holds: something typed by hand, or a correction after filling the same
+             * ticket, stays — but a field still carrying what a fill for ANOTHER ticket put there is
+             * wrong for this one and is cleared. Leaving it was the bug: the post silently linked the
+             * previous ticket's pull request.
+             */
+            $previous = mb_strtoupper(trim((string) ($input['gefuellt'] ?? '')));
+            $leftover = $previous !== '' && $previous !== $key;
+
             foreach (['pr', 'instance'] as $field) {
                 if ($filled[$field] !== '') {
                     $input[$field] = $filled[$field];
+                } elseif ($leftover) {
+                    $input[$field] = '';
                 }
             }
+
+            $input['gefuellt'] = $key;
 
             // the completed key goes back into the field, so what is posted is also what is shown
             if ($key !== $typed) {
