@@ -219,7 +219,11 @@ return [
     ],
 
     'build' => [
-        'stale' => 'Die Oberfläche ist älter als der Code. Einmal neu bauen, dann stimmt wieder alles:',
+        'stale' => 'Die Oberfläche ist älter als der Code.',
+        'rebuild' => 'Jetzt neu bauen',
+        'building' => 'Baue …',
+        'failed' => 'Neu bauen fehlgeschlagen: :reason',
+        'no_npm' => 'npm wurde nicht gefunden — bitte einmal im Projektordner npm run build ausführen.',
     ],
 
     'style' => [

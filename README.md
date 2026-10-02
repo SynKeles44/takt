@@ -187,8 +187,8 @@ npm run dev             # Vite with hot reloading, next to make start
 vendor/bin/pint --dirty # formatting
 ```
 
-`public/build` is not versioned. A build older than the sources shows a banner in the app and
-is rebuilt by `make start`; after editing CSS or JS run `npm run build` yourself.
+`public/build` is not versioned. A build older than the sources shows a banner in the app with
+a button that runs `npm run build` for you; `make start` rebuilds as well.
 
 | Path | Role |
 | --- | --- |

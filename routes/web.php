@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AwayGapController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\BuildController;
 use App\Http\Controllers\BulkEntryController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CalendarEventController;
@@ -198,6 +199,8 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/papierkorb/aufgaben/{todo}', [TrashController::class, 'restoreTodo'])->withTrashed()->name('trash.todo.restore');
     Route::delete('/papierkorb/aufgaben/{todo}', [TrashController::class, 'purgeTodo'])->withTrashed()->name('trash.todo.purge');
     Route::delete('/papierkorb', [TrashController::class, 'empty'])->name('trash.empty');
+
+    Route::post('/oberflaeche/bauen', BuildController::class)->name('build');
 
     Route::get('/einstellungen', [SettingsController::class, 'show'])->name('settings');
     Route::get('/einstellungen/export', [BackupController::class, 'downloadSettings'])->name('settings.export');

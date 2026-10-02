@@ -156,7 +156,14 @@
                 <div class="mb-5 flex items-center gap-3 rounded-[var(--radius-control)] border border-rest/40 bg-rest/10 px-4 py-3 text-sm text-rest-text" role="alert" data-stale-build>
                     <x-icon name="alert" class="size-4 shrink-0"/>
                     <span class="min-w-0 flex-1">{{ __('app.build.stale') }}</span>
-                    <code class="shrink-0 rounded bg-canvas/60 px-1.5 py-0.5 text-xs">npm run build</code>
+                    {{-- answered as JSON: a success reloads the page onto the fresh assets, a failure shows its reason as a toast --}}
+                    <form method="POST" action="{{ route('build') }}" class="shrink-0" data-async data-busy>
+                        @csrf
+                        <button type="submit" class="btn btn-ghost px-3 py-1.5 text-xs">
+                            <x-icon name="repeat" class="size-3.5"/>
+                            <span data-busy-label="{{ __('app.build.building') }}">{{ __('app.build.rebuild') }}</span>
+                        </button>
+                    </form>
                 </div>
             @endif
 

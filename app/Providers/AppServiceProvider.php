@@ -9,6 +9,7 @@ use App\Models\Tag;
 use App\Models\Ticket;
 use App\Models\TimeEntry;
 use App\Models\Todo;
+use App\Services\FrontendBuild;
 use App\Services\TimeTracker;
 use App\Support\BuildFreshness;
 use Illuminate\Support\Carbon;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(BuildFreshness::class, fn (): BuildFreshness => BuildFreshness::forApp());
+        $this->app->bind(FrontendBuild::class, fn (): FrontendBuild => FrontendBuild::forApp());
         //
     }
 

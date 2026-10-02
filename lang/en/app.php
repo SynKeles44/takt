@@ -219,7 +219,11 @@ return [
     ],
 
     'build' => [
-        'stale' => 'The interface is older than the code. Rebuild once and everything matches again:',
+        'stale' => 'The interface is older than the code.',
+        'rebuild' => 'Rebuild now',
+        'building' => 'Building …',
+        'failed' => 'Rebuild failed: :reason',
+        'no_npm' => 'npm was not found — run npm run build in the project folder once.',
     ],
 
     'style' => [
