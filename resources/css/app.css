@@ -2019,6 +2019,56 @@ html {
 }
 
 /*
+ * MARK: time-field — two inputs that look like one
+ *
+ * The wrapper carries `.control`, so the field sits in the form exactly where the native one did;
+ * the two inputs inside give up every border and background of their own. `field-sizing: content`
+ * would be neater than a fixed width, but it is not everywhere yet — 2ch plus the padding is the
+ * width of two digits in this font and does not reflow when one is typed.
+ */
+.time-field {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    cursor: text;
+}
+
+.time-field > input {
+    inline-size: 2ch;
+    border: 0;
+    background: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    outline: none;
+}
+
+.time-field > input::placeholder {
+    color: var(--color-faint);
+}
+
+/* the focused half is the one being typed into, and it says so */
+.time-field > input:focus {
+    border-radius: 0.2rem;
+    background-color: color-mix(in oklab, var(--color-accent) 22%, transparent);
+    color: var(--color-ink);
+}
+
+.time-field-sep {
+    color: var(--color-dim);
+}
+
+/* the wrapper draws the focus ring, because the inputs inside gave theirs up */
+.time-field:focus-within {
+    border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-line));
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 18%, transparent);
+}
+
+/*
  * MARK: page-width — the reading width, on a page that is not one
  *
  * The ticket board takes the window because nine columns are not a column of prose. Everything
