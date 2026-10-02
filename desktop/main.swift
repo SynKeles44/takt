@@ -549,6 +549,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         // the layout keys its app-window styling off this, no JS timing involved
         configuration.applicationNameForUserAgent = "TaktShell/1.0"
         configuration.userContentController.add(self, name: "notify")
+        configuration.userContentController.add(self, name: "canvas")
         configuration.userContentController.addUserScript(WKUserScript(
             source: Self.notificationBridge,
             injectionTime: .atDocumentStart,
@@ -559,6 +560,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
+
+        /*
+         * The web view paints its own white (or system grey) between committing a navigation and
+         * the page's first paint — on a ticket page that is a second of the wrong colour. With its
+         * own background off, the window shows through, and the window wears the page's canvas
+         * colour: the page reports it on every load, the last value is kept for the next launch.
+         */
+        webView.setValue(false, forKey: "drawsBackground")
+        paintCanvas(Self.storedCanvas())
 
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1180, height: 820),
@@ -577,7 +587,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
-        window.backgroundColor = NSColor(red: 0.023, green: 0.035, blue: 0.067, alpha: 1)
+        window.backgroundColor = Self.storedCanvas()
 
         let content = NSView(frame: NSRect(x: 0, y: 0, width: 1180, height: 820))
         let strip = DragStrip()
@@ -659,9 +669,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
     }
 
+    // MARK: the page's canvas colour
+
+    private static let canvasKey = "takt.canvas"
+
+    /// Midnight until the page has said otherwise once.
+    private static func storedCanvas() -> NSColor {
+        Self.color(from: UserDefaults.standard.string(forKey: canvasKey) ?? "") ?? NSColor(red: 0.023, green: 0.035, blue: 0.067, alpha: 1)
+    }
+
+    /// Parses what getComputedStyle hands over: `rgb(6, 9, 17)`, `rgba(…)`, or a `#rrggbb` hex.
+    private static func color(from text: String) -> NSColor? {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if value.hasPrefix("#"), value.count == 7, let number = UInt32(value.dropFirst(), radix: 16) {
+            return NSColor(
+                red: CGFloat((number >> 16) & 0xff) / 255,
+                green: CGFloat((number >> 8) & 0xff) / 255,
+                blue: CGFloat(number & 0xff) / 255,
+                alpha: 1
+            )
+        }
+
+        guard value.hasPrefix("rgb") else { return nil }
+
+        let parts = value
+            .drop(while: { $0 != "(" }).dropFirst()
+            .split(whereSeparator: { $0 == "," || $0 == " " || $0 == "/" || $0 == ")" })
+            .compactMap { Double($0) }
+
+        guard parts.count >= 3 else { return nil }
+
+        return NSColor(red: parts[0] / 255, green: parts[1] / 255, blue: parts[2] / 255, alpha: 1)
+    }
+
+    private func paintCanvas(_ color: NSColor) {
+        window?.backgroundColor = color
+
+        if #available(macOS 12.0, *) {
+            webView?.underPageBackgroundColor = color
+        }
+    }
+
     // MARK: notifications from the page
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "canvas" {
+            guard let text = message.body as? String, let color = Self.color(from: text) else { return }
+
+            paintCanvas(color)
+
+            if let rgb = color.usingColorSpace(.sRGB) {
+                let hex = String(format: "#%02x%02x%02x", Int(rgb.redComponent * 255), Int(rgb.greenComponent * 255), Int(rgb.blueComponent * 255))
+                UserDefaults.standard.set(hex, forKey: Self.canvasKey)
+            }
+
+            return
+        }
+
         guard let payload = message.body as? [String: Any] else { return }
 
         let content = UNMutableNotificationContent()

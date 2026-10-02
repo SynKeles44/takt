@@ -12,6 +12,24 @@ const post = (url, payload) => fetch(url, {
 });
 
 /*
+ * The app window paints the page's own canvas colour behind the web view, so a navigation that
+ * takes a moment does not flash white or grey in between. The page is the one that knows the
+ * colour — theme, style and the automatic scheme all end up in one computed value — so it reports
+ * it on load and again whenever the theme attribute changes.
+ */
+const reportCanvas = () => {
+    const bridge = window.webkit?.messageHandlers?.canvas;
+
+    if (! bridge || document.documentElement.dataset.shell !== 'native') return;
+
+    const send = () => bridge.postMessage(getComputedStyle(document.documentElement).backgroundColor);
+
+    send();
+
+    new MutationObserver(send).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-style'] });
+};
+
+/*
  * The surface the app shell talks to. The menu bar item needs the timer state and the two
  * actions — and it gets them through the page, not through a new endpoint: the forms the
  * command palette already carries bring their own CSRF token and their own live handling, so
@@ -74,6 +92,8 @@ export function shellApi() {
                 .catch(() => ({ recorded: false }));
         },
     };
+
+    reportCanvas();
 
     // a service worker from an earlier version would keep serving cached pages
     navigator.serviceWorker?.getRegistrations?.().then((registrations) => {
