@@ -151,6 +151,40 @@ final class Server {
         }
     }
 
+    /*
+     * The daily chores a cron entry would do, done by the app itself: a backup per account once
+     * the newest is a day old, and the trash emptied of what is past its 30 days. A downloaded
+     * Takt has no `php artisan` and no scheduler, so without this it never backed anything up.
+     * Runs in the background; a run that is still going is not started twice.
+     */
+    private var choresRunning = false
+
+    func chores() {
+        guard !choresRunning, !Config.root.isEmpty else { return }
+
+        choresRunning = true
+
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            for arguments in [["artisan", "takt:backup", "--if-due", "--no-interaction"], ["artisan", "takt:purge-trash", "--no-interaction"]] {
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: Config.php)
+                task.arguments = arguments
+                task.currentDirectoryURL = URL(fileURLWithPath: Config.root)
+                task.environment = Config.environment
+
+                if let handle = self?.logHandle() {
+                    task.standardOutput = handle
+                    task.standardError = handle
+                }
+
+                try? task.run()
+                task.waitUntilExit()
+            }
+
+            DispatchQueue.main.async { self?.choresRunning = false }
+        }
+    }
+
     func waitUntilReady(seconds: Double = 12) -> Bool {
         let deadline = Date().addingTimeInterval(seconds)
 
@@ -198,6 +232,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     private var webView: WKWebView!
     private var statusItem: NSStatusItem?
     private var stateTimer: Timer?
+    private var choresTimer: Timer?
     private var hotKey: EventHotKeyRef?
     private var awaySince: Date?
     private let calendarStore = EKEventStore()
@@ -226,6 +261,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             DispatchQueue.main.async {
                 if ready {
                     self.webView.load(URLRequest(url: Config.url))
+
+                    // once now, then every hour for as long as the app is open
+                    self.server.chores()
+                    self.choresTimer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+                        self?.server.chores()
+                    }
                 } else {
                     self.showStartupFailure()
                 }
@@ -251,6 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         flushTrail()
         trailTimer?.invalidate()
         stateTimer?.invalidate()
+        choresTimer?.invalidate()
         server.stopIfOwned()
     }
 

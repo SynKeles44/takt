@@ -19,7 +19,8 @@ For a Mac with nothing on it — no PHP, no Homebrew, no Docker. From the
 `Takt-<version>-aarch64.dmg` (Apple silicon, M1 and later) or `Takt-<version>-x86_64.dmg` (Intel),
 drag **Takt** into Applications, open it, create your account. The app carries its own PHP and its
 own copy of the code; your data lives in `~/Library/Application Support/Takt`, so replacing the app
-with a newer one keeps it. macOS 12 or later.
+with a newer one keeps it, and while it is open it writes a backup of every account once a day
+([where to find it](#your-data)). macOS 12 or later.
 
 The builds are not notarized yet, so macOS refuses the first start. Open it once, then go to
 **System Settings → Privacy & Security** and click **Open Anyway** next to the note about Takt;
@@ -199,13 +200,16 @@ stored encrypted and never rendered back into the page.
 
 | Command | What it does |
 | --- | --- |
-| `php artisan takt:backup` | JSON backup per account under `storage/app/backups/<user>/`, keeps the newest 30. Scheduled daily at 23:45. |
-| `php artisan takt:purge-trash` | Removes trashed entries and tasks older than 30 days. Scheduled daily at 03:15. |
+| `php artisan takt:backup` | JSON backup per account under `storage/app/private/backups/<id>/`, keeps the newest 30. `--if-due` skips accounts backed up in the last 20 hours. |
+| `php artisan takt:purge-trash` | Removes trashed entries and tasks older than 30 days. |
 | `php artisan takt:assign-owner you@example.com` | Adopts entries that were created before accounts existed. |
 | `php artisan takt:history` | Fills past months with realistic demo working time. Writes a safety copy first; `--help` lists the range, balance and seed options. |
 | `php artisan takt:icons` | Regenerates the notification icon. |
 
-The schedule needs a runner: `php artisan schedule:work`, or a cron entry for `schedule:run`.
+The macOS app runs both on its own — `takt:backup --if-due` and `takt:purge-trash` at launch and
+every hour while it is open, so there is one backup a day without anything set up. Without the app
+(a browser, Docker, a server) `routes/console.php` schedules them daily at 23:45 and 03:15; that
+needs a runner: `php artisan schedule:work`, or a cron entry for `schedule:run`.
 
 | `.env` variable | Default | Purpose |
 | --- | --- | --- |
@@ -213,7 +217,15 @@ The schedule needs a runner: `php artisan schedule:work`, or a cron entry for `s
 | `APP_TIMEZONE` | `Europe/Berlin` | Timezone all entries are stored and displayed in. |
 | `APP_LOCALE` | `de` | Default interface language (`de` or `en`); every user can override it. |
 
-Everything lives in `database/database.sqlite`. Back it up by copying that one file.
+### Your data
+
+| Install | Database | Daily backups |
+| --- | --- | --- |
+| Download | `~/Library/Application Support/Takt/database/database.sqlite` | `~/Library/Application Support/Takt/storage/app/private/backups/` |
+| From source | `database/database.sqlite` in the project folder | `storage/app/private/backups/` in the project folder |
+
+The database is one file; copying it while the app is closed is a complete backup. The JSON
+backups restore under *Einstellungen → Datensicherung*, additively and without duplicates.
 
 ## Development
 

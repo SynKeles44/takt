@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Console\Commands\BackupCommand;
 use App\Enums\EntryType;
 use App\Enums\Widget;
 use App\Models\Absence;
@@ -180,6 +181,48 @@ class BackupTest extends TestCase
         $this->assertCount(1, Storage::disk('local')->allFiles('backups'));
 
         $this->artisan('takt:backup', ['--user' => 'nobody@example.test'])->assertFailed();
+    }
+
+    /** The app runs this every hour while it is open; it must write once a day, not once an hour. */
+    public function test_if_due_writes_only_when_the_newest_backup_is_a_day_old(): void
+    {
+        Storage::fake('local');
+
+        User::factory()->create(['email' => 'a@example.test']);
+
+        $this->artisan('takt:backup', ['--if-due' => true])->assertSuccessful();
+        $this->assertCount(1, Storage::disk('local')->allFiles('backups'));
+
+        Carbon::setTestNow(Carbon::now()->addHours(3));
+        $this->artisan('takt:backup', ['--if-due' => true])->assertSuccessful();
+        $this->assertCount(1, Storage::disk('local')->allFiles('backups'), 'three hours later is not due');
+
+        Carbon::setTestNow(Carbon::now()->addHours(BackupCommand::DUE_AFTER_HOURS));
+        $this->artisan('takt:backup', ['--if-due' => true])->assertSuccessful();
+        $this->assertCount(2, Storage::disk('local')->allFiles('backups'), 'a day later it is');
+    }
+
+    public function test_if_due_decides_per_account(): void
+    {
+        Storage::fake('local');
+
+        $fresh = User::factory()->create(['email' => 'fresh@example.test']);
+        User::factory()->create(['email' => 'new@example.test']);
+
+        Storage::disk('local')->put('backups/'.$fresh->id.'/fresh-example-test-'.Carbon::now()->subHour()->format('Y-m-d-His').'.json', '{}');
+
+        $this->artisan('takt:backup', ['--if-due' => true])->assertSuccessful();
+
+        $this->assertCount(1, Storage::disk('local')->files('backups/'.$fresh->id), 'backed up an hour ago — left alone');
+        $this->assertCount(1, collect(Storage::disk('local')->allFiles('backups'))->reject(fn (string $file): bool => str_starts_with($file, 'backups/'.$fresh->id.'/')));
+    }
+
+    public function test_if_due_on_an_app_without_accounts_is_quietly_nothing(): void
+    {
+        Storage::fake('local');
+
+        $this->artisan('takt:backup', ['--if-due' => true])->assertSuccessful();
+        $this->artisan('takt:backup')->assertFailed();
     }
 
     public function test_the_board_travels_with_the_backup(): void
