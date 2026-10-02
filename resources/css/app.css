@@ -2006,77 +2006,16 @@ body::before {
 }
 
 /*
- * MARK: settings-columns — one flow, balanced across two
+ * MARK: scrollbar-gutter — the width stops depending on the height
  *
- * Two fixed column stacks each ended where their own contents did, so the shorter one left a
- * screen and a half of nothing beside the longer. Multi-column lets the browser balance them and
- * a card simply goes where there is room. `break-inside: avoid` keeps a card whole; one taller
- * than the column will still split, which is the one case this cannot promise.
+ * A classic scrollbar takes width from the content, the narrower content gets taller, the taller
+ * content keeps the scrollbar — and a layout that answers a width change by changing its height
+ * can sit in that loop and flicker. Reserving the gutter breaks it before it starts. A precaution
+ * rather than a diagnosis: the flicker that prompted it was never reproduced here, and its known
+ * cause was removed separately.
  */
-.settings-columns {
-    column-gap: var(--stack-gap);
-}
-
-@media (min-width: 1024px) {
-    .settings-columns {
-        column-count: 2;
-    }
-}
-
-.settings-columns > * {
-    display: block;
-    margin-block-end: var(--stack-gap);
-    break-inside: avoid;
-}
-
-/*
- * MARK: time-field — two inputs that look like one
- *
- * The wrapper carries `.control`, so the field sits in the form exactly where the native one did;
- * the two inputs inside give up every border and background of their own. `field-sizing: content`
- * would be neater than a fixed width, but it is not everywhere yet — 2ch plus the padding is the
- * width of two digits in this font and does not reflow when one is typed.
- */
-.time-field {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.1rem;
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    cursor: text;
-}
-
-.time-field > input {
-    inline-size: 2ch;
-    border: 0;
-    background: none;
-    padding: 0;
-    color: inherit;
-    font: inherit;
-    text-align: center;
-    outline: none;
-}
-
-.time-field > input::placeholder {
-    color: var(--color-faint);
-}
-
-/* the focused half is the one being typed into, and it says so */
-.time-field > input:focus {
-    border-radius: 0.2rem;
-    background-color: color-mix(in oklab, var(--color-accent) 22%, transparent);
-    color: var(--color-ink);
-}
-
-.time-field-sep {
-    color: var(--color-dim);
-}
-
-/* the wrapper draws the focus ring, because the inputs inside gave theirs up */
-.time-field:focus-within {
-    border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-line));
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 18%, transparent);
+html {
+    scrollbar-gutter: stable;
 }
 
 /*
@@ -2603,7 +2542,6 @@ body::before {
 [data-entered] .stack > .surface-plain,
 [data-entered] .stack-grid > .surface,
 [data-entered] .stack-grid > .stack,
-[data-entered] .settings-columns > *,
 [data-entered] .dashboard-grid > .widget-slot {
     animation: none;
 }

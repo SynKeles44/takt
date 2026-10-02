@@ -1,12 +1,17 @@
 <x-app-layout :title="__('app.nav.settings')">
     {{--
-        One flow in two columns, not two columns of cards.
+        Two columns, fixed, and balanced by hand.
 
-        Two fixed stacks meant each column was as tall as its own contents: the left one ended at
-        the password card and the right one carried on for another screen and a half, with nothing
-        beside it. Multi-column balances the two, so a card lands wherever there is room for it.
+        `column-count` balanced them for free and made every card's position depend on the height
+        of every other one — on another machine that fed back into itself: the page flickered,
+        scrolled on its own and swallowed clicks. The balance was cosmetic; the cost was not. The
+        split below is within ~400px of even, measured, and cannot oscillate because nothing here
+        is computed.
+
+        Left is work, account and development; right is the sidebar, the looks and the data.
     --}}
-    <div class="settings-columns">
+    <div class="stack-grid grid lg:grid-cols-2">
+        <div class="stack">
             <x-card class="rise">
 
                 <div class="flex items-start gap-3">
@@ -222,6 +227,185 @@
                     </button>
                 </form>
             </x-card>
+
+            <x-card class="rise">
+                <div class="flex items-start gap-3">
+                    <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-info/10 text-info-text"><x-icon name="terminal" class="size-4"/></span>
+                    <div>
+                        <h2 class="text-sm font-semibold text-ink">{{ __('app.nav.dev') }}</h2>
+                        <p class="text-xs text-faint">{{ __('app.settings.dev_hint') }}</p>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('settings.developer') }}" class="mt-4 space-y-3" data-live>
+                    @csrf
+                    @method('PUT')
+
+                    <div>
+                        <label for="linear_token" class="label">{{ __('app.linear.token') }}</label>
+                        <input id="linear_token" type="password" name="linear_token" class="control metric text-xs"
+                               autocomplete="off" placeholder="{{ $user->linear_token ? __('app.settings.token_set') : 'lin_api_…' }}">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.linear.token_hint') }}</p>
+                        @error('linear_token') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <span class="flex items-center justify-between gap-2">
+                            <label for="github_token" class="label">{{ __('app.settings.github_token') }}</label>
+
+                            <x-hint :title="__('app.dev.github_guide_title')">
+                                <ol>
+                                    <li>{!! __('app.dev.github_guide_1') !!}</li>
+                                    <li>{!! __('app.dev.github_guide_2') !!}</li>
+                                    <li>{!! __('app.dev.github_guide_3') !!}</li>
+                                    <li>{!! __('app.dev.github_guide_4') !!}</li>
+                                </ol>
+
+                                <span class="mt-2 block text-[11px] text-faint">{!! __('app.dev.github_guide_note') !!}</span>
+                            </x-hint>
+                        </span>
+                        <input id="github_token" type="password" name="github_token" class="control metric text-xs"
+                               autocomplete="off" placeholder="{{ $user->github_token ? __('app.settings.token_set') : 'ghp_…' }}">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.github_token_hint') }}</p>
+                        @error('github_token') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <span class="flex items-center justify-between gap-2">
+                            <label for="slack_token" class="label">{{ __('app.settings.slack_token') }}</label>
+
+                            <x-hint :title="__('app.slack.guide_title')">
+                                <ol>
+                                    <li>{!! __('app.slack.guide_1') !!}</li>
+                                    <li>{!! __('app.slack.guide_2') !!}</li>
+                                    <li>{!! __('app.slack.guide_3') !!}</li>
+                                    <li>{!! __('app.slack.guide_4') !!}</li>
+                                    <li>{!! __('app.slack.guide_5') !!}</li>
+                                    <li>{!! __('app.slack.guide_6') !!}</li>
+                                </ol>
+
+                                <span class="mt-2 block text-[11px] text-faint">{!! __('app.slack.guide_note') !!}</span>
+                            </x-hint>
+                        </span>
+                        <input id="slack_token" type="password" name="slack_token" class="control metric text-xs"
+                               autocomplete="off" placeholder="{{ $user->slack_token ? __('app.settings.token_set') : 'xoxp-…' }}">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_token_hint') }}</p>
+                        @error('slack_token') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="slack_channel" class="label">{{ __('app.settings.slack_channel') }}</label>
+                        <input id="slack_channel" type="text" name="slack_channel" class="control metric text-xs"
+                               value="{{ old('slack_channel', $user->slack_channel) }}" maxlength="120" placeholder="#testing">
+                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_channel_hint') }}</p>
+                    </div>
+
+                    <div>
+                        <label for="ticket_url_template" class="label">{{ __('app.settings.ticket_template') }}</label>
+                        <input id="ticket_url_template" type="text" name="ticket_url_template" class="control metric text-xs"
+                               value="{{ old('ticket_url_template', $user->ticket_url_template) }}"
+                               placeholder="{{ \App\Services\TestPost::TICKET_DEFAULT }}">
+                    </div>
+
+                    <div>
+                        <label for="pr_url_template" class="label">{{ __('app.settings.pr_template') }}</label>
+                        <input id="pr_url_template" type="text" name="pr_url_template" class="control metric text-xs"
+                               value="{{ old('pr_url_template', $user->pr_url_template) }}"
+                               placeholder="{{ \App\Services\TestPost::PR_DEFAULT }}">
+                    </div>
+
+                    <div>
+                        <label for="instance_url_template" class="label">{{ __('app.settings.instance_template') }}</label>
+                        <input id="instance_url_template" type="text" name="instance_url_template" class="control metric text-xs"
+                               value="{{ old('instance_url_template', $user->instance_url_template) }}"
+                               placeholder="{{ \App\Services\TestPost::INSTANCE_DEFAULT }}">
+                        <p class="mt-1 text-[11px] text-dim">{{ __('app.settings.template_hint') }}</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full">
+                        <x-icon name="check" class="size-4"/>
+                        {{ __('app.settings.save') }}
+                    </button>
+                </form>
+
+                {{--
+                    Two switches in the same shape the notification setting already uses: a
+                    checkbox that saves itself, a line of explanation, no coloured button
+                    competing with Speichern. The hidden zero makes unchecking send a value.
+                --}}
+                <form method="POST" action="{{ route('trail.update') }}" class="mt-4 border-t border-line pt-4" data-live>
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="activity_trail" value="0">
+
+                    <label class="flex cursor-pointer items-start gap-2.5">
+                        <input type="checkbox" name="activity_trail" value="1" data-autosave
+                               @checked($user->activity_trail)
+                               class="mt-0.5 size-4 shrink-0 rounded-[4px] border-line-strong bg-raised text-accent">
+                        <span>
+                            <span class="block text-xs font-semibold text-ink">{{ __('app.trail.title') }}</span>
+                            <span class="block text-[11px] leading-relaxed text-faint">{{ __('app.trail.hint') }}</span>
+                            @if ($user->activity_trail)
+                                <span class="mt-1 block text-[11px] leading-relaxed text-dim">{{ __('app.trail.needs_permission') }}</span>
+                            @endif
+                        </span>
+                    </label>
+                </form>
+
+                @if ($user->activity_trail)
+                    <form method="POST" action="{{ route('trail.update') }}" class="flex items-end gap-2" data-live>
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="activity_trail" value="1">
+
+                        <label class="min-w-0 flex-1">
+                            <span class="label">{{ __('app.trail.retention') }}</span>
+                            <input type="number" name="activity_retention_days" min="1" max="365"
+                                   value="{{ $user->activity_retention_days }}" class="control metric text-xs">
+                        </label>
+
+                        <button type="submit" class="btn btn-ghost shrink-0 text-xs">
+                            <x-icon name="check" class="size-3.5"/>
+                        </button>
+                    </form>
+                    @error('activity_retention_days') <p class="field-error">{{ $message }}</p> @enderror
+                @endif
+
+                <form method="POST" action="{{ route('settings.network') }}" class="border-t border-line pt-3" data-live>
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="enabled" value="0">
+
+                    <label class="flex cursor-pointer items-start gap-2.5">
+                        <input type="checkbox" name="enabled" value="1" data-autosave
+                               @checked($networkEnabled)
+                               class="mt-0.5 size-4 shrink-0 rounded-[4px] border-line-strong bg-raised text-accent">
+                        <span>
+                            <span class="block text-xs font-semibold text-ink">{{ __('app.network.title') }}</span>
+                            <span class="block text-[11px] leading-relaxed text-faint">{{ __('app.network.hint') }}</span>
+                        </span>
+                    </label>
+
+                    @if ($networkEnabled)
+                        <span class="mt-2 flex items-center gap-2 pl-6.5">
+                            @if ($networkAddress !== null)
+                                <span class="metric min-w-0 flex-1 truncate text-xs text-ink">{{ $networkAddress }}</span>
+                                <button type="button" class="icon-action shrink-0" data-copy="{{ $networkAddress }}"
+                                        data-copy-label="{{ __('app.network.copied') }}" title="{{ __('app.network.copy') }}">
+                                    <x-icon name="clipboard" class="size-3.5"/>
+                                </button>
+                            @else
+                                <span class="text-xs text-faint">{{ __('app.network.no_ip') }}</span>
+                            @endif
+                        </span>
+
+                        <span class="mt-1 block pl-6.5 text-[11px] text-faint">{{ __('app.network.needs_restart') }}</span>
+                    @endif
+                </form>
+            </x-card>
+        </div>
+
+        <div class="stack">
             <x-card class="rise">
                 <div class="flex items-start gap-3">
                     <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-accent/10 text-accent-text"><x-icon name="panel" class="size-4"/></span>
@@ -424,182 +608,7 @@
                     </form>
                 </div>
             </x-card>
-
-            <x-card class="rise">
-                <div class="flex items-start gap-3">
-                    <span class="grid size-8 shrink-0 place-items-center rounded-[var(--radius-control)] bg-info/10 text-info-text"><x-icon name="terminal" class="size-4"/></span>
-                    <div>
-                        <h2 class="text-sm font-semibold text-ink">{{ __('app.nav.dev') }}</h2>
-                        <p class="text-xs text-faint">{{ __('app.settings.dev_hint') }}</p>
-                    </div>
-                </div>
-
-                <form method="POST" action="{{ route('settings.developer') }}" class="mt-4 space-y-3" data-live>
-                    @csrf
-                    @method('PUT')
-
-                    <div>
-                        <label for="linear_token" class="label">{{ __('app.linear.token') }}</label>
-                        <input id="linear_token" type="password" name="linear_token" class="control metric text-xs"
-                               autocomplete="off" placeholder="{{ $user->linear_token ? __('app.settings.token_set') : 'lin_api_…' }}">
-                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.linear.token_hint') }}</p>
-                        @error('linear_token') <p class="field-error">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <span class="flex items-center justify-between gap-2">
-                            <label for="github_token" class="label">{{ __('app.settings.github_token') }}</label>
-
-                            <x-hint :title="__('app.dev.github_guide_title')">
-                                <ol>
-                                    <li>{!! __('app.dev.github_guide_1') !!}</li>
-                                    <li>{!! __('app.dev.github_guide_2') !!}</li>
-                                    <li>{!! __('app.dev.github_guide_3') !!}</li>
-                                    <li>{!! __('app.dev.github_guide_4') !!}</li>
-                                </ol>
-
-                                <span class="mt-2 block text-[11px] text-faint">{!! __('app.dev.github_guide_note') !!}</span>
-                            </x-hint>
-                        </span>
-                        <input id="github_token" type="password" name="github_token" class="control metric text-xs"
-                               autocomplete="off" placeholder="{{ $user->github_token ? __('app.settings.token_set') : 'ghp_…' }}">
-                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.github_token_hint') }}</p>
-                        @error('github_token') <p class="field-error">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <span class="flex items-center justify-between gap-2">
-                            <label for="slack_token" class="label">{{ __('app.settings.slack_token') }}</label>
-
-                            <x-hint :title="__('app.slack.guide_title')">
-                                <ol>
-                                    <li>{!! __('app.slack.guide_1') !!}</li>
-                                    <li>{!! __('app.slack.guide_2') !!}</li>
-                                    <li>{!! __('app.slack.guide_3') !!}</li>
-                                    <li>{!! __('app.slack.guide_4') !!}</li>
-                                    <li>{!! __('app.slack.guide_5') !!}</li>
-                                    <li>{!! __('app.slack.guide_6') !!}</li>
-                                </ol>
-
-                                <span class="mt-2 block text-[11px] text-faint">{!! __('app.slack.guide_note') !!}</span>
-                            </x-hint>
-                        </span>
-                        <input id="slack_token" type="password" name="slack_token" class="control metric text-xs"
-                               autocomplete="off" placeholder="{{ $user->slack_token ? __('app.settings.token_set') : 'xoxp-…' }}">
-                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_token_hint') }}</p>
-                        @error('slack_token') <p class="field-error">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label for="slack_channel" class="label">{{ __('app.settings.slack_channel') }}</label>
-                        <input id="slack_channel" type="text" name="slack_channel" class="control metric text-xs"
-                               value="{{ old('slack_channel', $user->slack_channel) }}" maxlength="120" placeholder="#testing">
-                        <p class="mt-1 text-[11px] leading-relaxed text-dim">{{ __('app.settings.slack_channel_hint') }}</p>
-                    </div>
-
-                    <div>
-                        <label for="ticket_url_template" class="label">{{ __('app.settings.ticket_template') }}</label>
-                        <input id="ticket_url_template" type="text" name="ticket_url_template" class="control metric text-xs"
-                               value="{{ old('ticket_url_template', $user->ticket_url_template) }}"
-                               placeholder="{{ \App\Services\TestPost::TICKET_DEFAULT }}">
-                    </div>
-
-                    <div>
-                        <label for="pr_url_template" class="label">{{ __('app.settings.pr_template') }}</label>
-                        <input id="pr_url_template" type="text" name="pr_url_template" class="control metric text-xs"
-                               value="{{ old('pr_url_template', $user->pr_url_template) }}"
-                               placeholder="{{ \App\Services\TestPost::PR_DEFAULT }}">
-                    </div>
-
-                    <div>
-                        <label for="instance_url_template" class="label">{{ __('app.settings.instance_template') }}</label>
-                        <input id="instance_url_template" type="text" name="instance_url_template" class="control metric text-xs"
-                               value="{{ old('instance_url_template', $user->instance_url_template) }}"
-                               placeholder="{{ \App\Services\TestPost::INSTANCE_DEFAULT }}">
-                        <p class="mt-1 text-[11px] text-dim">{{ __('app.settings.template_hint') }}</p>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-full">
-                        <x-icon name="check" class="size-4"/>
-                        {{ __('app.settings.save') }}
-                    </button>
-                </form>
-
-                {{--
-                    Two switches in the same shape the notification setting already uses: a
-                    checkbox that saves itself, a line of explanation, no coloured button
-                    competing with Speichern. The hidden zero makes unchecking send a value.
-                --}}
-                <form method="POST" action="{{ route('trail.update') }}" class="mt-4 border-t border-line pt-4" data-live>
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="activity_trail" value="0">
-
-                    <label class="flex cursor-pointer items-start gap-2.5">
-                        <input type="checkbox" name="activity_trail" value="1" data-autosave
-                               @checked($user->activity_trail)
-                               class="mt-0.5 size-4 shrink-0 rounded-[4px] border-line-strong bg-raised text-accent">
-                        <span>
-                            <span class="block text-xs font-semibold text-ink">{{ __('app.trail.title') }}</span>
-                            <span class="block text-[11px] leading-relaxed text-faint">{{ __('app.trail.hint') }}</span>
-                            @if ($user->activity_trail)
-                                <span class="mt-1 block text-[11px] leading-relaxed text-dim">{{ __('app.trail.needs_permission') }}</span>
-                            @endif
-                        </span>
-                    </label>
-                </form>
-
-                @if ($user->activity_trail)
-                    <form method="POST" action="{{ route('trail.update') }}" class="flex items-end gap-2" data-live>
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="activity_trail" value="1">
-
-                        <label class="min-w-0 flex-1">
-                            <span class="label">{{ __('app.trail.retention') }}</span>
-                            <input type="number" name="activity_retention_days" min="1" max="365"
-                                   value="{{ $user->activity_retention_days }}" class="control metric text-xs">
-                        </label>
-
-                        <button type="submit" class="btn btn-ghost shrink-0 text-xs">
-                            <x-icon name="check" class="size-3.5"/>
-                        </button>
-                    </form>
-                    @error('activity_retention_days') <p class="field-error">{{ $message }}</p> @enderror
-                @endif
-
-                <form method="POST" action="{{ route('settings.network') }}" class="border-t border-line pt-3" data-live>
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="enabled" value="0">
-
-                    <label class="flex cursor-pointer items-start gap-2.5">
-                        <input type="checkbox" name="enabled" value="1" data-autosave
-                               @checked($networkEnabled)
-                               class="mt-0.5 size-4 shrink-0 rounded-[4px] border-line-strong bg-raised text-accent">
-                        <span>
-                            <span class="block text-xs font-semibold text-ink">{{ __('app.network.title') }}</span>
-                            <span class="block text-[11px] leading-relaxed text-faint">{{ __('app.network.hint') }}</span>
-                        </span>
-                    </label>
-
-                    @if ($networkEnabled)
-                        <span class="mt-2 flex items-center gap-2 pl-6.5">
-                            @if ($networkAddress !== null)
-                                <span class="metric min-w-0 flex-1 truncate text-xs text-ink">{{ $networkAddress }}</span>
-                                <button type="button" class="icon-action shrink-0" data-copy="{{ $networkAddress }}"
-                                        data-copy-label="{{ __('app.network.copied') }}" title="{{ __('app.network.copy') }}">
-                                    <x-icon name="clipboard" class="size-3.5"/>
-                                </button>
-                            @else
-                                <span class="text-xs text-faint">{{ __('app.network.no_ip') }}</span>
-                            @endif
-                        </span>
-
-                        <span class="mt-1 block pl-6.5 text-[11px] text-faint">{{ __('app.network.needs_restart') }}</span>
-                    @endif
-                </form>
-            </x-card>
+        </div>
     </div>
     <x-mascot pose="gear" class="mascot-at-tail-right size-20"/>
 </x-app-layout>
