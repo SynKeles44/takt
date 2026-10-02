@@ -421,8 +421,134 @@
     --stack-gap: 0.8rem;
 }
 
+/*
+ * Apple — the macOS design language, as the Human Interface Guidelines describe it.
+ *
+ * Typography: the system font (SF Pro) at the macOS body size of 13 pt, nothing below the 10 pt
+ * minimum — a 15px root puts 0.875rem at 13px and the smallest captions at 10px (HIG Typography,
+ * macOS text styles). Headings are Headline: 13 pt bold, title-case, no tracking.
+ *
+ * Shape: push buttons and fields at the 28 pt default control height with ~6 px corners, grouped
+ * boxes at ~10 px, hairline borders, almost no shadow (HIG Controls, Buttons). Depth is layering,
+ * not drop shadows.
+ *
+ * Colour: the semantic system colours — blue, green, orange, red, cyan — with light and dark
+ * variants, and ONE tinted primary action per view: the push button is a flat accent fill, every
+ * other control stays monochrome (HIG Color, "Apply color sparingly"; Buttons, "one or two
+ * prominent buttons per view"). The brand gradient is retired for the same reason.
+ *
+ * Material: Liquid Glass belongs to the functional layer only — the sidebar — never to cards,
+ * rows or other content (HIG Materials, "Don't use Liquid Glass in the content layer"). Hence
+ * --blur: 0 here; the sidebar's glass lives in its own unlayered rule further down, together with
+ * the Reduce Transparency and Increase Contrast fallbacks the HIG asks for.
+ */
+[data-style='apple'] {
+    --root-size: 15px;
+    --radius-card: 0.65rem;
+    --radius-control: 0.4rem;
+    --radius-pill: 9999px;
+    --radius-bar: 3px;
+    --border-w: 1px;
+    --blur: 0px;
+    --pad-card: 1rem;
+    --pad-card-lg: 1.15rem;
+    --pad-row: 0.5rem 0.75rem;
+    --shadow-card: 0 1px 2px color-mix(in oklab, var(--shadow-color) 18%, transparent);
+    --shadow-btn: 0 1px 1px color-mix(in oklab, var(--shadow-color) 22%, transparent);
+    --heading-transform: none;
+    --heading-spacing: 0;
+    --heading-size: 0.875rem;
+    --heading-font: var(--body-font);
+    --body-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', system-ui, 'Helvetica Neue', sans-serif;
+    --metric-font: ui-monospace, 'SF Mono', Menlo, monospace;
+    --surface-extra: none;
+    --surface-image: none;
+    --control-shadow: none;
+    --btn-image: none;
+    --stack-gap: 1rem;
+
+    --color-accent: #0a84ff;
+    --color-accent-2: #0a84ff;
+    --color-accent-deep: #0060df;
+    --color-accent-text: #6fb6ff;
+    --color-accent-ink: #ffffff;
+    --color-work: #30d158;
+    --color-work-2: #30d158;
+    --color-work-text: #7ee29a;
+    --color-work-ink: #04210d;
+    --color-rest: #ff9f0a;
+    --color-rest-2: #ff9f0a;
+    --color-rest-text: #ffc266;
+    --color-rest-ink: #2b1a00;
+    --color-danger: #ff453a;
+    --color-danger-text: #ff8a84;
+    --color-info: #64d2ff;
+    --color-info-text: #a6e6ff;
+    --brand-gradient: linear-gradient(var(--color-ink), var(--color-ink));
+    --ambient: none;
+}
+
+[data-theme='daylight'][data-style='apple'] {
+    --color-accent: #007aff;
+    --color-accent-2: #007aff;
+    --color-accent-deep: #0062cc;
+    --color-accent-text: #0062cc;
+    --color-work: #34c759;
+    --color-work-2: #34c759;
+    --color-work-text: #1f8f3d;
+    --color-work-ink: #ffffff;
+    --color-rest: #ff9500;
+    --color-rest-2: #ff9500;
+    --color-rest-text: #b8650a;
+    --color-rest-ink: #ffffff;
+    --color-danger: #ff3b30;
+    --color-danger-text: #c62f26;
+    --color-info: #32ade6;
+    --color-info-text: #1c7fab;
+    --color-canvas: #f5f5f7;
+    --color-surface: #ffffff;
+    --color-raised: #f2f2f7;
+    --color-hover: #e5e5ea;
+    --color-line: #d9d9de;
+    --color-line-strong: #c7c7cc;
+}
+
 [data-theme='daylight'][data-style='industrial'] {
     --metric-shadow: none;
+}
+
+
+/*
+ * The one glass surface of the Apple style: the sidebar, which is the functional layer the
+ * HIG reserves the material for. Regular variant — blur plus a saturation lift, a translucent
+ * fill of the canvas colour, a hairline edge (HIG Liquid Glass, cross-platform translation).
+ * Unlayered on purpose: the markup carries Tailwind's backdrop-blur utility, and a layered rule
+ * would lose to it.
+ *
+ * The app window overrides this further down with `backdrop-filter: none`: there the sidebar is a
+ * fixed column that nothing scrolls beneath, so there is nothing to blur, and the flat fill is
+ * the honest material.
+ */
+[data-style='apple'] .nav-aside {
+    background-color: color-mix(in oklab, var(--color-canvas) 72%, transparent);
+    backdrop-filter: blur(28px) saturate(1.4);
+    -webkit-backdrop-filter: blur(28px) saturate(1.4);
+}
+
+/* Reduce Transparency gets an opaque fallback, Increase Contrast gets stronger lines (HIG Accessibility) */
+@media (prefers-reduced-transparency: reduce) {
+    [data-style='apple'] .nav-aside {
+        background-color: var(--color-canvas);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+@media (prefers-contrast: more) {
+    [data-style='apple'] {
+        --color-line: var(--color-line-strong);
+        --shadow-card: none;
+    }
 }
 
 html {
@@ -1223,6 +1349,75 @@ body {
         margin-top: 0.4rem;
         font-size: 0.75rem;
         color: var(--color-danger-text);
+    }
+
+    /*
+     * Apple: 28 pt controls, 13 pt text, a flat tinted push button with a real press state, and
+     * section headings as Headline (bold, title case) rather than small caps (HIG Buttons,
+     * Controls, Typography).
+     */
+    [data-style='apple'] .control {
+        min-block-size: 1.9rem;
+        padding: 0.3rem 0.6rem;
+    }
+
+    [data-style='apple'] .btn {
+        padding: 0.34rem 0.8rem;
+        font-weight: 500;
+    }
+
+    [data-style='apple'] .btn-lg {
+        padding: 0.5rem 1rem;
+    }
+
+    [data-style='apple'] .btn:active {
+        transform: none;
+        filter: brightness(0.9);
+    }
+
+    [data-style='apple'] .btn-primary {
+        border-color: color-mix(in oklab, black 12%, var(--color-accent));
+    }
+
+    [data-style='apple'] .btn-ghost,
+    [data-style='apple'] .btn-icon {
+        background-color: var(--color-surface);
+        box-shadow: var(--shadow-btn);
+    }
+
+    [data-style='apple'] .heading {
+        font-weight: 700;
+        color: var(--color-ink);
+    }
+
+    [data-style='apple'] .label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--color-muted);
+    }
+
+    [data-style='apple'] .nav-item {
+        padding-block: 0.35rem;
+        font-weight: 500;
+    }
+
+    [data-style='apple'] .nav-item-active {
+        color: var(--color-ink);
+    }
+
+    [data-style='apple'] .avatar {
+        background-image: none;
+        background-color: var(--color-accent);
+    }
+
+    [data-style='apple'] .pill {
+        font-weight: 500;
+    }
+
+    [data-style='apple'] .segment-active {
+        box-shadow: 0 1px 2px color-mix(in oklab, var(--shadow-color) 24%, transparent);
     }
 
     [data-style='terminal'] .heading::before {
