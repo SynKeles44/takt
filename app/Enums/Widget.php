@@ -35,6 +35,7 @@ enum Widget: string
     case CommitsWeek = 'commits_week';
     case ReviewQueue = 'review_queue';
     case MyPullRequests = 'my_pull_requests';
+    case ApprovedPulls = 'approved_pulls';
     case ProjectLauncher = 'project_launcher';
     case Snippets = 'snippets';
     case TestPost = 'test_post';
@@ -78,7 +79,7 @@ enum Widget: string
             self::Timer, self::Stats, self::YearHeatmap => 6,
             self::Activity => 4,
             self::WeekChart, self::Todos, self::Entries, self::CommitsToday,
-            self::ProjectLauncher, self::ReviewQueue, self::MyPullRequests,
+            self::ProjectLauncher, self::ReviewQueue, self::MyPullRequests, self::ApprovedPulls,
             self::Tickets, self::Packages, self::Docker, self::Runs => 4,
             default => 2,
         };
@@ -93,6 +94,8 @@ enum Widget: string
             self::WeekChart, self::Todos, self::CommitsToday, self::ReviewQueue,
             self::MyPullRequests, self::Snippets, self::TestPost,
             self::Tickets, self::Packages, self::Docker, self::Runs => 4,
+            // shorter than its siblings on purpose: approved-and-open is a handful, not a backlog
+            self::ApprovedPulls => 3,
             default => 3,
         };
     }
@@ -111,7 +114,7 @@ enum Widget: string
             self::YearHeatmap => 'heatmap',
             self::Meetings, self::Activity => 'list',
             self::Entries, self::Absences, self::Todos, self::CommitsToday, self::CommitsWeek,
-            self::ReviewQueue, self::MyPullRequests, self::Snippets => 'list',
+            self::ReviewQueue, self::MyPullRequests, self::ApprovedPulls, self::Snippets => 'list',
             self::Booking, self::TestPost => 'form',
             self::Note => 'text',
             self::TodoTags, self::DevLinks => 'pills',
@@ -123,7 +126,7 @@ enum Widget: string
     /** Widgets that reach out to GitHub, so the dashboard only pays for them when shown. */
     public function isRemote(): bool
     {
-        return in_array($this, [self::ReviewQueue, self::MyPullRequests], true);
+        return in_array($this, [self::ReviewQueue, self::MyPullRequests, self::ApprovedPulls], true);
     }
 
     /** @return array<int, self> The dashboard everybody starts with — today's default view. */

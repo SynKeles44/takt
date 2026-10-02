@@ -130,7 +130,7 @@ final class Dashboard
             Widget::CommitsWeek => [
                 'days' => $this->commits->perDay($this->weekStart(), $this->today(), $this->projects()),
             ],
-            Widget::ReviewQueue, Widget::MyPullRequests => [
+            Widget::ReviewQueue, Widget::MyPullRequests, Widget::ApprovedPulls => [
                 'reviews' => $this->reviews->forUser($user),
                 'configured' => $this->reviews->configured($user),
             ],

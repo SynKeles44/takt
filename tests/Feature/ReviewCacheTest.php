@@ -47,8 +47,9 @@ class ReviewCacheTest extends TestCase
         $first = $service->forUser($user);
         $second = $service->forUser($user);
 
-        // the second call is served from the store, which is where it used to break
-        Http::assertSentCount(2);
+        // the second call is served from the store, which is where it used to break.
+        // Three on the first: the identity, the open pull requests, and the approved ones.
+        Http::assertSentCount(3);
 
         foreach ([$first, $second] as $result) {
             $this->assertInstanceOf(Carbon::class, $result['fetched_at']);

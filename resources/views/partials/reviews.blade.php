@@ -66,6 +66,27 @@
         @endif
     </x-card>
 
+    {{--
+        Approved and still open — the short list of "nothing is stopping this any more".
+
+        Above my own pull requests rather than below them, because it is the one list that asks
+        for an action right now; the longer list underneath is the backlog it came out of. A pull
+        request appears in both, deliberately: removing it from the long list would hide it from
+        the place that groups it by project.
+    --}}
+    @if ($reviewsConfigured && ! $reviews['error'] && ($reviews['approved'] ?? []) !== [])
+        <x-card>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="heading">{{ __('app.dev.approved') }}</h2>
+                <span class="pill border-work/40 bg-work/15 text-[10px] text-work-text">{{ count($reviews['approved']) }}</span>
+            </div>
+
+            <p class="mt-0.5 text-[11px] text-faint">{{ __('app.dev.approved_hint') }}</p>
+
+            <x-pull-list :pulls="$reviews['approved']"/>
+        </x-card>
+    @endif
+
     @if ($reviewsConfigured && ! $reviews['error'])
         <x-card>
             <div class="flex flex-wrap items-center justify-between gap-3">

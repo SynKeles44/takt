@@ -119,6 +119,9 @@ final class Reviews
         return [
             'mine' => $this->sorted($mine),
             'incoming' => $this->sorted($incoming),
+            // the approved ones come from their own search and are not merged into `mine`: the
+            // same pull request belongs in both lists, and deduping them would hide it from one
+            'approved' => $this->sorted($this->search($responses['approved'] ?? null)['items']),
             'repositories' => $repositories,
             'login' => $login,
             'error' => $search['error'],
@@ -153,6 +156,18 @@ final class Reviews
 
             $calls[] = $request('search')->get('https://api.github.com/search/issues', [
                 'q' => 'is:open is:pr author:@me archived:false',
+                'per_page' => 20,
+                'sort' => 'updated',
+            ]);
+
+            /*
+             * Approved, as GitHub itself decides it: `review:approved` is the review DECISION of
+             * the pull request, so a later "changes requested" takes it straight back out. Asking
+             * the search is one request; reading `/pulls/{n}/reviews` would be one per pull
+             * request and would still have to work out which verdict is the current one.
+             */
+            $calls[] = $request('approved')->get('https://api.github.com/search/issues', [
+                'q' => 'is:open is:pr author:@me review:approved archived:false',
                 'per_page' => 20,
                 'sort' => 'updated',
             ]);
@@ -446,7 +461,7 @@ final class Reviews
     /** @return array<string, mixed> */
     private function rawEmpty(): array
     {
-        return ['mine' => [], 'incoming' => [], 'repositories' => [], 'login' => null, 'error' => null, 'fetched_at' => null];
+        return ['mine' => [], 'incoming' => [], 'approved' => [], 'repositories' => [], 'login' => null, 'error' => null, 'fetched_at' => null];
     }
 
     private function usable(mixed $cached): bool
@@ -483,6 +498,8 @@ final class Reviews
         return [
             'incoming' => $dates($cached['incoming']),
             'mine' => $dates($cached['mine']),
+            // absent in anything cached before this list existed, which is why it is not indexed
+            'approved' => $dates($cached['approved'] ?? []),
             'repositories' => $repositories,
             'login' => $cached['login'] ?? null,
             'error' => $cached['error'] ?? null,
