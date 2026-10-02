@@ -13,6 +13,8 @@ use Illuminate\Support\Str;
  */
 final class TestPost
 {
+    public function __construct(private readonly Linear $linear) {}
+
     public const string TICKET_DEFAULT = 'https://linear.app/galawork/issue/{KEY}';
 
     public const string PR_DEFAULT = 'https://github.com/galabau-workgroup/galawork-web/pull/{number}';
@@ -64,9 +66,24 @@ final class TestPost
             return $value;
         }
 
+        /*
+         * Linear's own link for the issue, when Linear knows it.
+         *
+         * The template produces `…/issue/COR-7053` while Linear's is
+         * `…/issue/COR-7053/abwesenheiten-werden-in-der-abwesenheitskachel-nicht-angezeigt` —
+         * the title slug is part of the address, not decoration, and a comment here used to claim
+         * it was optional. The real one was already in hand: `forIds` answers from the same cache
+         * the board fills, so this costs a request only for a key nothing has looked at yet.
+         */
+        $known = $this->linear->forIds($user, [Str::upper($value)])['issues'][Str::upper($value)]['url'] ?? null;
+
+        if (is_string($known) && $known !== '') {
+            return $known;
+        }
+
+        // the template is the fallback: an unknown key, no token, or Linear not answering
         $template = $user->ticket_url_template ?: self::TICKET_DEFAULT;
 
-        // Linear keeps the key upper case; the title slug is optional in its URLs
         return str_replace(
             ['{key}', '{KEY}'],
             [Str::lower($value), Str::upper($value)],
