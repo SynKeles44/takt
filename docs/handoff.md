@@ -26,7 +26,7 @@ Phasen 54–61 aus `docs/plan.md` (alle abgehakt dort nachlesbar). Kurz:
 
 - PR-Wartezahlen, „Wie letztes Mal" buchen, Releases-Bereich, Palette sieht alle Quellen
 - Ticket-Bereich: Linear als Quelle (`Linear::mine`), Git als Anreicherung (`Tickets`)
-- Menüleiste + ⌥⌘T (`desktop/main.swift`, über `window.takt` in `resources/js/app.js`)
+- Menüleiste + ⌥⌘T (`desktop/main.swift`, über `window.takt` in `resources/js/shell.js`)
 - „Der Mac war weg" (`AwayTime`), Kalender lesen (`CalendarEvents`), LAN-Zugriff
   (`NetworkAccess`, Schalter ist die Datei `storage/app/network-access`), Tätigkeitsspur
   (`ActivityTrail`)
