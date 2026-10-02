@@ -25,12 +25,17 @@ export function timeFields() {
             : `${pad(hour.value)}:${pad(minute.value)}`;
     };
 
+    /*
+     * Digits stay digits. Routing them through Number and back turned a freshly typed "05" into
+     * "5" — the leading zero vanished under the cursor, and the half then looked half-typed when
+     * it was finished. Only a value past the range is rewritten, and only to the range's edge.
+     */
     const digitsOnly = (input, max) => {
         const cleaned = input.value.replace(/\D/g, '').slice(0, 2);
 
-        input.value = cleaned === '' ? '' : String(Math.min(max, Number(cleaned)));
+        input.value = cleaned !== '' && Number(cleaned) > max ? String(max) : cleaned;
 
-        return cleaned;
+        return input.value;
     };
 
     document.addEventListener('input', (event) => {
@@ -55,6 +60,37 @@ export function timeFields() {
             minute.focus();
             minute.select();
         }
+    });
+
+    /*
+     * A whole time pasted into one half fills both. Without this, pasting "14:30" into the hour
+     * kept the 14 and dropped the minutes on the floor — and a paste is exactly how a time copied
+     * from somewhere else arrives.
+     */
+    document.addEventListener('paste', (event) => {
+        const input = event.target;
+        const field = input.closest?.('[data-time-field]');
+
+        if (! field) return;
+
+        const pasted = (event.clipboardData?.getData('text') ?? '').trim();
+        const parts = pasted.match(/^(\d{1,2})\s*[:.\s]\s*(\d{1,2})$/);
+
+        if (! parts) return;
+
+        event.preventDefault();
+
+        const hour = field.querySelector('[data-time-hour]');
+        const minute = field.querySelector('[data-time-minute]');
+
+        hour.value = parts[1];
+        minute.value = parts[2];
+        digitsOnly(hour, 23);
+        digitsOnly(minute, 59);
+        hour.value = pad(hour.value);
+        minute.value = pad(minute.value);
+        sync(field);
+        minute.focus();
     });
 
     document.addEventListener('keydown', (event) => {
