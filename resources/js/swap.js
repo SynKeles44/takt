@@ -30,7 +30,12 @@ const withTransition = (mutate) => {
         return;
     }
 
-    document.querySelectorAll('[data-region]').forEach((node) => {
+    /*
+     * The sidebar is never named: WebKit captures it as a blank image, so a named nav vanished
+     * for the length of every swap that touched it. Unnamed it belongs to the root, which does
+     * not animate, and simply shows its new state.
+     */
+    document.querySelectorAll('[data-region]:not([data-region="nav"])').forEach((node) => {
         node.style.viewTransitionName = 'region-' + node.dataset.region;
     });
 

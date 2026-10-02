@@ -38,6 +38,21 @@
             }
         })();
     </script>
+    {{--
+        A page carried in by a view transition has already arrived: the engine fades the old
+        content out and this one in. Letting the cards rise a second time on top of that left the
+        content area bare for a few hundred milliseconds on every click — on a light scheme that
+        is white cards turning canvas-grey and back. `pagereveal` fires before the first frame,
+        so the mark lands before any entrance animation could start; a cold load, which has no
+        transition, keeps its arrival.
+    --}}
+    <script>
+        addEventListener('pagereveal', (event) => {
+            if (event.viewTransition) {
+                document.documentElement.dataset.settled = '';
+            }
+        });
+    </script>
     <title>{{ $title ? $title.' · '.config('app.name') : config('app.name') }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <meta name="theme-color" content="{{ $theme->resolved()->preview()['canvas'] }}">

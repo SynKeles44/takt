@@ -54,10 +54,10 @@ class StylesheetTest extends TestCase
     }
 
     /**
-     * The soft page change rests on three lines in the stylesheet, and all three have to survive
-     * the build: the opt-in itself, and the two names that keep the shell out of the transition.
-     * Without the names the whole document is one group, the sidebar cross-fades with itself, and
-     * the result reads as a worse reload than no transition at all.
+     * The soft page change rests on a few lines in the stylesheet, and all of them have to survive
+     * the build: the opt-in, the one name that lets the content move on its own, a root that does
+     * not animate, and no name on the sidebar — WebKit captures a named aside as a blank image,
+     * which made the sidebar disappear for the length of every transition.
      */
     public function test_the_page_transition_survives_the_build(): void
     {
@@ -69,13 +69,16 @@ class StylesheetTest extends TestCase
             'Without the opt-in every navigation is a hard load.',
         );
 
-        foreach (['takt-nav', 'takt-page'] as $name) {
-            $this->assertStringContainsString(
-                'view-transition-name:'.$name,
-                str_replace(' ', '', $css),
-                sprintf('%s is unnamed, so the shell animates along with the content.', $name),
-            );
+        $flat = str_replace(' ', '', $css);
+
+        $this->assertStringContainsString('view-transition-name:takt-page', $flat);
+        $this->assertStringNotContainsString('view-transition-name:takt-nav', $flat, 'a named sidebar is a blank sidebar in WebKit');
+        // the minifier splits the grouped selector into one rule per half
+        foreach (['old', 'new'] as $half) {
+            $this->assertStringContainsString('::view-transition-'.$half.'(root){animation:none', $flat, 'a fading root flashes the colour beneath the page');
         }
+
+        $this->assertMatchesRegularExpression('/::view-transition-old\(\*\)\{animation:none/', $flat, 'an outgoing snapshot that fades exposes what lies beneath it');
     }
 
     public function test_the_motion_tokens_resolve_to_real_values(): void

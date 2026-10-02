@@ -1517,7 +1517,12 @@ body::before {
 :root[data-settled] .stack > .surface-plain,
 :root[data-settled] .stack-grid > .surface,
 :root[data-settled] .stack-grid > .stack,
-:root[data-settled] .dashboard-grid > .widget-slot {
+:root[data-settled] .dashboard-grid > .widget-slot,
+:root[data-settled] .widget-slot,
+:root[data-settled] main > *:not(.dashboard-grid),
+:root[data-settled] main > .grid > *:not(.widget-slot),
+:root[data-settled] ul > li > .row,
+:root[data-settled] ul > li.row {
     animation: none;
 }
 
@@ -3816,31 +3821,30 @@ input[type='time'] {
  * reader came from, the incoming one arrives from where it is going. Only regions carry
  * transition names, so nothing else on the page moves.
  */
+/*
+ * The outgoing snapshot never fades. It stays at full opacity and the incoming one is drawn in
+ * over it, so at no point is there a frame in which both halves are translucent.
+ *
+ * Measured, in WebKit, with the generic rule that is written here matched to the root as well
+ * (a cross-document transition takes the same `old(*)` / `new(*)` selectors): old and new were
+ * blended with mix-blend-mode normal, not plus-lighter — so half-way through, the page was 75 %
+ * page and 25 % of whatever lies beneath the document. In the browser that is white, in the app
+ * window the window's colour; on a light scheme the whole screen went pale for a fifth of a
+ * second on every click, on a dark one it went darker. Two translucent layers can never add up to
+ * an opaque one without plus-lighter, and an engine that does not honour it is not something a
+ * stylesheet can argue with — so the old layer simply does not become translucent.
+ */
 @media (prefers-reduced-motion: no-preference) {
-    ::view-transition-old(*),
-    ::view-transition-new(*) {
-        animation-duration: var(--dur);
-        animation-timing-function: var(--ease);
-    }
-
     ::view-transition-old(*) {
-        animation-name: vt-out;
+        animation: none;
     }
 
     ::view-transition-new(*) {
-        animation-name: vt-in;
-    }
-
-    :root[data-swap-direction='forward'] ::view-transition-old(*) {
-        animation-name: vt-out-left;
+        animation: vt-in var(--dur) var(--ease) both;
     }
 
     :root[data-swap-direction='forward'] ::view-transition-new(*) {
         animation-name: vt-in-right;
-    }
-
-    :root[data-swap-direction='back'] ::view-transition-old(*) {
-        animation-name: vt-out-right;
     }
 
     :root[data-swap-direction='back'] ::view-transition-new(*) {
@@ -3848,24 +3852,12 @@ input[type='time'] {
     }
 }
 
-@keyframes vt-out {
-    to { opacity: 0; transform: translateY(-4px); }
-}
-
 @keyframes vt-in {
     from { opacity: 0; transform: translateY(6px); }
 }
 
-@keyframes vt-out-left {
-    to { opacity: 0; transform: translateX(-2.5%); }
-}
-
 @keyframes vt-in-right {
     from { opacity: 0; transform: translateX(3%); }
-}
-
-@keyframes vt-out-right {
-    to { opacity: 0; transform: translateX(2.5%); }
 }
 
 @keyframes vt-in-left {
@@ -4030,42 +4022,20 @@ input[type='time'] {
 }
 
 /*
- * The shell stays put while the content changes. Without these names the whole document is one
- * transition group and the sidebar cross-fades with itself on every click — which looks worse than
- * no transition at all.
+ * Only the content carries a name. The sidebar used to have one of its own, so it would not
+ * cross-fade with itself — but WebKit captures the aside as a blank image (measured: the named
+ * group renders canvas-coloured for the whole transition, with or without its backdrop filter,
+ * whatever its z-order), so for a third of a second on every click the sidebar was simply gone.
+ * Unnamed, it is part of the root, and the root no longer animates at all — which is the same
+ * stillness the name was meant to buy, without the blank.
  */
-.nav-aside {
-    view-transition-name: takt-nav;
-}
-
 main[data-region='main'] {
     view-transition-name: takt-page;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    /*
-     * The shell does not animate; it is simply still. That is the half that sells the whole
-     * effect — a sidebar that stays put while the content moves reads as one application, and
-     * a sidebar that cross-fades with itself reads as a reload wearing a fade.
-     *
-     * The old snapshot is not drawn at all, and that is not a detail: a cross-document transition
-     * paints the outgoing capture over the incoming document, so for the length of the transition
-     * there were two sidebars stacked — the old one with its highlight still on the section you
-     * came from, the new one with the highlight travelling. Two marks at once, which is exactly
-     * how it was reported. Dropping the outgoing capture leaves one sidebar on screen, and the
-     * travel is visible from its first frame instead of from behind a stale copy of itself.
-     */
-    ::view-transition-old(takt-nav) {
-        display: none;
-    }
-
-    ::view-transition-new(takt-nav) {
-        animation: none;
-        mix-blend-mode: normal;
-    }
-
     ::view-transition-group(takt-page) {
-        animation-duration: 0.34s;
+        animation-duration: 0.32s;
         animation-timing-function: var(--ease);
     }
 
@@ -4073,33 +4043,32 @@ main[data-region='main'] {
      * Deliberately not subtle. The first version moved four pixels over 180 ms and was reported
      * as "no animation at all" — which is the correct reading: a transition nobody can see is
      * indistinguishable from none, and then only the hard cut remains to notice.
+     *
+     * The outgoing page stays opaque underneath while the new one rises in over it — see the
+     * region rules above for why nothing here is allowed to fade OUT.
      */
     ::view-transition-old(takt-page) {
-        animation: takt-page-out 0.2s var(--ease) both;
+        animation: none;
     }
 
     ::view-transition-new(takt-page) {
-        animation: takt-page-in 0.38s var(--spring) both;
+        animation: takt-page-in 0.32s var(--ease) both;
     }
 
-    /* the root cross-fade underneath everything, so nothing ever flashes white */
+    /*
+     * The root — canvas, ambient glow, the page title — does not animate at all. It used to
+     * cross-fade, and that cross-fade was the flash: both copies translucent at once, and the
+     * colour beneath the document showing through the whole window for a moment.
+     */
     ::view-transition-old(root),
     ::view-transition-new(root) {
-        animation-duration: 0.3s;
-    }
-}
-
-@keyframes takt-page-out {
-    to {
-        opacity: 0;
-        transform: translateY(-14px) scale(0.985);
-        filter: blur(1px);
+        animation: none;
     }
 }
 
 @keyframes takt-page-in {
     from {
         opacity: 0;
-        transform: translateY(22px) scale(0.985);
+        transform: translateY(18px);
     }
 }
