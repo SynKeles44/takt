@@ -5,12 +5,25 @@ declare(strict_types=1);
 namespace Tests;
 
 use App\Models\User;
+use App\Support\BuildFreshness;
 use App\Support\Deferred;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Testing\TestResponse;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * The stale-build banner compares file times on disk, and a test suite must not depend on
+     * whether somebody ran `npm run build` after their last edit. Every test starts with a build
+     * that counts as current; BuildFreshnessTest binds its own fixtures over this.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->bind(BuildFreshness::class, fn (): BuildFreshness => new BuildFreshness(__FILE__, []));
+    }
+
     /**
      * A page WITH its deferred content already in it.
      *

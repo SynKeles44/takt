@@ -1,0 +1,85 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Support\BuildFreshness;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Tests\TestCase;
+
+class BuildFreshnessTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private string $root;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->root = storage_path('framework/testing/freshness-'.uniqid());
+        File::makeDirectory($this->root.'/src', recursive: true);
+    }
+
+    protected function tearDown(): void
+    {
+        File::deleteDirectory($this->root);
+
+        parent::tearDown();
+    }
+
+    public function test_a_missing_manifest_is_stale(): void
+    {
+        $this->assertTrue((new BuildFreshness($this->root.'/manifest.json', [$this->root.'/src']))->stale());
+    }
+
+    public function test_a_manifest_newer_than_every_source_is_fresh(): void
+    {
+        File::put($this->root.'/src/app.css', 'a');
+        touch($this->root.'/src/app.css', time() - 120);
+        File::put($this->root.'/manifest.json', '{}');
+
+        $this->assertFalse((new BuildFreshness($this->root.'/manifest.json', [$this->root.'/src']))->stale());
+    }
+
+    public function test_a_source_edited_after_the_build_makes_it_stale(): void
+    {
+        File::put($this->root.'/manifest.json', '{}');
+        touch($this->root.'/manifest.json', time() - 120);
+        File::makeDirectory($this->root.'/src/deep');
+        File::put($this->root.'/src/deep/app.js', 'b');
+
+        $this->assertTrue((new BuildFreshness($this->root.'/manifest.json', [$this->root.'/src']))->stale());
+    }
+
+    public function test_a_single_file_counts_as_a_source_too(): void
+    {
+        File::put($this->root.'/manifest.json', '{}');
+        touch($this->root.'/manifest.json', time() - 120);
+        File::put($this->root.'/vite.config.js', 'c');
+
+        $this->assertTrue((new BuildFreshness($this->root.'/manifest.json', [$this->root.'/vite.config.js']))->stale());
+    }
+
+    public function test_the_page_warns_when_the_build_is_behind(): void
+    {
+        $this->login();
+
+        $this->app->bind(BuildFreshness::class, fn () => new BuildFreshness($this->root.'/missing.json', []));
+
+        $this->get(route('settings'))->assertOk()->assertSee('data-stale-build', escape: false)->assertSee('npm run build');
+    }
+
+    public function test_the_page_stays_quiet_when_the_build_is_current(): void
+    {
+        $this->login();
+
+        File::put($this->root.'/manifest.json', '{}');
+
+        $this->app->bind(BuildFreshness::class, fn () => new BuildFreshness($this->root.'/manifest.json', []));
+
+        $this->get(route('settings'))->assertOk()->assertDontSee('data-stale-build', escape: false);
+    }
+}

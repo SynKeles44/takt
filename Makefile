@@ -44,6 +44,10 @@ start:
 		echo "Missing dependencies or built assets — run: composer install && npm install && npm run build"; \
 		exit 1; \
 	fi; \
+	if [ -n "`find resources/css resources/js vite.config.js package-lock.json -newer public/build/manifest.json -print -quit 2>/dev/null`" ]; then \
+		echo "Built assets are older than the sources — rebuilding"; \
+		npm run build --silent || { echo "Build failed; run: npm run build"; exit 1; }; \
+	fi; \
 	if lsof -ti tcp:$(PORT) >/dev/null 2>&1; then \
 		echo "Port $(PORT) is already in use by another process — free it or use: make start PORT=8001"; \
 		exit 1; \

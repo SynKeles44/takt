@@ -151,6 +151,15 @@
              */
             'max-w-none' => $wide === 'full',
         ])>
+            @if (app(\App\Support\BuildFreshness::class)->stale())
+                {{-- the built assets are older than their sources: whatever is on screen is not what the code says --}}
+                <div class="mb-5 flex items-center gap-3 rounded-[var(--radius-control)] border border-rest/40 bg-rest/10 px-4 py-3 text-sm text-rest-text" role="alert" data-stale-build>
+                    <x-icon name="alert" class="size-4 shrink-0"/>
+                    <span class="min-w-0 flex-1">{{ __('app.build.stale') }}</span>
+                    <code class="shrink-0 rounded bg-canvas/60 px-1.5 py-0.5 text-xs">npm run build</code>
+                </div>
+            @endif
+
             @if ($title)
                 {{--
                     On a full-bleed page the heading keeps the normal page width, so it does not
